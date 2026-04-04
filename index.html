@@ -1,84 +1,113 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>至尊刮刮乐</title>
+    <title>至尊龙年-全真模拟版</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; overflow: hidden; }
-        .card-container { position: relative; width: 360px; height: 720px; margin-top: 20px; background-size: cover; border-radius: 15px; box-shadow: 0 0 20px rgba(255,215,0,0.5); }
-        /* 刮奖画布层 */
-        #scratch-canvas { position: absolute; top: 445px; left: 22px; width: 316px; height: 210px; cursor: crosshair; touch-action: none; border-radius: 5px; }
-        /* 底部中奖数据层 */
-        .prize-layer { position: absolute; top: 445px; left: 22px; width: 316px; height: 210px; display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(6, 1fr); background: #fff; border-radius: 5px; }
-        .num-box { color: #d42323; font-size: 12px; font-weight: bold; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 0.1px solid #eee; }
-        .btn-group { margin-top: 20px; }
-        button { padding: 10px 20px; background: gold; border: none; border-radius: 5px; font-weight: bold; }
+        body { background: #000; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: "Microsoft YaHei", sans-serif; }
+        
+        .card-container { position: relative; width: 360px; height: 700px; background: url('64005.jpg') no-repeat; background-size: cover; border-radius: 15px; overflow: hidden; }
+
+        /* 核心修改：让数据层背景透明，显示彩票原图条纹 */
+        .data-layer { position: absolute; top: 350px; left: 20px; width: 320px; height: 320px; z-index: 1; display: flex; flex-direction: column; background: rgba(255,255,255,0.05); /* 极低透明度，露出底图 */ }
+
+        /* 中奖号码区 - 对应原图上两行 */
+        .win-area { height: 80px; display: flex; justify-content: space-around; align-items: center; padding: 0 10px; }
+        
+        /* 我的号码区 */
+        .my-area { flex: 1; display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(4, 1fr); }
+
+        .number-item { display: flex; flex-direction: column; justify-content: center; align-items: center; color: #d42323; font-weight: bold; text-shadow: 1px 1px 0px rgba(255,255,255,0.5); }
+        .prize-text { font-size: 9px; color: #9b1c1c; margin-top: 2px; }
+
+        /* 覆盖全区域的刮奖层 */
+        #scratch-canvas { position: absolute; top: 350px; left: 20px; width: 320px; height: 320px; z-index: 10; cursor: crosshair; touch-action: none; }
     </style>
 </head>
 <body>
-    <div id="game-ui">
-        <div class="card-container" id="bg-card" style="background-image: url('64005.jpg');">
-            <div class="prize-layer" id="prize-content"></div>
-            <canvas id="scratch-canvas"></canvas>
+    <div class="card-container">
+        <div class="data-layer">
+            <div class="win-area" id="win-nums-box"></div>
+            <div class="my-area" id="my-nums-box"></div>
         </div>
+        <canvas id="scratch-canvas"></canvas>
     </div>
 
     <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand(); // 全屏打开
-
         const canvas = document.getElementById('scratch-canvas');
         const ctx = canvas.getContext('2d');
-        let isDrawing = false;
+        const tg = window.Telegram.WebApp;
+        tg.expand();
 
-        // 初始化中奖数据
-        function initPrize() {
-            const container = document.getElementById('prize-content');
-            container.innerHTML = '';
-            const winNum = Math.floor(Math.random() * 90) + 10;
-            for (let i = 0; i < 30; i++) {
-                const myNum = Math.floor(Math.random() * 90) + 10;
-                const isWin = myNum === winNum;
-                container.innerHTML += `<div class="num-box"><span>${myNum}</span><span style="font-size:8px">${isWin ? '$888' : '$0'}</span></div>`;
-            }
+        // 1. 生成随机中奖逻辑
+        const winningNumbers = Array.from({length: 4}, () => Math.floor(Math.random() * 89) + 10);
+        document.getElementById('win-nums-box').innerHTML = winningNumbers.map(n => 
+            `<div class="number-item" style="color:#000">${n}<div class="prize-text" style="color:#666">中奖号码</div></div>`
+        ).join('');
+
+        const myBox = document.getElementById('my-nums-box');
+        for (let i = 0; i < 20; i++) {
+            const num = Math.floor(Math.random() * 89) + 10;
+            const isWin = winningNumbers.includes(num);
+            const prize = isWin ? [50, 100, 500, 1000][Math.floor(Math.random()*4)] : 0;
+            myBox.innerHTML += `
+                <div class="number-item">
+                    ${num}
+                    <div class="prize-text">${prize > 0 ? '¥'+prize : '￥0'}</div>
+                </div>`;
         }
 
-        // 绘制灰色涂层
-        function initCanvas() {
-            ctx.globalCompositeOperation = 'source-over';
-            ctx.fillStyle = '#C0C0C0'; // 银色涂层
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            // 添加点缀
-            for(let i=0; i<100; i++) {
-                ctx.fillStyle = '#A9A9A9';
-                ctx.fillRect(Math.random()*canvas.width, Math.random()*canvas.height, 2, 2);
-            }
-        }
-
-        // 刮除逻辑
-        function scratch(e) {
-            if (!isDrawing) return;
-            const rect = canvas.getBoundingClientRect();
-            const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-            const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+        // 2. 绘制涂层 (增加仿金属质感)
+        function initScratch() {
+            canvas.width = 320;
+            canvas.height = 320;
             
+            // 绘制银灰色底色
+            ctx.fillStyle = '#CCCCCC'; 
+            ctx.fillRect(0, 0, 320, 320);
+            
+            // 绘制杂色点，模拟真实的涂层颗粒感
+            for(let i=0; i<400; i++) {
+                ctx.fillStyle = Math.random() > 0.5 ? '#E0E0E0' : '#A0A0A0';
+                ctx.fillRect(Math.random()*320, Math.random()*320, 1.5, 1.5);
+            }
+
+            // 在涂层上写一些引导字
+            ctx.fillStyle = '#777';
+            ctx.font = 'bold 18px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('SCRATCH AREA', 160, 45);
+            ctx.fillText('刮奖区', 160, 160);
+        }
+
+        // 3. 触摸刮除逻辑
+        let isPressed = false;
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        function scratch(e) {
+            if (!isPressed) return;
+            const pos = getPos(e);
             ctx.globalCompositeOperation = 'destination-out';
             ctx.beginPath();
-            ctx.arc(x, y, 20, 0, Math.PI * 2);
+            ctx.arc(pos.x, pos.y, 25, 0, Math.PI * 2);
             ctx.fill();
         }
 
-        canvas.addEventListener('mousedown', () => isDrawing = true);
-        canvas.addEventListener('touchstart', () => isDrawing = true);
-        window.addEventListener('mouseup', () => isDrawing = false);
-        window.addEventListener('touchend', () => isDrawing = false);
+        canvas.addEventListener('mousedown', () => isPressed = true);
+        canvas.addEventListener('touchstart', (e) => { isPressed = true; scratch(e); });
+        window.addEventListener('mouseup', () => isPressed = false);
+        window.addEventListener('touchend', () => isPressed = false);
         canvas.addEventListener('mousemove', scratch);
-        canvas.addEventListener('touchmove', scratch);
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); scratch(e); });
 
-        initPrize();
-        initCanvas();
+        initScratch();
     </script>
 </body>
 </html>
