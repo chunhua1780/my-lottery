@@ -3,61 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>中国龙-超级配置器 V2.0</title>
+    <title>中国龙-至尊兑奖版</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { background: #1a1a1a; margin: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; font-family: -apple-system, sans-serif; overflow: hidden; }
+        body { background: #000; margin: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; overflow: hidden; font-family: "Arial Rounded MT Bold", "Helvetica", sans-serif; }
+        .card-container { position: relative; width: 360px; height: 720px; background: url('64005.jpg') no-repeat; background-size: cover; border-radius: 10px; flex-shrink: 0; }
         
-        /* 彩票容器 */
-        .card-container { position: relative; width: 360px; height: 720px; background: url('64005.jpg') no-repeat; background-size: cover; margin-top: 5px; flex-shrink: 0; box-shadow: 0 0 50px #000; overflow: hidden; }
-
-        /* 1. 玩法区 (中奖号码) - 独立控制层 */
-        #win-box { position: absolute; width: 100px; height: 60px; z-index: 5; display: flex; justify-content: center; align-items: center; border: 1px dashed rgba(255,255,0,0.5); pointer-events: none; }
+        /* 玩法区 - 使用你提供的参数 Top: 242, Left: 126 */
+        .win-box { position: absolute; top: 242px; left: 126px; width: 100px; height: 60px; display: flex; justify-content: center; align-items: center; z-index: 1; }
         
-        /* 2. 我的号码区 (30个圆圈) - 独立控制层 */
-        #my-grid { position: absolute; width: 312px; height: 280px; z-index: 5; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(5, 1fr); border: 1px dashed rgba(0,255,255,0.3); pointer-events: none; }
+        /* 数字区 - 使用你提供的参数 Top: 328, Left: 21, Gap: 5 */
+        .my-grid { position: absolute; top: 328px; left: 21px; width: 312px; height: 280px; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(5, 1fr); row-gap: 5px; z-index: 1; }
 
-        .num-item { display: flex; flex-direction: column; justify-content: center; align-items: center; color: #000; font-weight: 900; text-shadow: 1px 1px 0 #fff; line-height: 1.1; }
-        .prize-item { color: #8B0000; font-weight: 900; }
+        /* 字体大小使用你提供的 Size: 14 */
+        .num-item { display: flex; flex-direction: column; justify-content: center; align-items: center; color: #000; font-weight: 900; font-size: 14px; text-shadow: 1px 1px 0 #fff; line-height: 1.1; }
+        .prize-item { font-size: 10px; color: #8B0000; font-weight: 900; }
 
-        /* 3. 刮奖图层 (Canvas) - 可视化控制 */
-        #scratch-canvas { position: absolute; z-index: 10; touch-action: none; cursor: crosshair; outline: 3px solid rgba(255,0,0,0.5); /* 调试模式红色边框 */ }
-
-        /* --- 调试控制台 --- */
-        .console { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-radius: 20px 20px 0 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.5); z-index: 1000; max-height: 60vh; overflow-y: auto; }
-        .console-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid #eee; background: #f8f9fa; border-radius: 20px 20px 0 0; }
-        .console-header h3 { margin: 0; font-size: 16px; }
-        .tab-group { display: flex; gap: 5px; }
-        .tab-btn { padding: 5px 10px; background: #ddd; border: none; border-radius: 5px; font-size: 12px; cursor: pointer; }
-        .tab-btn.active { background: #ff4400; color: #fff; }
-
-        .tab-content { display: none; padding: 15px; }
-        .tab-content.active { display: block; }
-
-        .control-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; background: #f4f4f4; padding: 6px 10px; border-radius: 8px; }
-        .label-txt { font-size: 13px; font-weight: bold; flex: 1; }
-        .label-txt span { font-size: 11px; color: #666; font-weight: normal; }
-        .btn-group { display: flex; align-items: center; gap: 4px; }
-        .btn-group button { width: 32px; height: 32px; border: none; background: #333; color: #fff; border-radius: 4px; font-size: 18px; cursor: pointer; }
-        .btn-group button:active { background: #000; }
-        .btn-group input { width: 50px; text-align: center; border: 1px solid #ccc; height: 28px; font-weight: bold; font-size: 14px; }
-
-        .final-code-btn { width: 100%; padding: 12px; background: #28a745; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 15px; }
-        .final-code-btn:active { background: #1e7e34; }
+        /* 刮奖图层 - 自动适配高度 */
+        #scratch-canvas { position: absolute; top: 235px; left: 18px; width: 324px; height: 410px; z-index: 10; touch-action: none; cursor: crosshair; }
     </style>
 </head>
 <body>
-
     <div class="card-container">
-        <div id="win-box"><div id="win-text" class="num-item">88</div></div>
-        <div id="my-grid"></div>
+        <div class="win-box" id="win-num"></div>
+        <div class="my-grid" id="my-nums"></div>
         <canvas id="scratch-canvas"></canvas>
     </div>
 
-    <div class="console">
-        <div class="console-header">
-            <h3>中国龙配置器</h3>
-            <div class="tab-group">
-                <button class="tab-btn active" onclick="showTab('tab-win')">玩法区</button>
-                <button class="tab-btn" onclick="showTab('tab-my')">数字区</button>
-                <button class="tab-btn" onclick="showTab('tab-canv')">刮奖区</button>
-            </div>
+    <script>
+        const canvas = document.getElementById('scratch-canvas');
+        const ctx = canvas.getContext('2d');
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // 1. 生成随机中奖号码 (10-99)
+        const luckyNum = Math.floor(Math.random() * 89) + 10;
+        document.getElementById('win-num').innerHTML = `<div class="num-item" style="font-size:24px">${luckyNum}</div>`;
+
+        // 2. 生成30个不重复的随机格子
+        const myBox = document.getElementById('my-nums');
+        const prizePool = [0, 5, 10, 20, 50, 100, 500, 1000, 5000, 10000, 1000000];
+        
+        // 创建一个数字池并打乱，确保不重复
+        let numberPool = Array.from({length: 90}, (_, i) => i + 10);
+        numberPool.sort(() => Math.random() - 0.5);
+
+        for (let i = 0; i < 30; i++) {
+            // 20% 概率中奖 (号码等于luckyNum)
+            let isWinner = Math.random() > 0.8;
+            let myNum;
+            let prize;
+
+            if (isWinner) {
+                myNum = luckyNum;
+                // 中奖则从奖金池随机取（含大奖）
+                prize = prizePool[Math.floor(Math.random() * prizePool.length)];
+            } else {
+                // 不中奖：从池子里取一个不等于luckyNum的数字
+                myNum = numberPool[i] === luckyNum ? numberPool[31] : numberPool[i];
+                // 不中奖显示 0 或 5, 10 等小额
+                const smallPrizes = [0, 5, 10, 20];
+                prize = smallPrizes[Math.floor(Math.random() * smallPrizes.length)];
+            }
+
+            // 格式化金额显示
+            let prizeStr = prize >= 10000 ? (prize/10000) + "W" : prize.toLocaleString();
+            
+            myBox.innerHTML += `<div class="num-item">${myNum}<div class="prize-item">¥${prizeStr}</div></div>`;
+        }
+
+        // 3. 绘制磨砂涂层
+        function init() {
+            canvas.width = 324;
+            canvas.height = 410;
+            ctx.fillStyle = '#BDBDBD'; 
+            ctx.fillRect(0, 0, 324, 410);
+            for(let i=0; i<1800; i++) {
+                ctx.fillStyle = Math.random() > 0.5 ? '#E0E0E0' : '#828282';
+                ctx.fillRect(Math.random()*324, Math.random()*410, 1.2, 1.2);
+            }
+            ctx.fillStyle = '#444'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText('玩法区', 162, 45);
+            ctx.fillText('刮 开 区', 162, 210);
+        }
+
+        // 4. 刮除逻辑
+        let isDrawing = false;
+        function scratch(e) {
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+            const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.beginPath();
+            ctx.arc(x, y, 18, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        canvas.addEventListener('mousedown', () => isDrawing = true);
+        canvas.addEventListener('touchstart', (e) => { isDrawing = true; scratch(e); });
+        window.addEventListener('mouseup', () => isDrawing = false);
+        window.addEventListener('touchend', () => isDrawing = false);
+        canvas.addEventListener('mousemove', scratch);
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); scratch(e); }, {passive: false});
+
+        init();
+    </script>
+</body>
+</html>
