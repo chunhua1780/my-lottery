@@ -1,122 +1,42 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>中国龙 刮刮乐</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
+<meta charset="UTF-8">
+<title>仿真刮刮乐</title>
+<style>
+* {margin:0;padding:0;box-sizing:border-box;}
+body {min-height:100vh;display:flex;justify-content:center;align-items:center;background:#eee;}
+.lottery-card {position:relative;width:400px;height:600px;background:url('64005.jpg') center/cover no-repeat;}
+.scratch-area {position:absolute;top:285px;left:75px;width:240px;height:170px;cursor:grabbing;}
+</style>
+</head>
+<body>
+<div class="lottery-card">
+<canvas class="scratch-area" width="240" height="170"></canvas>
+</div>
+<script>
+const canvas = document.querySelector('.scratch-area');
+const ctx = canvas.getContext('2d');
+let isScratching = false;
 
-        body {
-            font-family: "Microsoft YaHei", sans-serif;
-            background: #f0f0f0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
+// 初始化刮涂层
+ctx.fillStyle = '#f9d749';
+ctx.fillRect(0,0,canvas.width,canvas.height);
+ctx.globalCompositeOperation = 'destination-out';
+ctx.lineWidth = 25;
+ctx.lineCap = 'round';
+ctx.strokeStyle = 'rgba(0,0,0,0.1)';
 
-        .scratch-card {
-            position: relative;
-            width: 100%;
-            max-width: 480px;
-            aspect-ratio: 9 / 19;
-            background: url('https://picsum.photos/960/1920?random=1') no-repeat center center;
-            background-size: cover;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-        }
-
-        .scratch-overlay {
-            position: absolute;
-            top: 43%;
-            left: 5%;
-            width: 90%;
-            height: 47%;
-            background: linear-gradient(135deg, #d4af37 0%, #f0c14b 25%, #d4af37 50%, #f0c14b 75%, #d4af37 100%);
-            background-size: 20px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            user-select: none;
-            -webkit-user-select: none;
-            touch-action: none;
-            z-index: 10;
-        }
-
-        .scratch-overlay::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23b8860b' fill-opacity='0.3'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-        }
-
-        .prize-content {
-            position: absolute;
-            top: 43%;
-            left: 5%;
-            width: 90%;
-            height: 47%;
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            grid-template-rows: repeat(5, 1fr);
-            gap: 8px;
-            padding: 10px;
-            z-index: 5;
-        }
-
-        .prize-item {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 18px;
-            font-weight: bold;
-            color: #fff;
-            text-shadow: 1px 1px 2px #000;
-            background: rgba(0,0,0,0.1);
-            border-radius: 4px;
-        }
-
-        .win-notice {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(255, 215, 0, 0.95);
-            color: #d32f2f;
-            padding: 20px 40px;
-            border-radius: 12px;
-            font-size: 28px;
-            font-weight: bold;
-            text-align: center;
-            z-index: 20;
-            display: none;
-            box-shadow: 0 0 30px rgba(255,215,0,0.8);
-            animation: pulse 1s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: translate(-50%, -50%) scale(1); }
-            50% { transform: translate(-50%, -50%) scale(1.05); }
-            100% { transform: translate(-50%, -50%) scale(1); }
-        }
-
-        .reset-btn {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 12px 30px;
-            background: #d32f2f;
-            color: #fff;
-            border: none;
-            border-radius: 25px;
+canvas.addEventListener('mousedown', () => isScratching = true);
+canvas.addEventListener('mouseup', () => isScratching = false);
+canvas.addEventListener('mousemove', (e) => {
+  if(!isScratching) return;
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  ctx.lineTo(x, y);
+  ctx.stroke();
+});
+</script>
+</body>
+</html>
