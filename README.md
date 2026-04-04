@@ -1,0 +1,2 @@
+# my-lottery
+lucky game
