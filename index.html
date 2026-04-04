@@ -3,151 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>中国龙-全参数调试 V4.0</title>
+    <title>中国龙-刮刮乐</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { background: #1a1a1a; margin: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; font-family: sans-serif; overflow-x: hidden; }
-        .card-container { position: relative; width: 360px; height: 720px; background: url('64005.jpg') no-repeat; background-size: cover; margin-top: 5px; flex-shrink: 0; box-shadow: 0 0 50px #000; }
+        body { 
+            background: #000; margin: 0; padding: 0;
+            display: flex; justify-content: center; align-items: flex-start;
+            min-height: 100vh; overflow: hidden;
+            font-family: "Arial Rounded MT Bold", "Helvetica", sans-serif;
+            -webkit-user-select: none; user-select: none;
+        }
 
-        /* 中奖号码文字层 */
-        #win-box { position: absolute; z-index: 5; display: flex; justify-content: center; align-items: center; border: 1px dashed gold; pointer-events: none; }
+        /* 核心容器 */
+        .card-container { 
+            position: relative; width: 360px; height: 720px;
+            background: url('64005.jpg') no-repeat; background-size: cover;
+            border-radius: 10px; flex-shrink: 0;
+        }
+
+        /* 1. 中奖号码文字层 (根据你的 T=248, L=126, Size=22) */
+        .win-box { 
+            position: absolute; top: 248px; left: 126px; 
+            width: 120px; height: 60px; z-index: 1;
+            display: flex; justify-content: center; align-items: center; 
+            font-size: 22px; color: #000; font-weight: 900;
+            text-shadow: 1px 1px 0 #fff;
+        }
         
-        /* 我的号码网格层 */
-        #my-grid { position: absolute; z-index: 5; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(5, 1fr); border: 1px dashed cyan; pointer-events: none; }
+        /* 2. 我的号码网格层 (根据你的 T=339, L=24, Size=14) */
+        .my-grid { 
+            position: absolute; top: 339px; left: 24px; 
+            width: 312px; height: 280px; z-index: 1;
+            display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(5, 1fr);
+            row-gap: 5px; font-size: 14px;
+        }
+
+        .num-item { 
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: #000; font-weight: 900; text-shadow: 1px 1px 0 #fff; line-height: 1.1; 
+        }
+        .prize-item { font-size: 10px; color: #8B0000; font-weight: 900; }
+
+        /* 3. 刮奖涂层 (Canvas) */
+        .scratch-canvas { position: absolute; z-index: 10; touch-action: none; cursor: crosshair; }
         
-        .num-item { display: flex; flex-direction: column; justify-content: center; align-items: center; color: #000; font-weight: 900; text-shadow: 1px 1px 0 #fff; line-height: 1.1; }
-        .prize-item { color: #8B0000; font-weight: 900; }
+        /* 涂层A定位 (根据你的 T=258, L=154, W=69, H=50) */
+        #canv-a { top: 258px; left: 154px; width: 69px; height: 50px; }
+        /* 涂层B定位 (根据你的 T=322, L=21, W=318, H=299) */
+        #canv-b { top: 322px; left: 21px; width: 318px; height: 299px; }
 
-        /* 两个独立的刮奖 Canvas */
-        .scratch-layer { position: absolute; z-index: 10; touch-action: none; opacity: 0.7; }
-        #canv-win { outline: 1px solid red; } 
-        #canv-mine { outline: 1px solid blue; }
-
-        /* 控制台 */
-        .console { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; padding: 10px; border-radius: 20px 20px 0 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.5); z-index: 1000; max-height: 55vh; overflow-y: auto; }
-        .tab-bar { display: flex; gap: 4px; margin-bottom: 10px; position: sticky; top: 0; background: #fff; z-index: 11; }
-        .tab-btn { flex: 1; padding: 8px 2px; font-size: 11px; border: none; background: #eee; border-radius: 6px; }
-        .tab-btn.active { background: #ff4400; color: #fff; }
-        .tab-content { display: none; padding: 5px; }
-        .tab-content.active { display: block; }
-
-        .row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; background: #f4f4f4; padding: 6px; border-radius: 6px; }
-        .label-txt { font-size: 12px; font-weight: bold; }
-        .btn-group { display: flex; align-items: center; gap: 3px; }
-        .btn-group button { width: 30px; height: 30px; border: none; background: #333; color: #fff; border-radius: 4px; font-size: 18px; }
-        .btn-group input { width: 45px; text-align: center; border: 1px solid #ccc; height: 26px; font-size: 12px; }
-
-        .output-box { background: #000; color: #0f0; padding: 10px; font-family: monospace; font-size: 10px; border-radius: 5px; white-space: pre-wrap; margin-top: 10px; }
+        /* 底部交互提示 */
+        .tg-hint {
+            position: absolute; bottom: 20px; width: 100%; text-align: center;
+            color: rgba(255,255,255,0.5); font-size: 12px; pointer-events: none;
+        }
     </style>
 </head>
 <body>
-
     <div class="card-container">
-        <div id="win-box"><div id="win-text" class="num-item">88</div></div>
+        <div class="win-box" id="win-num"></div>
+        <div class="my-grid" id="my-nums"></div>
         
-        <div id="my-grid"></div>
-        
-        <canvas id="canv-win" class="scratch-layer"></canvas>
-        <canvas id="canv-mine" class="scratch-layer"></canvas>
-    </div>
+        <canvas id="canv-a" class="scratch-canvas"></canvas>
+        <canvas id="canv-b" class="scratch-canvas"></canvas>
 
-    <div class="console">
-        <div class="tab-bar">
-            <button class="tab-btn active" onclick="showTab(0)">文字对齐</button>
-            <button class="tab-btn" onclick="showTab(1)">涂层范围</button>
-            <button class="tab-btn" onclick="showTab(2)">数据汇总</button>
-        </div>
-
-        <div id="tab0" class="tab-content active">
-            <p style="font-size:11px; color:red; margin:0 0 5px 0;">* 先对准文字，再调涂层</p>
-            <div class="row"><span class="label-txt">中奖号 Top</span><div class="btn-group"><button onclick="adj('wt',-1)">-</button><input id="wt" value="248"><button onclick="adj('wt',1)">+</button></div></div>
-            <div class="row"><span class="label-txt">中奖号 Left</span><div class="btn-group"><button onclick="adj('wl',-1)">-</button><input id="wl" value="126"><button onclick="adj('wl',1)">+</button></div></div>
-            <div class="row"><span class="label-txt">中奖号 大小</span><div class="btn-group"><button onclick="adj('ws',-1)">-</button><input id="ws" value="22"><button onclick="adj('ws',1)">+</button></div></div>
-            <hr>
-            <div class="row"><span class="label-txt">网格区 Top</span><div class="btn-group"><button onclick="adj('gt',-1)">-</button><input id="gt" value="339"><button onclick="adj('gt',1)">+</button></div></div>
-            <div class="row"><span class="label-txt">网格区 Left</span><div class="btn-group"><button onclick="adj('gl',-1)">-</button><input id="gl" value="24"><button onclick="adj('gl',1)">+</button></div></div>
-            <div class="row"><span class="label-txt">网格区 大小</span><div class="btn-group"><button onclick="adj('gs',-1)">-</button><input id="gs" value="14"><button onclick="adj('gs',1)">+</button></div></div>
-        </div>
-
-        <div id="tab1" class="tab-content">
-            <div class="row"><span class="label-txt">涂层A Top</span><div class="btn-group"><button onclick="adj('at',-1)">-</button><input id="at" value="258"><button onclick="adj('at',1)">+</button></div></div>
-            <div class="row"><span class="label-txt">涂层A Left</span><div class="btn-group"><button onclick="adj('al',-1)">-</button><input id="al" value="154"><button onclick="adj('al',1)">+</button></div></div>
-            <div class="row"><span class="label-txt">涂层A 宽</span><div class="btn-group"><button onclick="adj('aw',-1)">-</button><input id="aw" value="69"><button onclick="adj('aw',1)">+</button></div></div>
-            <hr>
-            <div class="row"><span class="label-txt">涂层B Top</span><div class="btn-group"><button onclick="adj('bt',-1)">-</button><input id="bt" value="322"><button onclick="adj('bt',1)">+</button></div></div>
-            <div class="row"><span class="label-txt">涂层B Left</span><div class="btn-group"><button onclick="adj('bl',-1)">-</button><input id="bl" value="21"><button onclick="adj('bl',1)">+</button></div></div>
-            <div class="row"><span class="label-txt">涂层B 高</span><div class="btn-group"><button onclick="adj('bh',-1)">-</button><input id="bh" value="299"><button onclick="adj('bh',1)">+</button></div></div>
-        </div>
-
-        <div id="tab2" class="tab-content">
-            <div class="output-box" id="output">正在计算...</div>
-        </div>
+        <div class="tg-hint">—— 祝您好运 ——</div>
     </div>
 
     <script>
-        const grid = document.getElementById('my-grid');
-        function initGrid() {
-            grid.innerHTML = '';
-            for (let i = 0; i < 30; i++) grid.innerHTML += `<div class="num-item" id="item-${i}">10<div class="prize-item">¥10</div></div>`;
-        }
+        // 初始化 Telegram SDK
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand(); // 全屏打开
+        tg.setHeaderColor('#000000');
 
-        window.adj = (id, d) => { document.getElementById(id).value = parseInt(document.getElementById(id).value) + d; update(); }
-        window.showTab = (n) => {
-            document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === n));
-            document.querySelectorAll('.tab-content').forEach((c, i) => c.classList.toggle('active', i === n));
-        }
+        // 1. 游戏数据初始化
+        const luckyNum = Math.floor(Math.random() * 89) + 10;
+        document.getElementById('win-num').innerText = luckyNum;
 
-        function update() {
-            const v = (id) => parseInt(document.getElementById(id).value);
+        // 生成30个不重复的号码池
+        let pool = Array.from({length: 90}, (_, i) => i + 10).sort(() => Math.random() - 0.5);
+        const myBox = document.getElementById('my-nums');
+        const prizes = [0, 5, 10, 20, 50, 100, 500, 1000, 5000, 10000, 1000000];
+
+        for (let i = 0; i < 30; i++) {
+            let isWinner = Math.random() > 0.88; // 模拟中奖率
+            let myNum = isWinner ? luckyNum : (pool[i] === luckyNum ? pool[35] : pool[i]);
+            let prize = isWinner ? prizes[Math.floor(Math.random() * prizes.length)] : [0, 5, 10, 20][Math.floor(Math.random()*4)];
             
-            // 更新文字
-            document.getElementById('win-box').style.cssText = `top:${v('wt')}px; left:${v('wl')}px; width:100px; height:60px; font-size:${v('ws')}px;`;
-            grid.style.cssText = `top:${v('gt')}px; left:${v('gl')}px; width:312px; row-gap:5px;`;
-            document.querySelectorAll('.num-item').forEach(el => el.style.fontSize = v('gs') + 'px');
-
-            // 更新涂层A
-            const ca = document.getElementById('canv-win');
-            ca.style.top = v('at') + 'px'; ca.style.left = v('al') + 'px';
-            ca.width = v('aw'); ca.height = 50; 
-            draw(ca, "A");
-
-            // 更新涂层B
-            const cb = document.getElementById('canv-mine');
-            cb.style.top = v('bt') + 'px'; cb.style.left = v('bl') + 'px';
-            cb.width = 318; cb.height = v('bh');
-            draw(cb, "B");
-
-            // 汇总报告
-            document.getElementById('output').innerText = 
-                `【文字最终参数】\n中奖号: T=${v('wt')}, L=${v('wl')}, Size=${v('ws')}\n网格区: T=${v('gt')}, L=${v('gl')}, Size=${v('gs')}\n\n` +
-                `【涂层最终参数】\n涂层A: T=${v('at')}, L=${v('al')}, W=${v('aw')}\n涂层B: T=${v('bt')}, L=${v('bl')}, H=${v('bh')}`;
+            // 格式化金额显示
+            let prizeStr = prize >= 10000 ? (prize/10000) + "W" : prize.toLocaleString();
+            myBox.innerHTML += `<div class="num-item">${myNum}<div class="prize-item">¥${prizeStr}</div></div>`;
+            
+            // 如果中了大奖，触发手机震动
+            if (isWinner && prize >= 1000) {
+                tg.HapticFeedback.notificationOccurred('success');
+            }
         }
 
-        function draw(c, label) {
-            const ctx = c.getContext('2d');
-            ctx.fillStyle = 'rgba(192, 192, 192, 0.8)';
-            ctx.fillRect(0, 0, c.width, c.height);
-            ctx.fillStyle = '#000'; ctx.font = '10px Arial'; ctx.textAlign = 'center';
-            ctx.fillText(label, c.width/2, c.height/2 + 4);
+        // 2. 涂层绘制逻辑
+        function initScratch(id, w, h) {
+            const canvas = document.getElementById(id);
+            const ctx = canvas.getContext('2d');
+            canvas.width = w;
+            canvas.height = h;
+
+            // 绘制银灰色涂层 + 随机杂色颗粒
+            ctx.fillStyle = '#BDBDBD';
+            ctx.fillRect(0, 0, w, h);
+            for(let i=0; i<600; i++) {
+                ctx.fillStyle = Math.random() > 0.5 ? '#E0E0E0' : '#888';
+                ctx.fillRect(Math.random()*w, Math.random()*h, 1.2, 1.2);
+            }
+
+            // 刮除逻辑
+            let drawing = false;
+            const scratch = (e) => {
+                if (!drawing) return;
+                const rect = canvas.getBoundingClientRect();
+                const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+                const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+                
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath();
+                ctx.arc(x, y, 18, 0, Math.PI * 2);
+                ctx.fill();
+            };
+
+            // 事件绑定
+            canvas.addEventListener('mousedown', () => drawing = true);
+            canvas.addEventListener('touchstart', (e) => { drawing = true; scratch(e); });
+            window.addEventListener('mouseup', () => drawing = false);
+            window.addEventListener('touchend', () => drawing = false);
+            canvas.addEventListener('mousemove', scratch);
+            canvas.addEventListener('touchmove', (e) => { 
+                e.preventDefault(); // 阻止滚动
+                scratch(e); 
+            }, {passive: false});
         }
 
-        initGrid();
-        update();
+        // 启动涂层 (根据你的 W 和 H 参数)
+        initScratch('canv-a', 69, 50);
+        initScratch('canv-b', 318, 299);
     </script>
 </body>
 </html>
-// 初始化 Telegram Web App
-const tg = window.Telegram.WebApp;
-tg.ready(); // 告诉 TG 页面加载完了
-tg.expand(); // 自动拉伸到全屏，用户体验更好
-
-// 比如：如果用户刮出了 100W，你可以让它震动手机
-if (prize === 1000000) {
-    tg.HapticFeedback.notificationOccurred('success');
-}
-
-// 刮完之后，你可以加一个“确定”按钮，点击后关闭网页并把结果传给机器人
-function closeAndSend() {
-    // 这里的 data 会发送回机器人后端
-    tg.sendData("用户刚刚刮了一张，中奖金额：" + finalPrize);
-    tg.close();
-}
