@@ -1,91 +1,9 @@
-<!DOCTYPE html>
-<html lang="zh">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>刮刮乐精确对齐版</title>
-<style>
-body{
-    margin:0;
-    background:#000;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    height:100vh;
-}
-
-.card{
-    position:relative;
-    width:360px;
-    height:740px;
-    background:url('64005.jpg') no-repeat;
-    background-size:cover;
-}
-
-.layer{
-    position:absolute;
-    width:320px;
-    height:560px;
-    left:20px;
-    top:150px;
-}
-
-/* 小圆圈 */
-.cell{
-    position:absolute;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    font-weight:900;
-    color:#000;
-    -webkit-text-stroke:1.5px #fff;
-    text-align:center;
-}
-
-.num{
-    font-size:26px;
-}
-
-.money{
-    font-size:12px;
-    color:#d40000;
-    margin-top:-3px;
-}
-
-/* canvas */
-canvas{
-    position:absolute;
-    left:0;
-    top:0;
-    z-index:10;
-    border-radius:4px;
-}
-</style>
-</head>
-<body>
-<div class="card">
-
-    <!-- 数据层 -->
-    <div class="layer" id="layer"></div>
-
-    <!-- 玩法区刮层 -->
-    <canvas id="scratchWin"></canvas>
-
-    <!-- 刮奖区刮层 -->
-    <canvas id="scratchPrize"></canvas>
-
-</div>
-
-<script>
-const layer = document.getElementById('layer');
-
 /* =========================
-   🎯 5x6 圆圈坐标
+   🎯 5x6 圆圈坐标（下移45px）
 ========================= */
 const positions = [];
-let startX = 32;   // 左侧起点
-let startY = 120;  // 上移 20px，让数字更靠上
+let startX = 32;   
+let startY = 120 + 45;  // 原 120 上移 45px
 let gapX = 52;
 let gapY = 60;
 
@@ -99,23 +17,11 @@ for(let r=0;r<5;r++){
 }
 
 /* =========================
-   🎰 玩法区中奖号码
-========================= */
-const winNumber = Math.floor(Math.random()*90)+10;
-
-const winDiv = document.createElement('div');
-winDiv.className='cell num';
-winDiv.style.left='160px';
-winDiv.style.top='40px'; // 放在如意黄色方框里
-winDiv.innerHTML = `<div class="num">${winNumber}</div>`;
-layer.appendChild(winDiv);
-
-/* =========================
-   🎯 生成 5x6 圆圈数字和奖金
+   🎯 生成 5x6 圆圈数字和奖金（数字小，奖金深红色）
 ========================= */
 positions.forEach(pos=>{
     let num = Math.floor(Math.random()*90)+10;
-    let prize = Math.floor(Math.random()*1000000); // 0~100万
+    let prize = Math.floor(Math.random()*1000000);
 
     const d = document.createElement('div');
     d.className='cell';
@@ -123,72 +29,14 @@ positions.forEach(pos=>{
     d.style.top=pos.y+'px';
     d.style.transform='translate(-50%, -50%)';
     d.innerHTML = `
-        <div class="num">${num}</div>
-        <div class="money">¥${prize}</div>
+        <div class="num" style="font-size:22px">${num}</div>
+        <div class="money" style="color:#a00000">${'¥'+prize}</div>
     `;
     layer.appendChild(d);
 });
 
-/* =========================
-   🎰 Canvas 涂层函数
-========================= */
-function setup(canvas, width, height){
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d');
-
-    ctx.fillStyle = '#bbb';
-    ctx.fillRect(0,0,width,height);
-
-    for(let i=0;i<1200;i++){
-        ctx.fillStyle = Math.random()>0.5?'#eee':'#888';
-        ctx.fillRect(Math.random()*width, Math.random()*height,1,1);
-    }
-
-    return ctx;
-}
-
-/* 玩法区刮层（覆盖如意黄色方框） */
-const scratchWinCanvas = document.getElementById('scratchWin');
-scratchWinCanvas.style.top='10px';
-scratchWinCanvas.style.left='20px';
-const ctxWin = setup(scratchWinCanvas,320,80);
-
-/* 刮奖区刮层（覆盖整个下方黄色方框） */
+/* 刮奖区 Canvas 下移 45px */
 const scratchPrizeCanvas = document.getElementById('scratchPrize');
-scratchPrizeCanvas.style.top='120px'; // 对应圆圈区域
+scratchPrizeCanvas.style.top='120px'+45+'px'; // 或者直接 top='165px'
 scratchPrizeCanvas.style.left='20px';
 const ctxPrize = setup(scratchPrizeCanvas,320,380);
-
-/* =========================
-   ✋ 通用刮奖逻辑
-========================= */
-function scratch(canvas, ctx){
-    let down=false;
-
-    function draw(e){
-        if(!down) return;
-        const rect = canvas.getBoundingClientRect();
-        const x=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
-        const y=(e.touches?e.touches[0].clientY:e.clientY)-rect.top;
-
-        ctx.globalCompositeOperation='destination-out';
-        ctx.beginPath();
-        ctx.arc(x,y,18,0,Math.PI*2);
-        ctx.fill();
-    }
-
-    canvas.onmousedown=()=>down=true;
-    canvas.onmouseup=()=>down=false;
-    canvas.onmousemove=draw;
-
-    canvas.ontouchstart=e=>{down=true;draw(e)};
-    canvas.ontouchend=()=>down=false;
-    canvas.ontouchmove=e=>{e.preventDefault();draw(e)};
-}
-
-scratch(scratchWinCanvas, ctxWin);
-scratch(scratchPrizeCanvas, ctxPrize);
-</script>
-</body>
-</html>
