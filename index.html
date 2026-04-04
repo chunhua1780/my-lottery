@@ -3,72 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>中国龙-全维度调试 V5.0</title>
+    <title>中国龙-网格间距校准器</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { background: #1a1a1a; margin: 0; display: flex; justify-content: center; font-family: sans-serif; overflow-x: hidden; }
-        .card-container { position: relative; width: 360px; height: 720px; background: url('64005.jpg') no-repeat; background-size: cover; margin-top: 5px; flex-shrink: 0; box-shadow: 0 0 50px #000; }
+        body { background: #1a1a1a; margin: 0; display: flex; justify-content: center; font-family: sans-serif; overflow: hidden; }
+        .card-container { position: relative; width: 360px; height: 720px; background: url('64005.jpg') no-repeat; background-size: cover; flex-shrink: 0; box-shadow: 0 0 50px #000; margin-top: 5px; }
 
-        /* 核心文字层 */
-        #win-box { position: absolute; z-index: 5; display: flex; justify-content: center; align-items: center; border: 1px dashed gold; pointer-events: none; }
-        #my-grid { position: absolute; z-index: 5; display: grid; grid-template-columns: repeat(6, 1fr); border: 1px dashed cyan; pointer-events: none; }
+        /* 中奖号预览 */
+        #win-box { position: absolute; z-index: 5; display: flex; justify-content: center; align-items: center; border: 1px dashed gold; background: rgba(255,215,0,0.1); pointer-events: none; }
         
-        .num-item { display: flex; flex-direction: column; justify-content: center; align-items: center; color: #000; font-weight: 900; text-shadow: 1px 1px 0 #fff; line-height: 1.1; border: 0.1px solid rgba(0,255,255,0.2); }
-        .prize-item { color: #8B0000; font-weight: 900; font-size: 10px; }
+        /* 我的号码网格预览 */
+        #my-grid { position: absolute; z-index: 5; display: grid; grid-template-columns: repeat(6, 1fr); border: 1px dashed cyan; background: rgba(0,255,255,0.05); pointer-events: none; }
+        
+        .num-item { display: flex; flex-direction: column; justify-content: center; align-items: center; color: #000; font-weight: 900; text-shadow: 1px 1px 0 #fff; line-height: 1; border: 0.5px solid rgba(0,255,255,0.2); }
+        .prize-item { color: #8B0000; font-weight: 900; }
 
-        /* 涂层 */
-        .scratch-layer { position: absolute; z-index: 10; touch-action: none; opacity: 0.6; }
-
-        /* 增强版控制台 */
-        .console { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; padding: 10px; border-radius: 20px 20px 0 0; z-index: 1000; max-height: 60vh; overflow-y: auto; box-shadow: 0 -5px 20px rgba(0,0,0,0.5); }
-        .tab-bar { display: flex; gap: 4px; margin-bottom: 10px; position: sticky; top: 0; background: #fff; z-index: 11; }
-        .tab-btn { flex: 1; padding: 10px 2px; font-size: 12px; border: none; background: #eee; border-radius: 6px; }
+        /* 调试控制台 */
+        .console { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; padding: 12px; border-radius: 20px 20px 0 0; z-index: 1000; max-height: 60vh; overflow-y: auto; box-shadow: 0 -5px 30px rgba(0,0,0,0.8); }
+        .tab-bar { display: flex; gap: 5px; margin-bottom: 12px; position: sticky; top: 0; background: #fff; padding-bottom: 5px; }
+        .tab-btn { flex: 1; padding: 12px 5px; font-size: 13px; border: none; background: #eee; border-radius: 8px; font-weight: bold; }
         .tab-btn.active { background: #ff4400; color: #fff; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
-        .row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; background: #f8f8f8; padding: 6px; border-radius: 6px; font-size: 12px; }
-        .btn-group { display: flex; align-items: center; gap: 2px; }
-        .btn-group button { width: 30px; height: 30px; border: none; background: #333; color: #fff; border-radius: 4px; }
-        .btn-group input { width: 40px; text-align: center; border: 1px solid #ccc; height: 26px; }
-        .output-box { background: #000; color: #0f0; padding: 10px; font-family: monospace; font-size: 10px; white-space: pre-wrap; margin-top: 10px; border-radius: 8px; }
+        .control-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; background: #f1f1f1; padding: 10px; border-radius: 10px; }
+        .label { font-size: 13px; font-weight: bold; color: #333; width: 120px; }
+        .stepper { display: flex; align-items: center; gap: 5px; }
+        .stepper button { width: 36px; height: 36px; border: none; background: #444; color: #fff; border-radius: 8px; font-size: 20px; font-weight: bold; }
+        .stepper button:active { background: #ff4400; }
+        .stepper input { width: 50px; text-align: center; border: 1px solid #ccc; height: 32px; border-radius: 4px; font-weight: bold; font-size: 14px; }
+        
+        .report-box { background: #000; color: #0f0; padding: 15px; font-family: 'Courier New', monospace; font-size: 12px; border-radius: 10px; white-space: pre-wrap; line-height: 1.5; }
+        .hide-btn { width: 100%; padding: 12px; background: #ff4400; color: #fff; border: none; border-radius: 8px; font-weight: bold; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
     <div class="card-container">
         <div id="win-box">88</div>
+        
         <div id="my-grid"></div>
-        <canvas id="canv-win" class="scratch-layer"></canvas>
-        <canvas id="canv-mine" class="scratch-layer"></canvas>
     </div>
 
     <div class="console">
         <div class="tab-bar">
-            <button class="tab-btn active" onclick="showTab(0)">网格框架</button>
-            <button class="tab-btn" onclick="showTab(1)">间距大小</button>
-            <button class="tab-btn" onclick="showTab(2)">数据汇总</button>
+            <button class="tab-btn active" onclick="showTab(0)">1. 中奖号位置</button>
+            <button class="tab-btn" onclick="showTab(1)">2. 号码网格间距</button>
+            <button class="tab-btn" onclick="showTab(2)">3. 生成最终参数</button>
         </div>
 
         <div id="tab0" class="tab-content active">
-            <div class="row"><span>网格 Top (整体上下)</span><div class="btn-group"><button onclick="adj('gt',-1)">-</button><input id="gt" value="339"><button onclick="adj('gt',1)">+</button></div></div>
-            <div class="row"><span>网格 Left (整体左右)</span><div class="btn-group"><button onclick="adj('gl',-1)">-</button><input id="gl" value="24"><button onclick="adj('gl',1)">+</button></div></div>
-            <div class="row"><span>网格 Width (整体宽度)</span><div class="btn-group"><button onclick="adj('gw',-1)">-</button><input id="gw" value="312"><button onclick="adj('gw',1)">+</button></div></div>
-            <hr>
-            <div class="row"><span>中奖号 Top</span><div class="btn-group"><button onclick="adj('wt',-1)">-</button><input id="wt" value="248"><button onclick="adj('wt',1)">+</button></div></div>
-            <div class="row"><span>中奖号 Left</span><div class="btn-group"><button onclick="adj('wl',-1)">-</button><input id="wl" value="126"><button onclick="adj('wl',1)">+</button></div></div>
+            <div class="control-row">
+                <div class="label">上下位置 (Top)</div>
+                <div class="stepper"><button onclick="adj('wt',-1)">-</button><input id="wt" value="248"><button onclick="adj('wt',1)">+</button></div>
+            </div>
+            <div class="control-row">
+                <div class="label">左右位置 (Left)</div>
+                <div class="stepper"><button onclick="adj('wl',-1)">-</button><input id="wl" value="126"><button onclick="adj('wl',1)">+</button></div>
+            </div>
+            <div class="control-row">
+                <div class="label">字体大小 (Size)</div>
+                <div class="stepper"><button onclick="adj('ws',-1)">-</button><input id="ws" value="22"><button onclick="adj('ws',1)">+</button></div>
+            </div>
         </div>
 
         <div id="tab1" class="tab-content">
-            <div class="row"><span>行间距 (Row Gap)</span><div class="btn-group"><button onclick="adj('rg',-1)">-</button><input id="rg" value="5"><button onclick="adj('rg',1)">+</button></div></div>
-            <div class="row"><span>列间距 (Col Gap)</span><div class="btn-group"><button onclick="adj('cg',-1)">-</button><input id="cg" value="0"><button onclick="adj('cg',1)">+</button></div></div>
-            <div class="row"><span>数字大小 (Font Size)</span><div class="btn-group"><button onclick="adj('gs',-0.5)">-</button><input id="gs" value="14"><button onclick="adj('gs',0.5)">+</button></div></div>
-            <div class="row"><span>格子高度 (Item Height)</span><div class="btn-group"><button onclick="adj('gh',-1)">-</button><input id="gh" value="55"><button onclick="adj('gh',1)">+</button></div></div>
+            <div class="control-row">
+                <div class="label">整体 Top</div>
+                <div class="stepper"><button onclick="adj('gt',-1)">-</button><input id="gt" value="339"><button onclick="adj('gt',1)">+</button></div>
+            </div>
+            <div class="control-row">
+                <div class="label">整体 Left</div>
+                <div class="stepper"><button onclick="adj('gl',-1)">-</button><input id="gl" value="24"><button onclick="adj('gl',1)">+</button></div>
+            </div>
+            <div class="control-row">
+                <div class="label">整体 宽度</div>
+                <div class="stepper"><button onclick="adj('gw',-1)">-</button><input id="gw" value="312"><button onclick="adj('gw',1)">+</button></div>
+            </div>
+            <div class="control-row">
+                <div class="label">行间距 (上下)</div>
+                <div class="stepper"><button onclick="adj('rg',-0.5)">-</button><input id="rg" value="5.0"><button onclick="adj('rg',0.5)">+</button></div>
+            </div>
+            <div class="control-row">
+                <div class="label">列间距 (左右)</div>
+                <div class="stepper"><button onclick="adj('cg',-0.5)">-</button><input id="cg" value="0.0"><button onclick="adj('cg',0.5)">+</button></div>
+            </div>
+            <div class="control-row">
+                <div class="label">格子高度 (Height)</div>
+                <div class="stepper"><button onclick="adj('gh',-1)">-</button><input id="gh" value="55"><button onclick="adj('gh',1)">+</button></div>
+            </div>
+            <div class="control-row">
+                <div class="label">号码字体大小</div>
+                <div class="stepper"><button onclick="adj('gs',-0.5)">-</button><input id="gs" value="14.0"><button onclick="adj('gs',0.5)">+</button></div>
+            </div>
         </div>
 
         <div id="tab2" class="tab-content">
-            <button onclick="document.querySelector('.console').style.display='none'" style="width:100%; padding:10px; background:red; color:#fff; border:none; margin-bottom:10px;">暂时关闭调试窗</button>
-            <div class="output-box" id="output">参数生成中...</div>
+            <button class="hide-btn" onclick="document.querySelector('.console').style.display='none'">点击隐藏工具 (看全屏效果)</button>
+            <p style="font-size: 12px; color: #666; margin: 5px;">调好后，请将下方数据复制给我：</p>
+            <div class="report-box" id="output">数据实时生成中...</div>
+            <button onclick="location.reload()" style="width:100%; padding:10px; border:none; background:#ddd; border-radius:8px; margin-top:10px;">重置/刷新</button>
         </div>
     </div>
 
@@ -77,6 +111,7 @@
         tg.ready(); tg.expand();
 
         const grid = document.getElementById('my-grid');
+        
         function initGrid() {
             grid.innerHTML = '';
             for (let i = 0; i < 30; i++) {
@@ -86,7 +121,8 @@
 
         window.adj = (id, d) => {
             const el = document.getElementById(id);
-            el.value = (parseFloat(el.value) + d).toFixed(1);
+            let val = parseFloat(el.value) + d;
+            el.value = val.toFixed(1);
             update();
         };
 
@@ -98,42 +134,33 @@
         function update() {
             const v = (id) => parseFloat(document.getElementById(id).value);
             
-            // 更新网格
+            // 1. 更新中奖号
+            const wb = document.getElementById('win-box');
+            wb.style.top = v('wt') + 'px';
+            wb.style.left = v('wl') + 'px';
+            wb.style.fontSize = v('ws') + 'px';
+            wb.style.width = '100px'; // 固定宽度
+            wb.style.height = '60px'; // 固定高度
+
+            // 2. 更新网格
             grid.style.top = v('gt') + 'px';
             grid.style.left = v('gl') + 'px';
             grid.style.width = v('gw') + 'px';
             grid.style.rowGap = v('rg') + 'px';
             grid.style.columnGap = v('cg') + 'px';
             
-            // 更新单元格高度和字体
-            document.querySelectorAll('.num-item').forEach(el => {
-                el.style.height = v('gh') + 'px';
-                el.style.fontSize = v('gs') + 'px';
+            // 3. 更新网格内数字
+            document.querySelectorAll('.num-item').forEach(item => {
+                item.style.height = v('gh') + 'px';
+                item.style.fontSize = v('gs') + 'px';
             });
 
-            // 更新中奖号
-            document.getElementById('win-box').style.top = v('wt') + 'px';
-            document.getElementById('win-box').style.left = v('wl') + 'px';
-
-            // 绘制预览涂层 (保持静态)
-            setupCanvas('canv-win', 258, 154, 69, 50, "A");
-            setupCanvas('canv-mine', 322, 21, 318, 299, "B");
-
-            // 汇总数据
+            // 4. 生成报告
             document.getElementById('output').innerText = 
-                `【网格参数】\nTop: ${v('gt')}, Left: ${v('gl')}, Width: ${v('gw')}\nRowGap: ${v('rg')}, ColGap: ${v('cg')}\nFontSize: ${v('gs')}, ItemHeight: ${v('gh')}\n\n` +
-                `【中奖号参数】\nTop: ${v('wt')}, Left: ${v('wl')}`;
-        }
-
-        function setupCanvas(id, t, l, w, h, label) {
-            const c = document.getElementById(id);
-            c.style.top = t + 'px'; c.style.left = l + 'px';
-            c.width = w; c.height = h;
-            const ctx = c.getContext('2d');
-            ctx.fillStyle = 'rgba(192, 192, 192, 0.5)';
-            ctx.fillRect(0, 0, w, h);
-            ctx.fillStyle = '#000'; ctx.font = '12px Arial'; ctx.textAlign = 'center';
-            ctx.fillText(label, w/2, h/2 + 5);
+                `【中奖号参数】\nTop: ${v('wt')}, Left: ${v('wl')}, Size: ${v('ws')}\n\n` +
+                `【网格区参数】\nTop: ${v('gt')}, Left: ${v('gl')}, Width: ${v('gw')}\n` +
+                `RowGap: ${v('rg')}, ColGap: ${v('cg')}\n` +
+                `ItemHeight: ${v('gh')}, FontSize: ${v('gs')}`;
         }
 
         initGrid();
