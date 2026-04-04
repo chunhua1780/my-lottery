@@ -3,117 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>中国龙-极致对齐版</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>中国龙-无限位置调试版</title>
     <style>
-        body { background: #000; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: "Arial Rounded MT Bold", "Helvetica", sans-serif; }
+        body { background: #222; margin: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; font-family: sans-serif; padding-top: 10px; }
         
-        .card-container { position: relative; width: 360px; height: 720px; background: url('64005.jpg') no-repeat; background-size: cover; border-radius: 10px; }
+        /* 彩票容器 */
+        .card-container { position: relative; width: 360px; height: 720px; background: url('64005.jpg') no-repeat; background-size: cover; box-shadow: 0 0 40px rgba(0,0,0,0.8); }
 
-        /* 1. 玩法区 (中奖号码) - 坐标根据反馈大幅上移 */
-        .win-box { 
-            position: absolute; 
-            top: 285px;   /* 继续往上调至 285px */
-            left: 130px; 
-            width: 100px; 
-            height: 60px; 
-            z-index: 1; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-        }
+        /* 1. 玩法区 (中奖号码) */
+        #win-box { position: absolute; width: 100px; height: 60px; z-index: 5; display: flex; justify-content: center; align-items: center; pointer-events: none; }
+        
+        /* 2. 我的号码区 (30个圆圈) */
+        #my-grid { position: absolute; width: 312px; height: 280px; z-index: 5; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(5, 1fr); pointer-events: none; }
 
-        /* 2. 我的号码区 - 坐标根据反馈大幅上移 */
-        .my-grid { 
-            position: absolute; 
-            top: 385px;   /* 继续往上调至 385px */
-            left: 21px; 
-            width: 320px; 
-            height: 280px; 
-            z-index: 1; 
-            display: grid; 
-            grid-template-columns: repeat(6, 1fr); 
-            grid-template-rows: repeat(5, 1fr);
-            row-gap: 5px; /* 你测试好的 5px 行间距 */
-        }
+        .num-item { display: flex; flex-direction: column; justify-content: center; align-items: center; color: #000; font-weight: 900; text-shadow: 1px 1px 0 #fff; line-height: 1.1; }
+        .prize-item { color: #8B0000; font-weight: 900; }
 
-        .num-item { display: flex; flex-direction: column; justify-content: center; align-items: center; color: #000; font-weight: 900; font-size: 14px; text-shadow: 1px 1px 0 #fff; line-height: 1.1; }
-        .prize-item { font-size: 10px; color: #8B0000; font-weight: 900; }
-
-        /* 刮奖涂层：起始位置也要跟着数字一起往上跳 */
-        #scratch-canvas { 
-            position: absolute; 
-            top: 280px;  /* 涂层起始位置与玩法区同步 */
-            left: 18px; 
-            width: 324px; 
-            height: 420px; 
-            z-index: 10; 
-            touch-action: none; 
-            cursor: crosshair; 
-        }
+        /* --- 增强版调试面板 --- */
+        .debug-panel { position: fixed; left: 10px; top: 10px; background: rgba(255,255,255,0.98); border: 3px solid #007bff; padding: 15px; border-radius: 15px; width: 260px; z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto; }
+        .debug-panel h3 { margin: 0 0 15px 0; font-size: 18px; color: #007bff; text-align: center; }
+        .ctrl-group { margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .ctrl-group label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; }
+        .ctrl-group input { width: 100%; cursor: pointer; }
+        .val-txt { color: #d63384; font-weight: bold; float: right; font-family: monospace; }
+        .result-box { background: #222; color: #0f0; padding: 12px; font-size: 12px; margin-top: 15px; border-radius: 8px; white-space: pre-wrap; font-family: 'Courier New', monospace; }
+        .tips { font-size: 11px; color: #666; margin-top: 10px; line-height: 1.4; }
     </style>
 </head>
 <body>
+
     <div class="card-container">
-        <div class="win-box" id="win-num"></div>
-        <div class="my-grid" id="my-nums"></div>
-        <canvas id="scratch-canvas"></canvas>
+        <div id="win-box">
+            <div id="win-num-display" class="num-item">88</div>
+        </div>
+        <div id="my-grid"></div>
+    </div>
+
+    <div class="debug-panel">
+        <h3>🚀 无限调试模式</h3>
+        
+        <div class="ctrl-group">
+            <label>玩法区 Top (高度): <span id="wtVal" class="val-txt">285</span></label>
+            <input type="range" id="wt" min="50" max="600" value="285">
+        </div>
+
+        <div class="ctrl-group">
+            <label>玩法区 字体大小: <span id="wsVal" class="val-txt">24</span></label>
+            <input type="range" id="ws" min="10" max="40" value="24">
+        </div>
+
+        <div class="ctrl-group">
+            <label>30个圆圈 Top (高度): <span id="gtVal" class="val-txt">385</span></label>
+            <input type="range" id="gt" min="50" max="700" value="385">
+        </div>
+
+        <div class="ctrl-group">
+            <label>30个圆圈 Left (左右): <span id="glVal" class="val-txt">24</span></label>
+            <input type="range" id="gl" min="0" max="100" value="24">
+        </div>
+
+        <div class="ctrl-group">
+            <label>行间距 (垂直密度): <span id="rgVal" class="val-txt">5</span></label>
+            <input type="range" id="rg" min="-20" max="40" value="5">
+        </div>
+
+        <div class="ctrl-group">
+            <label>数字整体大小: <span id="fsVal" class="val-txt">14</span></label>
+            <input type="range" id="fs" min="8" max="25" value="14">
+        </div>
+
+        <div class="result-box" id="result-code"></div>
+        <div class="tips">
+            1. 拖动滑块直到数字完美压在龙圆圈中心。<br>
+            2. 记下黑框里的数值发送给我。<br>
+            3. 如果图片没加载，请确保文件名正确。
+        </div>
     </div>
 
     <script>
-        const canvas = document.getElementById('scratch-canvas');
-        const ctx = canvas.getContext('2d');
-        const tg = window.Telegram.WebApp;
-        tg.expand();
+        const winBox = document.getElementById('win-box');
+        const winNumDisplay = document.getElementById('win-num-display');
+        const myGrid = document.getElementById('my-grid');
+        const resultCode = document.getElementById('result-code');
 
-        const luckyNum = Math.floor(Math.random() * 89) + 10;
-        document.getElementById('win-num').innerHTML = `<div class="num-item" style="font-size:24px">${luckyNum}</div>`;
-
-        const myBox = document.getElementById('my-nums');
-        const prizePool = ["10", "20", "50", "100", "500", "1000", "1W", "10W", "100W"];
-
-        for (let i = 0; i < 30; i++) {
-            let n = Math.floor(Math.random() * 89) + 10;
-            let p = prizePool[Math.floor(Math.random() * prizePool.length)];
-            myBox.innerHTML += `<div class="num-item">${n}<div class="prize-item">¥${p}</div></div>`;
-        }
-
-        function init() {
-            canvas.width = 324;
-            canvas.height = 420;
-            ctx.fillStyle = '#BDBDBD';
-            ctx.fillRect(0, 0, 324, 420);
-            for(let i=0; i<2500; i++) {
-                ctx.fillStyle = Math.random() > 0.5 ? '#E0E0E0' : '#828282';
-                ctx.fillRect(Math.random()*324, Math.random()*420, 1.2, 1.2);
+        function initGrid() {
+            myGrid.innerHTML = '';
+            for (let i = 0; i < 30; i++) {
+                myGrid.innerHTML += `<div class="num-item" id="item-${i}">66<div class="prize-item">¥10W</div></div>`;
             }
-            ctx.fillStyle = '#444';
-            ctx.font = 'bold 14px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('玩 法 区', 162, 45);
-            ctx.fillText('刮 开 区', 162, 220);
         }
 
-        let isDrawing = false;
-        function scratch(e) {
-            if (!isDrawing) return;
-            const rect = canvas.getBoundingClientRect();
-            const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-            const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-            ctx.globalCompositeOperation = 'destination-out';
-            ctx.beginPath();
-            ctx.arc(x, y, 18, 0, Math.PI * 2);
-            ctx.fill();
+        function update() {
+            const wt = document.getElementById('wt').value;
+            const ws = document.getElementById('ws').value;
+            const gt = document.getElementById('gt').value;
+            const gl = document.getElementById('gl').value;
+            const rg = document.getElementById('rg').value;
+            const fs = document.getElementById('fs').value;
+
+            // 应用位置和大小
+            winBox.style.top = wt + 'px';
+            winNumDisplay.style.fontSize = ws + 'px';
+            
+            myGrid.style.top = gt + 'px';
+            myGrid.style.left = gl + 'px';
+            myGrid.style.rowGap = rg + 'px';
+            
+            document.querySelectorAll('.num-item').forEach(el => {
+                if(el.id !== 'win-num-display') el.style.fontSize = fs + 'px';
+            });
+            document.querySelectorAll('.prize-item').forEach(el => {
+                el.style.fontSize = (fs * 0.7) + 'px';
+            });
+
+            // 更新显示数值
+            document.getElementById('wtVal').innerText = wt;
+            document.getElementById('wsVal').innerText = ws;
+            document.getElementById('gtVal').innerText = gt;
+            document.getElementById('glVal').innerText = gl;
+            document.getElementById('rgVal').innerText = rg;
+            document.getElementById('fsVal').innerText = fs;
+
+            // 更新结果
+            resultCode.innerText = `【最终数值反馈】\n玩法区Top: ${wt}px\n玩法区Size: ${ws}px\n圆圈区Top: ${gt}px\n圆圈区Left: ${gl}px\n行间距Gap: ${rg}px\n数字大小: ${fs}px`;
         }
 
-        canvas.addEventListener('mousedown', () => isDrawing = true);
-        canvas.addEventListener('touchstart', (e) => { isDrawing = true; scratch(e); });
-        window.addEventListener('mouseup', () => isDrawing = false);
-        window.addEventListener('touchend', () => isDrawing = false);
-        canvas.addEventListener('mousemove', scratch);
-        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); scratch(e); }, {passive: false});
+        document.querySelectorAll('input[type="range"]').forEach(el => {
+            el.addEventListener('input', update);
+        });
 
-        init();
+        initGrid();
+        update();
     </script>
 </body>
 </html>
