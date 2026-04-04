@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>刮刮乐终极版</title>
+<title>刮刮乐优化版</title>
 
 <style>
-body {
+body{
     margin:0;
     background:#000;
     display:flex;
@@ -15,7 +15,7 @@ body {
     height:100vh;
 }
 
-.card {
+.card{
     position:relative;
     width:360px;
     height:740px;
@@ -23,44 +23,40 @@ body {
     background-size:cover;
 }
 
-.layer {
+/* 数据层 */
+.layer{
     position:absolute;
-    top:342px;
-    left:23px;
-    width:314px;
-    height:350px;
+    top:330px;
+    left:20px;
+    width:320px;
+    height:380px;
 }
 
-/* 数字样式 */
-.num {
+/* 数字 */
+.cell{
     position:absolute;
     transform:translate(-50%,-50%);
-    font-size:22px;
+    text-align:center;
     font-weight:900;
     color:#000;
     -webkit-text-stroke:1.5px #fff;
 }
 
-.prize {
+.num{
+    font-size:26px;
+}
+
+.money{
     font-size:12px;
     color:#d40000;
+    margin-top:-3px;
 }
 
 /* canvas */
-canvas {
+canvas{
     position:absolute;
-    left:23px;
+    left:20px;
     z-index:10;
-}
-
-/* 金币动画 */
-.coin {
-    position:absolute;
-    width:18px;
-    height:18px;
-    background:gold;
-    border-radius:50%;
-    pointer-events:none;
 }
 </style>
 </head>
@@ -68,76 +64,80 @@ canvas {
 <body>
 
 <div class="card">
+
     <div class="layer" id="layer"></div>
 
-    <!-- 上方玩法区 -->
+    <!-- 玩法区 -->
     <canvas id="top"></canvas>
 
-    <!-- 下方号码区 -->
+    <!-- 刮奖区 -->
     <canvas id="bottom"></canvas>
-</div>
 
-<audio id="winSound" src="https://www.soundjay.com/misc/sounds/coin-drop-1.mp3"></audio>
+</div>
 
 <script>
 const layer = document.getElementById('layer');
 
 /* =========================
-   🎯 精准坐标（已调优）
+   🎯 精准5x6龙圆坐标（核心）
 ========================= */
 
-const winPos = {x:157,y:60};
+const positions = [];
 
-const myPos = [];
-let sx=40, sy=150, gx=58, gy=55;
+let startX = 30;
+let startY = 140;
 
-for(let r=0;r<4;r++){
-    for(let c=0;c<5;c++){
-        myPos.push({
-            x:sx+c*gx,
-            y:sy+r*gy
+let gapX = 52;   // 横向间距
+let gapY = 60;   // 纵向间距
+
+for(let r=0;r<5;r++){
+    for(let c=0;c<6;c++){
+        positions.push({
+            x: startX + c*gapX,
+            y: startY + r*gapY
         });
     }
 }
 
 /* =========================
-   🎰 生成中奖号码
+   🎰 中奖号码（玩法区）
 ========================= */
 
-const winNum = Math.floor(Math.random()*90)+10;
+const winNumber = Math.floor(Math.random()*90)+10;
 
-let winDiv = document.createElement('div');
-winDiv.className='num';
-winDiv.style.left=winPos.x+'px';
-winDiv.style.top=winPos.y+'px';
-winDiv.innerText=winNum;
+const winDiv = document.createElement('div');
+winDiv.className='cell num';
+winDiv.style.left='160px';
+winDiv.style.top='40px';
+winDiv.innerText=winNumber;
+
 layer.appendChild(winDiv);
 
 /* =========================
-   🎯 生成格子
+   🎯 生成30个龙圆
 ========================= */
 
 let totalWin = 0;
 
-myPos.forEach(p=>{
+positions.forEach(pos=>{
+
     let num = Math.floor(Math.random()*90)+10;
 
-    let prizePool = [0,0,0,20,50,100,500];
-    let prize = prizePool[Math.floor(Math.random()*prizePool.length)];
+    let prize = Math.floor(Math.random()*1000000); // 0~100万
 
-    let isWin = num === winNum;
+    let isWin = num === winNumber;
 
     let d = document.createElement('div');
-    d.className='num';
-    d.style.left=p.x+'px';
-    d.style.top=p.y+'px';
+    d.className='cell';
+    d.style.left=pos.x+'px';
+    d.style.top=pos.y+'px';
 
     d.innerHTML = `
-        <div class="prize">${prize? '¥'+prize:''}</div>
-        ${num}
+        <div class="num">${num}</div>
+        <div class="money">${prize>0?'¥'+prize:''}</div>
     `;
 
-    if(isWin && prize>0){
+    if(isWin){
         totalWin += prize;
         d.style.color='red';
         d.style.transform='translate(-50%,-50%) scale(1.2)';
@@ -147,37 +147,36 @@ myPos.forEach(p=>{
 });
 
 /* =========================
-   🎰 Canvas刮奖系统
+   🎰 Canvas刮层
 ========================= */
 
-function setupCanvas(canvas, height){
+function setup(canvas, height){
     const ctx = canvas.getContext('2d');
-
-    canvas.width = 314;
-    canvas.height = height;
+    canvas.width=320;
+    canvas.height=height;
 
     ctx.fillStyle='#bbb';
-    ctx.fillRect(0,0,314,height);
+    ctx.fillRect(0,0,320,height);
 
-    for(let i=0;i<1000;i++){
+    for(let i=0;i<1200;i++){
         ctx.fillStyle=Math.random()>0.5?'#eee':'#888';
-        ctx.fillRect(Math.random()*314,Math.random()*height,1,1);
+        ctx.fillRect(Math.random()*320,Math.random()*height,1,1);
     }
 
     return ctx;
 }
 
-const topCanvas = document.getElementById('top');
-const bottomCanvas = document.getElementById('bottom');
+const top = document.getElementById('top');
+const bottom = document.getElementById('bottom');
 
-topCanvas.style.top="342px";
-bottomCanvas.style.top="442px";
+top.style.top="330px";
+bottom.style.top="430px";
 
-const ctx1 = setupCanvas(topCanvas,100);
-const ctx2 = setupCanvas(bottomCanvas,250);
+const ctx1 = setup(top,100);
+const ctx2 = setup(bottom,300);
 
 /* =========================
-   ✋ 刮开 + 自动Reveal
+   ✋ 刮奖逻辑（双区域）
 ========================= */
 
 function scratch(canvas, ctx){
@@ -193,14 +192,13 @@ function scratch(canvas, ctx){
 
         ctx.globalCompositeOperation='destination-out';
         ctx.beginPath();
-        ctx.arc(x,y,20,0,Math.PI*2);
+        ctx.arc(x,y,18,0,Math.PI*2);
         ctx.fill();
 
         count++;
 
-        if(count>600){
+        if(count>700){
             ctx.clearRect(0,0,canvas.width,canvas.height);
-            triggerWin();
         }
     }
 
@@ -213,46 +211,9 @@ function scratch(canvas, ctx){
     canvas.ontouchmove=e=>{e.preventDefault();draw(e)};
 }
 
-scratch(topCanvas,ctx1);
-scratch(bottomCanvas,ctx2);
+scratch(top,ctx1);
+scratch(bottom,ctx2);
 
-/* =========================
-   🎉 中奖效果
-========================= */
-
-function triggerWin(){
-    if(totalWin>0){
-        document.getElementById('winSound').play();
-        dropCoins();
-    }
-}
-
-/* =========================
-   💰 金币动画
-========================= */
-
-function dropCoins(){
-    for(let i=0;i<25;i++){
-        let c=document.createElement('div');
-        c.className='coin';
-        document.body.appendChild(c);
-
-        c.style.left=Math.random()*300+50+'px';
-        c.style.top='0px';
-
-        let speed = Math.random()*5+3;
-
-        let fall = setInterval(()=>{
-            let t=c.offsetTop;
-            c.style.top = t + speed + 'px';
-
-            if(t>700){
-                clearInterval(fall);
-                c.remove();
-            }
-        },16);
-    }
-}
 </script>
 
 </body>
