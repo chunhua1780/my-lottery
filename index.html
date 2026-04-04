@@ -1,42 +1,170 @@
-/* =========================
-   🎯 5x6 圆圈坐标（下移45px）
-========================= */
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>刮刮乐-金属圆形刮开效果</title>
+<style>
+body{
+    margin:0;
+    background:#000;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+.card{
+    position:relative;
+    width:360px;
+    height:740px;
+    background:url('64005.jpg') no-repeat;
+    background-size:cover;
+}
+.layer{
+    position:absolute;
+    width:320px;
+    height:560px;
+    left:20px;
+    top:150px;
+}
+/* 小圆圈数字 */
+.cell{
+    position:absolute;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    font-weight:700;
+    font-family: 'Arial', sans-serif;
+    color:#000;
+    text-align:center;
+    pointer-events:none;
+}
+.num{
+    font-size:18px;
+    font-weight:700;
+}
+.money{
+    font-size:12px;
+    color:#660000;
+    margin-top:-2px;
+}
+/* canvas */
+canvas{
+    position:absolute;
+    left:0;
+    top:0;
+    z-index:10;
+    border-radius:4px;
+}
+</style>
+</head>
+<body>
+<div class="card">
+    <!-- 数据层 -->
+    <div class="layer" id="layer"></div>
+    <!-- 玩法区刮层 -->
+    <canvas id="scratchWin"></canvas>
+    <!-- 刮奖区刮层 -->
+    <canvas id="scratchPrize"></canvas>
+</div>
+
+<script>
+const layer = document.getElementById('layer');
+
+/* 瓜奖区5x6圆圈坐标 */
 const positions = [];
-let startX = 32;   
-let startY = 120 + 45;  // 原 120 上移 45px
+let startX = 32;
+let startY = 150;
 let gapX = 52;
 let gapY = 60;
-
+let circleRadius = 24; // 小圆半径
 for(let r=0;r<5;r++){
     for(let c=0;c<6;c++){
-        positions.push({
-            x: startX + c*gapX,
-            y: startY + r*gapY
-        });
+        positions.push({ x: startX+c*gapX, y: startY+r*gapY });
     }
 }
 
-/* =========================
-   🎯 生成 5x6 圆圈数字和奖金（数字小，奖金深红色）
-========================= */
+/* 生成瓜奖区数字和奖金 */
+function formatPrize(num){
+    if(num===0) return '0';
+    return (num/10000)+'W';
+}
 positions.forEach(pos=>{
     let num = Math.floor(Math.random()*90)+10;
-    let prize = Math.floor(Math.random()*1000000);
-
+    let prize = Math.floor(Math.random()*101)*10000; // 0~100万
     const d = document.createElement('div');
     d.className='cell';
-    d.style.left=pos.x+'px';
-    d.style.top=pos.y+'px';
-    d.style.transform='translate(-50%, -50%)';
-    d.innerHTML = `
-        <div class="num" style="font-size:22px">${num}</div>
-        <div class="money" style="color:#a00000">${'¥'+prize}</div>
-    `;
+    d.style.left = pos.x+'px';
+    d.style.top = pos.y+'px';
+    d.style.transform = 'translate(-50%, -50%)';
+    d.innerHTML = `<div class="num">${num}</div><div class="money">${formatPrize(prize)}</div>`;
     layer.appendChild(d);
 });
 
-/* 刮奖区 Canvas 下移 45px */
+/* Canvas 金属刮层 */
+function setup(canvas, width, height){
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+
+    // 金属渐变涂层
+    const grad = ctx.createLinearGradient(0,0,width,height);
+    grad.addColorStop(0,'#ccc');
+    grad.addColorStop(0.5,'#eee');
+    grad.addColorStop(1,'#999');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,width,height);
+
+    // 随机颗粒增强质感
+    for(let i=0;i<1500;i++){
+        ctx.fillStyle = `rgba(${Math.floor(180+Math.random()*50)},${Math.floor(180+Math.random()*50)},${Math.floor(180+Math.random()*50)},0.8)`;
+        ctx.fillRect(Math.random()*width, Math.random()*height,1,1);
+    }
+    return ctx;
+}
+
+/* 玩法区刮层 */
+const scratchWinCanvas = document.getElementById('scratchWin');
+scratchWinCanvas.style.top='10px';
+scratchWinCanvas.style.left='20px';
+const ctxWin = setup(scratchWinCanvas,320,80);
+
+/* 刮奖区刮层 */
 const scratchPrizeCanvas = document.getElementById('scratchPrize');
-scratchPrizeCanvas.style.top='120px'+45+'px'; // 或者直接 top='165px'
+scratchPrizeCanvas.style.top='150px';
 scratchPrizeCanvas.style.left='20px';
+scratchPrizeCanvas.style.height='380px';
 const ctxPrize = setup(scratchPrizeCanvas,320,380);
+
+/* 圆形刮开逻辑带羽化边缘 */
+function scratch(canvas, ctx){
+    let down=false;
+    function draw(e){
+        if(!down) return;
+        const rect = canvas.getBoundingClientRect();
+        const x=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
+        const y=(e.touches?e.touches[0].clientY:e.clientY)-rect.top;
+
+        ctx.globalCompositeOperation='destination-out';
+        const gradient = ctx.createRadialGradient(x,y,0,x,y,20);
+        gradient.addColorStop(0,'rgba(0,0,0,1)');
+        gradient.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(x,y,20,0,Math.PI*2);
+        ctx.fill();
+    }
+    canvas.onmousedown=()=>down=true;
+    canvas.onmouseup=()=>down=false;
+    canvas.onmousemove=draw;
+    canvas.ontouchstart=e=>{down=true;draw(e)};
+    canvas.ontouchend=()=>down=false;
+    canvas.ontouchmove=e=>{e.preventDefault();draw(e)};
+}
+
+scratch(scratchWinCanvas, ctxWin);
+scratch(scratchPrizeCanvas, ctxPrize);
+</script>
+</body>
+</html>
