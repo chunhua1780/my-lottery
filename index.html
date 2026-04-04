@@ -1,0 +1,84 @@
+﻿<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>至尊刮刮乐</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; overflow: hidden; }
+        .card-container { position: relative; width: 360px; height: 720px; margin-top: 20px; background-size: cover; border-radius: 15px; box-shadow: 0 0 20px rgba(255,215,0,0.5); }
+        /* 刮奖画布层 */
+        #scratch-canvas { position: absolute; top: 445px; left: 22px; width: 316px; height: 210px; cursor: crosshair; touch-action: none; border-radius: 5px; }
+        /* 底部中奖数据层 */
+        .prize-layer { position: absolute; top: 445px; left: 22px; width: 316px; height: 210px; display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(6, 1fr); background: #fff; border-radius: 5px; }
+        .num-box { color: #d42323; font-size: 12px; font-weight: bold; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 0.1px solid #eee; }
+        .btn-group { margin-top: 20px; }
+        button { padding: 10px 20px; background: gold; border: none; border-radius: 5px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div id="game-ui">
+        <div class="card-container" id="bg-card" style="background-image: url('64005.jpg');">
+            <div class="prize-layer" id="prize-content"></div>
+            <canvas id="scratch-canvas"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // 全屏打开
+
+        const canvas = document.getElementById('scratch-canvas');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+
+        // 初始化中奖数据
+        function initPrize() {
+            const container = document.getElementById('prize-content');
+            container.innerHTML = '';
+            const winNum = Math.floor(Math.random() * 90) + 10;
+            for (let i = 0; i < 30; i++) {
+                const myNum = Math.floor(Math.random() * 90) + 10;
+                const isWin = myNum === winNum;
+                container.innerHTML += `<div class="num-box"><span>${myNum}</span><span style="font-size:8px">${isWin ? '$888' : '$0'}</span></div>`;
+            }
+        }
+
+        // 绘制灰色涂层
+        function initCanvas() {
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.fillStyle = '#C0C0C0'; // 银色涂层
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // 添加点缀
+            for(let i=0; i<100; i++) {
+                ctx.fillStyle = '#A9A9A9';
+                ctx.fillRect(Math.random()*canvas.width, Math.random()*canvas.height, 2, 2);
+            }
+        }
+
+        // 刮除逻辑
+        function scratch(e) {
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+            const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+            
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.beginPath();
+            ctx.arc(x, y, 20, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        canvas.addEventListener('mousedown', () => isDrawing = true);
+        canvas.addEventListener('touchstart', () => isDrawing = true);
+        window.addEventListener('mouseup', () => isDrawing = false);
+        window.addEventListener('touchend', () => isDrawing = false);
+        canvas.addEventListener('mousemove', scratch);
+        canvas.addEventListener('touchmove', scratch);
+
+        initPrize();
+        initCanvas();
+    </script>
+</body>
+</html>
