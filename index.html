@@ -6,35 +6,34 @@
     <title>中国龙-至尊兑奖版</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { background: #000; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: "Arial Black", "Verdana", sans-serif; }
+        body { background: #000; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: "Arial Rounded MT Bold", "Verdana", sans-serif; }
         
         .card-container { position: relative; width: 360px; height: 720px; background: url('64005.jpg') no-repeat; background-size: cover; border-radius: 10px; }
 
         /* 1. 玩法区 (中奖号码) - 对应如意红框中心 */
-        .win-box { position: absolute; top: 358px; left: 130px; width: 100px; height: 60px; z-index: 1; display: flex; justify-content: center; align-items: center; }
+        .win-box { position: absolute; top: 350px; left: 130px; width: 100px; height: 75px; z-index: 1; display: flex; justify-content: center; align-items: center; }
 
         /* 2. 我的号码区 - 对应大黄色方框 (6列 x 5行) */
-        /* 精调 top/left 和 grid 间距，确保每个数字都在龙圆圈正中心 */
+        /* 精调 top/left，确保每个数字都在龙圆圈正中心 */
         .my-grid { 
             position: absolute; 
-            top: 445px; /* 下移确保对准第一排 */
-            left: 24px; /* 右移 0.3cm */
-            width: 312px; 
-            height: 255px; 
+            top: 430px; /* 上移确保对准第一排 */
+            left: 25px; /* 右移确保横向对齐 */
+            width: 310px; 
+            height: 270px; 
             z-index: 1; 
             display: grid; 
             grid-template-columns: repeat(6, 1fr); 
             grid-template-rows: repeat(5, 1fr);
-            row-gap: 5px; /* 纵向微调 */
         }
 
-        .num-item { display: flex; flex-direction: column; justify-content: center; align-items: center; color: #000; font-weight: 900; font-size: 15px; text-shadow: 1px 1px 0 #fff; }
+        .num-item { display: flex; flex-direction: column; justify-content: center; align-items: center; color: #000; font-weight: 900; font-size: 14px; text-shadow: 1px 1px 0 #fff; line-height: 1.2; }
         
-        /* 奖金深红色，W 缩写 */
-        .prize-item { font-size: 10px; color: #8B0000; font-weight: 900; margin-top: 1px; }
+        /* 奖金深红色，加粗清晰 */
+        .prize-item { font-size: 9px; color: #8B0000; font-weight: 900; margin-top: 1px; }
 
         /* 覆盖层 - 覆盖玩法区和黄色大框 */
-        #scratch-canvas { position: absolute; top: 345px; left: 18px; width: 324px; height: 365px; z-index: 10; touch-action: none; cursor: crosshair; }
+        #scratch-canvas { position: absolute; top: 345px; left: 18px; width: 324px; height: 355px; z-index: 10; touch-action: none; cursor: crosshair; }
     </style>
 </head>
 <body>
@@ -50,40 +49,58 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // 1. 生成玩法区随机中奖号码
+        // 1. 生成中奖号码 (玩法区)
         const luckyNum = Math.floor(Math.random() * 89) + 10;
-        document.getElementById('win-num').innerHTML = `<div class="num-item" style="font-size:24px">${luckyNum}</div>`;
+        document.getElementById('win-num').innerHTML = `<div class="num-item" style="font-size:22px">${luckyNum}</div>`;
 
         // 2. 生成30个格子
         const myBox = document.getElementById('my-nums');
-        const prizePool = ["10", "20", "50", "100", "500", "1000", "1W", "10W", "100W"];
+        // 奖金池（不包含百万大奖，百万只有中奖才触发）
+        const normalPrizes = [20, 50, 100, 500];
 
         for (let i = 0; i < 30; i++) {
-            // 随机生成我的号码
-            let n = Math.floor(Math.random() * 89) + 10;
-            // 随机抽取奖金
-            let p = prizePool[Math.floor(Math.random() * prizePool.length)];
+            // 设置中奖概率（如20%）
+            let isWinner = Math.random() > 0.8;
+            let myNum;
+            let prize;
+
+            if (isWinner) {
+                // 中奖了：号码等于中奖号码，奖金随机（包括100W）
+                myNum = luckyNum;
+                const winnerPrizes = [1000, 5000, 10000, 1000000];
+                prize = winnerPrizes[Math.floor(Math.random() * winnerPrizes.length)];
+            } else {
+                // 没中奖：号码绝不等于中奖号码，奖金为小额保底
+                do {
+                    myNum = Math.floor(Math.random() * 89) + 10;
+                } while (myNum === luckyNum); // 确保不等
+                prize = normalPrizes[Math.floor(Math.random() * normalPrizes.length)];
+            }
+
+            // 格式化金额 (万单位简写)
+            let prizeStr;
+            if (prize >= 10000) {
+                prizeStr = (prize / 10000) + "W";
+            } else {
+                prizeStr = prize.toLocaleString();
+            }
             
-            myBox.innerHTML += `
-                <div class="num-item">
-                    ${n}
-                    <div class="prize-item">¥${p}</div>
-                </div>`;
+            myBox.innerHTML += `<div class="num-item">${myNum}<div class="prize-item">¥${prizeStr}</div></div>`;
         }
 
         // 3. 绘制磨砂涂层
         function init() {
             canvas.width = 324;
-            canvas.height = 365;
+            canvas.height = 355;
             
-            // 银灰色遮盖
-            ctx.fillStyle = '#BDBDBD';
-            ctx.fillRect(0, 0, 324, 365);
+            // 基础银灰色
+            ctx.fillStyle = '#BDBDBD'; 
+            ctx.fillRect(0, 0, 324, 355);
             
             // 模拟真实涂层颗粒
-            for(let i=0; i<2000; i++) {
+            for(let i=0; i<1800; i++) {
                 ctx.fillStyle = Math.random() > 0.5 ? '#E0E0E0' : '#828282';
-                ctx.fillRect(Math.random()*324, Math.random()*365, 1.2, 1.2);
+                ctx.fillRect(Math.random()*324, Math.random()*355, 1.2, 1.2);
             }
 
             // 涂层上的说明文字
@@ -91,7 +108,7 @@
             ctx.font = 'bold 14px sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText('玩法区', 162, 45);
-            ctx.fillText('刮 开 区', 162, 210);
+            ctx.fillText('刮 开 区 (30次机会)', 162, 200);
         }
 
         let isDrawing = false;
@@ -103,7 +120,7 @@
             
             ctx.globalCompositeOperation = 'destination-out';
             ctx.beginPath();
-            ctx.arc(x, y, 20, 0, Math.PI * 2); // 稍微加大刮除圆圈，更爽快
+            ctx.arc(x, y, 18, 0, Math.PI * 2);
             ctx.fill();
         }
 
