@@ -3,36 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>中国龙-高精度调试器</title>
+    <title>中国龙-双区独立调试器</title>
     <style>
-        body { background: #1a1a1a; margin: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; font-family: -apple-system, sans-serif; overflow-x: hidden; }
+        body { background: #1a1a1a; margin: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; font-family: sans-serif; overflow: hidden; }
         
         /* 彩票容器 */
-        .card-container { position: relative; width: 360px; height: 720px; background: url('64005.jpg') no-repeat; background-size: cover; margin: 10px; box-shadow: 0 0 50px rgba(0,0,0,0.8); flex-shrink: 0; }
+        .card-container { position: relative; width: 360px; height: 720px; background: url('64005.jpg') no-repeat; background-size: cover; margin-top: 5px; flex-shrink: 0; box-shadow: 0 0 50px #000; }
 
-        /* 元素图层 */
-        #win-box { position: absolute; width: 100px; height: 60px; z-index: 5; display: flex; justify-content: center; align-items: center; border: 1px dashed rgba(255,255,255,0.5); }
-        #my-grid { position: absolute; width: 312px; height: 280px; z-index: 5; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(5, 1fr); border: 1px dashed rgba(255,255,255,0.3); }
+        /* 玩法区 - 独立控制层 */
+        #win-box { position: absolute; width: 120px; height: 80px; z-index: 5; display: flex; justify-content: center; align-items: center; border: 1px dashed rgba(255,255,0,0.5); }
+        
+        /* 30个圆圈区 - 独立控制层 */
+        #my-grid { position: absolute; width: 320px; height: 280px; z-index: 5; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(5, 1fr); border: 1px dashed rgba(0,255,255,0.3); }
 
         .num-item { display: flex; flex-direction: column; justify-content: center; align-items: center; color: #000; font-weight: 900; text-shadow: 1px 1px 0 #fff; line-height: 1.1; pointer-events: none; }
         .prize-item { color: #8B0000; font-weight: 900; }
 
-        /* --- 调试控制台 --- */
-        .console { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top-left-radius: 20px; border-top-right-radius: 20px; padding: 15px; box-shadow: 0 -5px 20px rgba(0,0,0,0.3); z-index: 1000; max-height: 45vh; overflow-y: auto; }
-        .console-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-        .console-header h3 { margin: 0; font-size: 16px; color: #333; }
+        /* --- 底部控制台 --- */
+        .console { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; padding: 10px 15px; border-radius: 20px 20px 0 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.5); z-index: 100; max-height: 50vh; overflow-y: auto; }
+        .section-title { font-size: 14px; font-weight: bold; color: #ff4400; border-left: 4px solid #ff4400; padding-left: 8px; margin: 10px 0; background: #fff5f0; }
         
-        .control-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; background: #f8f9fa; padding: 8px; border-radius: 8px; }
-        .label-box { flex: 1; }
-        .label-box b { font-size: 13px; display: block; }
-        .label-box span { font-size: 11px; color: #666; }
-
-        .btn-group { display: flex; align-items: center; gap: 5px; }
-        .btn-group button { width: 35px; height: 35px; border: none; background: #007bff; color: #fff; border-radius: 5px; font-size: 20px; font-weight: bold; cursor: pointer; }
-        .btn-group button:active { background: #0056b3; }
-        .btn-group input { width: 45px; text-align: center; border: 1px solid #ddd; height: 31px; border-radius: 4px; font-weight: bold; }
-
-        .code-box { background: #222; color: #00ff00; padding: 10px; font-family: monospace; font-size: 12px; border-radius: 5px; margin-top: 10px; }
+        .control-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; background: #f4f4f4; padding: 5px 10px; border-radius: 8px; }
+        .btn-group { display: flex; align-items: center; gap: 4px; }
+        .btn-group button { width: 32px; height: 32px; border: none; background: #333; color: #fff; border-radius: 4px; font-size: 18px; cursor: pointer; }
+        .btn-group input { width: 45px; text-align: center; border: 1px solid #ccc; height: 28px; font-weight: bold; }
+        
+        .code-box { background: #000; color: #0f0; padding: 10px; font-family: monospace; font-size: 11px; margin-top: 10px; border-radius: 5px; white-space: pre-wrap; }
     </style>
 </head>
 <body>
@@ -43,49 +39,53 @@
     </div>
 
     <div class="console">
-        <div class="console-header">
-            <h3>🎮 像素级位置微调器</h3>
-            <button onclick="copyCode()" style="font-size:12px; padding:4px 8px;">复制参数</button>
-        </div>
+        <h3 style="margin:0 0 10px 0; text-align:center; font-size:16px;">🎮 独立双区位置微调器</h3>
 
+        <div class="section-title">1. 玩法区 (中奖号) 调整</div>
         <div class="control-row">
-            <div class="label-box"><b>玩法区 Top (高度)</b><span>数值越小越靠上</span></div>
+            <span>上下位置 (Top)</span>
             <div class="btn-group">
                 <button onclick="adj('wt',-1)">-</button>
                 <input type="number" id="wt" value="285" onchange="update()">
                 <button onclick="adj('wt',1)">+</button>
             </div>
         </div>
-
         <div class="control-row">
-            <div class="label-box"><b>圆圈区 Top (高度)</b><span>调整30个格子的起点</span></div>
+            <span>左右位置 (Left)</span>
+            <div class="btn-group">
+                <button onclick="adj('wl',-1)">-</button>
+                <input type="number" id="wl" value="120" onchange="update()">
+                <button onclick="adj('wl',1)">+</button>
+            </div>
+        </div>
+
+        <div class="section-title">2. 30个圆圈区 (数字区) 调整</div>
+        <div class="control-row">
+            <span>整体上下 (Top)</span>
             <div class="btn-group">
                 <button onclick="adj('gt',-1)">-</button>
                 <input type="number" id="gt" value="385" onchange="update()">
                 <button onclick="adj('gt',1)">+</button>
             </div>
         </div>
-
         <div class="control-row">
-            <div class="label-box"><b>圆圈区 Left (左右)</b><span>调整横向对齐</span></div>
+            <span>整体左右 (Left)</span>
             <div class="btn-group">
                 <button onclick="adj('gl',-1)">-</button>
-                <input type="number" id="gl" value="24" onchange="update()">
+                <input type="number" id="gl" value="21" onchange="update()">
                 <button onclick="adj('gl',1)">+</button>
             </div>
         </div>
-
         <div class="control-row">
-            <div class="label-box"><b>行间距 (Gap)</b><span>调整上下圆圈的密度</span></div>
+            <span>行与行间距 (Gap)</span>
             <div class="btn-group">
                 <button onclick="adj('rg',-1)">-</button>
                 <input type="number" id="rg" value="5" onchange="update()">
                 <button onclick="adj('rg',1)">+</button>
             </div>
         </div>
-
         <div class="control-row">
-            <div class="label-box"><b>数字大小 (Size)</b><span>整体缩放</span></div>
+            <span>数字大小 (Size)</span>
             <div class="btn-group">
                 <button onclick="adj('fs',-1)">-</button>
                 <input type="number" id="fs" value="14" onchange="update()">
@@ -93,7 +93,7 @@
             </div>
         </div>
 
-        <div class="code-box" id="output">参数生成中...</div>
+        <div class="code-box" id="output">调好后，将此处参数发给我</div>
     </div>
 
     <script>
@@ -105,12 +105,11 @@
         function init() {
             myGrid.innerHTML = '';
             for (let i = 0; i < 30; i++) {
-                myGrid.innerHTML += `<div class="num-item" id="n-${i}">10<div class="prize-item">¥10W</div></div>`;
+                myGrid.innerHTML += `<div class="num-item" id="item-${i}">10<div class="prize-item">¥10W</div></div>`;
             }
             update();
         }
 
-        // 调整函数
         window.adj = function(id, delta) {
             const el = document.getElementById(id);
             el.value = parseInt(el.value) + delta;
@@ -119,15 +118,18 @@
 
         function update() {
             const wt = parseInt(document.getElementById('wt').value);
+            const wl = parseInt(document.getElementById('wl').value);
             const gt = parseInt(document.getElementById('gt').value);
             const gl = parseInt(document.getElementById('gl').value);
             const rg = parseInt(document.getElementById('rg').value);
             const fs = parseInt(document.getElementById('fs').value);
 
-            // 实时应用
+            // 应用玩法区样式
             winBox.style.top = wt + 'px';
-            winText.style.fontSize = (fs + 8) + 'px';
-            
+            winBox.style.left = wl + 'px';
+            winText.style.fontSize = (fs + 6) + 'px';
+
+            // 应用数字区样式
             myGrid.style.top = gt + 'px';
             myGrid.style.left = gl + 'px';
             myGrid.style.rowGap = rg + 'px';
@@ -136,16 +138,11 @@
                 if(el.id !== 'win-text') el.style.fontSize = fs + 'px';
             });
             document.querySelectorAll('.prize-item').forEach(el => {
-                el.style.fontSize = (fs * 0.7) + 'px';
+                el.style.fontSize = (fs * 0.75) + 'px';
             });
 
-            // 生成反馈文本
-            output.innerText = `【调试成功！请复制以下数据】\n玩法区Top: ${wt}, 圆圈区Top: ${gt}, Left: ${gl}, Gap: ${rg}, Size: ${fs}`;
-        }
-
-        window.copyCode = function() {
-            const text = output.innerText;
-            navigator.clipboard.writeText(text).then(() => alert('参数已复制！请发给AI'));
+            // 生成反馈报告
+            output.innerText = `【最终参数反馈】\n玩法区: Top=${wt}, Left=${wl}\n数字区: Top=${gt}, Left=${gl}, Gap=${rg}, Size=${fs}`;
         }
 
         init();
