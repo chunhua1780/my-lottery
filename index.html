@@ -10,30 +10,29 @@
             background: #000; margin: 0; padding: 0;
             display: flex; justify-content: center; align-items: flex-start;
             min-height: 100vh; overflow: hidden;
-            font-family: "Arial Rounded MT Bold", "Helvetica", sans-serif;
+            font-family: "Microsoft YaHei", sans-serif;
             -webkit-user-select: none; user-select: none;
         }
 
-        /* 核心容器 */
         .card-container { 
             position: relative; width: 360px; height: 720px;
             background: url('64005.jpg') no-repeat; background-size: cover;
-            border-radius: 10px; flex-shrink: 0;
+            flex-shrink: 0;
         }
 
-        /* 1. 中奖号码文字层 (根据你的 T=248, L=126, Size=22) */
-        .win-box { 
+        /* 中奖号码文字层 (基于你的 T=248, L=126, Size=22) */
+        #win-box { 
             position: absolute; top: 248px; left: 126px; 
-            width: 120px; height: 60px; z-index: 1;
+            width: 100px; height: 60px; z-index: 1;
             display: flex; justify-content: center; align-items: center; 
             font-size: 22px; color: #000; font-weight: 900;
             text-shadow: 1px 1px 0 #fff;
         }
         
-        /* 2. 我的号码网格层 (根据你的 T=339, L=24, Size=14) */
-        .my-grid { 
+        /* 我的号码网格层 (基于你的 T=339, L=24, Size=14) */
+        #my-grid { 
             position: absolute; top: 339px; left: 24px; 
-            width: 312px; height: 280px; z-index: 1;
+            width: 312px; z-index: 1;
             display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(5, 1fr);
             row-gap: 5px; font-size: 14px;
         }
@@ -44,107 +43,92 @@
         }
         .prize-item { font-size: 10px; color: #8B0000; font-weight: 900; }
 
-        /* 3. 刮奖涂层 (Canvas) */
-        .scratch-canvas { position: absolute; z-index: 10; touch-action: none; cursor: crosshair; }
+        /* 刮奖图层 */
+        .scratch-layer { position: absolute; z-index: 10; touch-action: none; cursor: crosshair; }
         
-        /* 涂层A定位 (根据你的 T=258, L=154, W=69, H=50) */
-        #canv-a { top: 258px; left: 154px; width: 69px; height: 50px; }
-        /* 涂层B定位 (根据你的 T=322, L=21, W=318, H=299) */
-        #canv-b { top: 322px; left: 21px; width: 318px; height: 299px; }
-
-        /* 底部交互提示 */
-        .tg-hint {
-            position: absolute; bottom: 20px; width: 100%; text-align: center;
-            color: rgba(255,255,255,0.5); font-size: 12px; pointer-events: none;
-        }
+        /* 涂层A定位 (基于你的 T=258, L=154, W=69) */
+        #canv-win { top: 258px; left: 154px; width: 69px; height: 50px; }
+        /* 涂层B定位 (基于你的 T=322, L=21, H=299) */
+        #canv-mine { top: 322px; left: 21px; width: 318px; height: 299px; }
     </style>
 </head>
 <body>
-    <div class="card-container">
-        <div class="win-box" id="win-num"></div>
-        <div class="my-grid" id="my-nums"></div>
-        
-        <canvas id="canv-a" class="scratch-canvas"></canvas>
-        <canvas id="canv-b" class="scratch-canvas"></canvas>
 
-        <div class="tg-hint">—— 祝您好运 ——</div>
+    <div class="card-container">
+        <div id="win-box"></div>
+        <div id="my-grid"></div>
+        
+        <canvas id="canv-win" class="scratch-layer"></canvas>
+        <canvas id="canv-mine" class="scratch-layer"></canvas>
     </div>
 
     <script>
-        // 初始化 Telegram SDK
         const tg = window.Telegram.WebApp;
         tg.ready();
-        tg.expand(); // 全屏打开
+        tg.expand();
         tg.setHeaderColor('#000000');
 
-        // 1. 游戏数据初始化
+        // 1. 初始化游戏数据
         const luckyNum = Math.floor(Math.random() * 89) + 10;
-        document.getElementById('win-num').innerText = luckyNum;
+        document.getElementById('win-box').innerText = luckyNum;
 
-        // 生成30个不重复的号码池
         let pool = Array.from({length: 90}, (_, i) => i + 10).sort(() => Math.random() - 0.5);
-        const myBox = document.getElementById('my-nums');
-        const prizes = [0, 5, 10, 20, 50, 100, 500, 1000, 5000, 10000, 1000000];
+        const myBox = document.getElementById('my-grid');
+        const prizeList = [0, 5, 10, 20, 50, 100, 500, 1000, 5000, 10000, 1000000];
 
         for (let i = 0; i < 30; i++) {
-            let isWinner = Math.random() > 0.88; // 模拟中奖率
-            let myNum = isWinner ? luckyNum : (pool[i] === luckyNum ? pool[35] : pool[i]);
-            let prize = isWinner ? prizes[Math.floor(Math.random() * prizes.length)] : [0, 5, 10, 20][Math.floor(Math.random()*4)];
+            let isWin = Math.random() > 0.9; // 10% 中奖概率
+            let num = isWin ? luckyNum : (pool[i] === luckyNum ? pool[35] : pool[i]);
+            let prize = isWin ? prizeList[Math.floor(Math.random() * prizeList.length)] : [2, 5, 10][Math.floor(Math.random()*3)];
             
-            // 格式化金额显示
-            let prizeStr = prize >= 10000 ? (prize/10000) + "W" : prize.toLocaleString();
-            myBox.innerHTML += `<div class="num-item">${myNum}<div class="prize-item">¥${prizeStr}</div></div>`;
+            let prizeStr = prize >= 10000 ? (prize/10000) + "W" : prize;
+            myBox.innerHTML += `<div class="num-item">${num}<div class="prize-item">¥${prizeStr}</div></div>`;
             
-            // 如果中了大奖，触发手机震动
-            if (isWinner && prize >= 1000) {
-                tg.HapticFeedback.notificationOccurred('success');
-            }
+            // 刮出大奖时触发震动
+            if (isWin && prize >= 500) tg.HapticFeedback.notificationOccurred('success');
         }
 
-        // 2. 涂层绘制逻辑
-        function initScratch(id, w, h) {
-            const canvas = document.getElementById(id);
-            const ctx = canvas.getContext('2d');
-            canvas.width = w;
-            canvas.height = h;
+        // 2. 初始化涂层绘制
+        function drawScratch(id, w, h) {
+            const c = document.getElementById(id);
+            const ctx = c.getContext('2d');
+            c.width = w; c.height = h;
 
-            // 绘制银灰色涂层 + 随机杂色颗粒
-            ctx.fillStyle = '#BDBDBD';
+            // 绘制银色涂层
+            ctx.fillStyle = '#C0C0C0';
             ctx.fillRect(0, 0, w, h);
-            for(let i=0; i<600; i++) {
-                ctx.fillStyle = Math.random() > 0.5 ? '#E0E0E0' : '#888';
-                ctx.fillRect(Math.random()*w, Math.random()*h, 1.2, 1.2);
+            
+            // 增加金属质感颗粒
+            for(let i=0; i<500; i++) {
+                ctx.fillStyle = Math.random() > 0.5 ? '#DCDCDC' : '#999';
+                ctx.fillRect(Math.random()*w, Math.random()*h, 1.5, 1.5);
             }
 
-            // 刮除逻辑
-            let drawing = false;
+            // 刮除功能
+            let isDrawing = false;
             const scratch = (e) => {
-                if (!drawing) return;
-                const rect = canvas.getBoundingClientRect();
-                const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-                const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+                if (!isDrawing) return;
+                const r = c.getBoundingClientRect();
+                const x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+                const y = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
                 
                 ctx.globalCompositeOperation = 'destination-out';
                 ctx.beginPath();
-                ctx.arc(x, y, 18, 0, Math.PI * 2);
+                ctx.arc(x, y, 20, 0, Math.PI * 2);
                 ctx.fill();
             };
 
-            // 事件绑定
-            canvas.addEventListener('mousedown', () => drawing = true);
-            canvas.addEventListener('touchstart', (e) => { drawing = true; scratch(e); });
-            window.addEventListener('mouseup', () => drawing = false);
-            window.addEventListener('touchend', () => drawing = false);
-            canvas.addEventListener('mousemove', scratch);
-            canvas.addEventListener('touchmove', (e) => { 
-                e.preventDefault(); // 阻止滚动
-                scratch(e); 
-            }, {passive: false});
+            c.addEventListener('mousedown', () => isDrawing = true);
+            c.addEventListener('touchstart', (e) => { isDrawing = true; scratch(e); });
+            window.addEventListener('mouseup', () => isDrawing = false);
+            window.addEventListener('touchend', () => isDrawing = false);
+            c.addEventListener('mousemove', scratch);
+            c.addEventListener('touchmove', (e) => { e.preventDefault(); scratch(e); }, {passive: false});
         }
 
-        // 启动涂层 (根据你的 W 和 H 参数)
-        initScratch('canv-a', 69, 50);
-        initScratch('canv-b', 318, 299);
+        // 启动涂层 (基于你的 W=69, H=50 / W=318, H=299)
+        drawScratch('canv-win', 69, 50);
+        drawScratch('canv-mine', 318, 299);
     </script>
 </body>
 </html>
