@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>刮刮乐-优化版</title>
+<title>刮刮乐终极版</title>
 
 <style>
 body {
-    background:#000;
     margin:0;
+    background:#000;
     display:flex;
     justify-content:center;
     align-items:center;
@@ -23,7 +23,6 @@ body {
     background-size:cover;
 }
 
-/* 数据层 */
 .layer {
     position:absolute;
     top:342px;
@@ -33,30 +32,35 @@ body {
 }
 
 /* 数字样式 */
-.number {
+.num {
     position:absolute;
     transform:translate(-50%,-50%);
     font-size:22px;
     font-weight:900;
     color:#000;
     -webkit-text-stroke:1.5px #fff;
-    text-align:center;
 }
 
 .prize {
-    font-size:11px;
+    font-size:12px;
     color:#d40000;
-    margin-top:-2px;
 }
 
-/* 刮层 */
+/* canvas */
 canvas {
     position:absolute;
-    top:342px;
     left:23px;
-    width:314px;
-    height:350px;
     z-index:10;
+}
+
+/* 金币动画 */
+.coin {
+    position:absolute;
+    width:18px;
+    height:18px;
+    background:gold;
+    border-radius:50%;
+    pointer-events:none;
 }
 </style>
 </head>
@@ -64,25 +68,28 @@ canvas {
 <body>
 
 <div class="card">
-
     <div class="layer" id="layer"></div>
 
-    <canvas id="c"></canvas>
+    <!-- 上方玩法区 -->
+    <canvas id="top"></canvas>
 
+    <!-- 下方号码区 -->
+    <canvas id="bottom"></canvas>
 </div>
+
+<audio id="winSound" src="https://www.soundjay.com/misc/sounds/coin-drop-1.mp3"></audio>
 
 <script>
 const layer = document.getElementById('layer');
 
-// 🎯 中奖号码位置（微调这里就能完美贴图）
-const winPos = [
-    {x:50,y:40},{x:157,y:40},{x:264,y:40},
-    {x:100,y:90},{x:214,y:90}
-];
+/* =========================
+   🎯 精准坐标（已调优）
+========================= */
 
-// 🎯 我的号码位置（20个）
-const myPos=[];
-let sx=35, sy=140, gx=58, gy=55;
+const winPos = {x:157,y:60};
+
+const myPos = [];
+let sx=40, sy=150, gx=58, gy=55;
 
 for(let r=0;r<4;r++){
     for(let c=0;c<5;c++){
@@ -93,97 +100,159 @@ for(let r=0;r<4;r++){
     }
 }
 
-// 🎯 生成中奖号码
-const winNums=[];
-while(winNums.length<5){
-    let n=Math.floor(Math.random()*89)+10;
-    if(!winNums.includes(n)) winNums.push(n);
-}
+/* =========================
+   🎰 生成中奖号码
+========================= */
 
-// 👉 渲染中奖号码
-winPos.forEach((p,i)=>{
-    let d=document.createElement('div');
-    d.className='number';
-    d.style.left=p.x+'px';
-    d.style.top=p.y+'px';
-    d.innerText=winNums[i];
-    layer.appendChild(d);
-});
+const winNum = Math.floor(Math.random()*90)+10;
 
-// 👉 渲染我的号码
+let winDiv = document.createElement('div');
+winDiv.className='num';
+winDiv.style.left=winPos.x+'px';
+winDiv.style.top=winPos.y+'px';
+winDiv.innerText=winNum;
+layer.appendChild(winDiv);
+
+/* =========================
+   🎯 生成格子
+========================= */
+
+let totalWin = 0;
+
 myPos.forEach(p=>{
-    let num;
-    
-    do{
-        num=Math.floor(Math.random()*89)+10;
-    }while(false);
+    let num = Math.floor(Math.random()*90)+10;
 
-    let isWin=winNums.includes(num);
+    let prizePool = [0,0,0,20,50,100,500];
+    let prize = prizePool[Math.floor(Math.random()*prizePool.length)];
 
-    let prize=isWin
-        ? [20,50,100,500][Math.floor(Math.random()*4)]
-        : 0;
+    let isWin = num === winNum;
 
-    let d=document.createElement('div');
-    d.className='number';
+    let d = document.createElement('div');
+    d.className='num';
     d.style.left=p.x+'px';
     d.style.top=p.y+'px';
 
     d.innerHTML = `
-        ${num}
         <div class="prize">${prize? '¥'+prize:''}</div>
+        ${num}
     `;
+
+    if(isWin && prize>0){
+        totalWin += prize;
+        d.style.color='red';
+        d.style.transform='translate(-50%,-50%) scale(1.2)';
+    }
 
     layer.appendChild(d);
 });
 
-// 🎰 刮刮乐层
-const c=document.getElementById('c');
-const ctx=c.getContext('2d');
+/* =========================
+   🎰 Canvas刮奖系统
+========================= */
 
-c.width=314;
-c.height=350;
+function setupCanvas(canvas, height){
+    const ctx = canvas.getContext('2d');
 
-// 灰层
-ctx.fillStyle='#C0C0C0';
-ctx.fillRect(0,0,314,350);
+    canvas.width = 314;
+    canvas.height = height;
 
-// 颗粒
-for(let i=0;i<1000;i++){
-    ctx.fillStyle=Math.random()>0.5?'#eee':'#888';
-    ctx.fillRect(Math.random()*314,Math.random()*350,1,1);
+    ctx.fillStyle='#bbb';
+    ctx.fillRect(0,0,314,height);
+
+    for(let i=0;i<1000;i++){
+        ctx.fillStyle=Math.random()>0.5?'#eee':'#888';
+        ctx.fillRect(Math.random()*314,Math.random()*height,1,1);
+    }
+
+    return ctx;
 }
 
-// 标题
-ctx.fillStyle='#666';
-ctx.font='bold 16px Arial';
-ctx.textAlign='center';
-ctx.fillText('中奖号码区',157,40);
-ctx.fillText('我的号码区',157,160);
+const topCanvas = document.getElementById('top');
+const bottomCanvas = document.getElementById('bottom');
 
-let down=false;
+topCanvas.style.top="342px";
+bottomCanvas.style.top="442px";
 
-function draw(e){
-    if(!down) return;
+const ctx1 = setupCanvas(topCanvas,100);
+const ctx2 = setupCanvas(bottomCanvas,250);
 
-    const rect=c.getBoundingClientRect();
-    const x=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
-    const y=(e.touches?e.touches[0].clientY:e.clientY)-rect.top;
+/* =========================
+   ✋ 刮开 + 自动Reveal
+========================= */
 
-    ctx.globalCompositeOperation='destination-out';
-    ctx.beginPath();
-    ctx.arc(x,y,20,0,Math.PI*2);
-    ctx.fill();
+function scratch(canvas, ctx){
+    let down=false;
+    let count=0;
+
+    function draw(e){
+        if(!down) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const x=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
+        const y=(e.touches?e.touches[0].clientY:e.clientY)-rect.top;
+
+        ctx.globalCompositeOperation='destination-out';
+        ctx.beginPath();
+        ctx.arc(x,y,20,0,Math.PI*2);
+        ctx.fill();
+
+        count++;
+
+        if(count>600){
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            triggerWin();
+        }
+    }
+
+    canvas.onmousedown=()=>down=true;
+    canvas.onmouseup=()=>down=false;
+    canvas.onmousemove=draw;
+
+    canvas.ontouchstart=e=>{down=true;draw(e)};
+    canvas.ontouchend=()=>down=false;
+    canvas.ontouchmove=e=>{e.preventDefault();draw(e)};
 }
 
-c.onmousedown=()=>down=true;
-c.onmouseup=()=>down=false;
-c.onmousemove=draw;
+scratch(topCanvas,ctx1);
+scratch(bottomCanvas,ctx2);
 
-c.ontouchstart=e=>{down=true;draw(e)};
-c.ontouchend=()=>down=false;
-c.ontouchmove=e=>{e.preventDefault();draw(e)};
+/* =========================
+   🎉 中奖效果
+========================= */
 
+function triggerWin(){
+    if(totalWin>0){
+        document.getElementById('winSound').play();
+        dropCoins();
+    }
+}
+
+/* =========================
+   💰 金币动画
+========================= */
+
+function dropCoins(){
+    for(let i=0;i<25;i++){
+        let c=document.createElement('div');
+        c.className='coin';
+        document.body.appendChild(c);
+
+        c.style.left=Math.random()*300+50+'px';
+        c.style.top='0px';
+
+        let speed = Math.random()*5+3;
+
+        let fall = setInterval(()=>{
+            let t=c.offsetTop;
+            c.style.top = t + speed + 'px';
+
+            if(t>700){
+                clearInterval(fall);
+                c.remove();
+            }
+        },16);
+    }
+}
 </script>
 
 </body>
