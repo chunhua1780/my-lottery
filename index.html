@@ -2,136 +2,119 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>中国龙-至尊兑奖版</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中国龙-位置调试器</title>
     <style>
-        body { background: #000; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: "Arial Rounded MT Bold", "Verdana", sans-serif; }
+        body { background: #333; margin: 0; display: flex; flex-direction: column; align-items: center; padding-top: 20px; font-family: sans-serif; }
         
-        .card-container { position: relative; width: 360px; height: 720px; background: url('64005.jpg') no-repeat; background-size: cover; border-radius: 10px; }
+        /* 彩票主体 */
+        .card-container { position: relative; width: 360px; height: 720px; background: url('64005.jpg') no-repeat; background-size: cover; border: 2px solid #fff; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
 
-        /* 1. 玩法区 (中奖号码) - 对应如意红框中心 */
-        .win-box { position: absolute; top: 350px; left: 130px; width: 100px; height: 75px; z-index: 1; display: flex; justify-content: center; align-items: center; }
-
-        /* 2. 我的号码区 - 对应大黄色方框 (6列 x 5行) */
-        /* 精调 top/left，确保每个数字都在龙圆圈正中心 */
-        .my-grid { 
-            position: absolute; 
-            top: 430px; /* 上移确保对准第一排 */
-            left: 25px; /* 右移确保横向对齐 */
-            width: 310px; 
-            height: 270px; 
-            z-index: 1; 
-            display: grid; 
-            grid-template-columns: repeat(6, 1fr); 
-            grid-template-rows: repeat(5, 1fr);
-        }
+        /* 中奖号码区 */
+        #win-box { position: absolute; width: 100px; height: 60px; border: 1px dashed lime; display: flex; justify-content: center; align-items: center; z-index: 5; pointer-events: none; }
+        
+        /* 30个圆圈区 */
+        #my-grid { position: absolute; width: 310px; height: 270px; border: 1px dashed cyan; z-index: 5; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(5, 1fr); pointer-events: none; }
 
         .num-item { display: flex; flex-direction: column; justify-content: center; align-items: center; color: #000; font-weight: 900; font-size: 14px; text-shadow: 1px 1px 0 #fff; line-height: 1.2; }
-        
-        /* 奖金深红色，加粗清晰 */
-        .prize-item { font-size: 9px; color: #8B0000; font-weight: 900; margin-top: 1px; }
+        .prize-item { font-size: 9px; color: #8B0000; font-weight: 900; }
 
-        /* 覆盖层 - 覆盖玩法区和黄色大框 */
-        #scratch-canvas { position: absolute; top: 345px; left: 18px; width: 324px; height: 355px; z-index: 10; touch-action: none; cursor: crosshair; }
+        /* 控制面板样式 */
+        .control-panel { position: fixed; right: 20px; top: 20px; background: rgba(255,255,255,0.95); padding: 20px; border-radius: 10px; width: 280px; box-shadow: 0 0 10px rgba(0,0,0,0.3); z-index: 100; }
+        .control-group { margin-bottom: 15px; }
+        .control-group label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; }
+        input[type="range"] { width: 100%; }
+        .val-display { color: blue; font-weight: bold; float: right; }
+        .code-output { background: #eee; padding: 10px; font-size: 11px; margin-top: 10px; border: 1px solid #ccc; white-space: pre-wrap; }
     </style>
 </head>
 <body>
+
     <div class="card-container">
-        <div class="win-box" id="win-num"></div>
-        <div class="my-grid" id="my-nums"></div>
-        <canvas id="scratch-canvas"></canvas>
+        <div id="win-box"><div class="num-item" style="font-size:22px">88</div></div>
+        <div id="my-grid" id="my-nums"></div>
+    </div>
+
+    <div class="control-panel">
+        <h3>📏 位置调试器</h3>
+        
+        <div class="control-group">
+            <label>玩法区 (中奖号) Top: <span id="winTopVal" class="val-display">350</span></label>
+            <input type="range" id="winTop" min="300" max="450" value="350">
+        </div>
+
+        <div class="control-group">
+            <label>玩法区 (中奖号) Left: <span id="winLeftVal" class="val-display">130</span></label>
+            <input type="range" id="winLeft" min="0" max="250" value="130">
+        </div>
+
+        <hr>
+
+        <div class="control-group">
+            <label>30个圆圈区 Top: <span id="gridTopVal" class="val-display">430</span></label>
+            <input type="range" id="gridTop" min="400" max="550" value="430">
+        </div>
+
+        <div class="control-group">
+            <label>30个圆圈区 Left: <span id="gridLeftVal" class="val-display">25</span></label>
+            <input type="range" id="gridLeft" min="0" max="50" value="25">
+        </div>
+
+        <div class="control-group">
+            <label>行间距 (Row Gap): <span id="rowGapVal" class="val-display">0</span></label>
+            <input type="range" id="rowGap" min="-10" max="20" value="0">
+        </div>
+
+        <p style="font-size: 12px; color: red;">* 虚线框仅供参考，对准后记下数值告诉我。</p>
+        <div class="code-output" id="outputText"></div>
     </div>
 
     <script>
-        const canvas = document.getElementById('scratch-canvas');
-        const ctx = canvas.getContext('2d');
-        const tg = window.Telegram.WebApp;
-        tg.expand();
+        const winBox = document.getElementById('win-box');
+        const myGrid = document.getElementById('my-grid');
+        const output = document.getElementById('outputText');
 
-        // 1. 生成中奖号码 (玩法区)
-        const luckyNum = Math.floor(Math.random() * 89) + 10;
-        document.getElementById('win-num').innerHTML = `<div class="num-item" style="font-size:22px">${luckyNum}</div>`;
-
-        // 2. 生成30个格子
-        const myBox = document.getElementById('my-nums');
-        // 奖金池（不包含百万大奖，百万只有中奖才触发）
-        const normalPrizes = [20, 50, 100, 500];
-
-        for (let i = 0; i < 30; i++) {
-            // 设置中奖概率（如20%）
-            let isWinner = Math.random() > 0.8;
-            let myNum;
-            let prize;
-
-            if (isWinner) {
-                // 中奖了：号码等于中奖号码，奖金随机（包括100W）
-                myNum = luckyNum;
-                const winnerPrizes = [1000, 5000, 10000, 1000000];
-                prize = winnerPrizes[Math.floor(Math.random() * winnerPrizes.length)];
-            } else {
-                // 没中奖：号码绝不等于中奖号码，奖金为小额保底
-                do {
-                    myNum = Math.floor(Math.random() * 89) + 10;
-                } while (myNum === luckyNum); // 确保不等
-                prize = normalPrizes[Math.floor(Math.random() * normalPrizes.length)];
+        // 生成测试格子
+        function refreshGrid() {
+            myGrid.innerHTML = '';
+            for (let i = 0; i < 30; i++) {
+                myGrid.innerHTML += `<div class="num-item">10<div class="prize-item">¥1000</div></div>`;
             }
-
-            // 格式化金额 (万单位简写)
-            let prizeStr;
-            if (prize >= 10000) {
-                prizeStr = (prize / 10000) + "W";
-            } else {
-                prizeStr = prize.toLocaleString();
-            }
-            
-            myBox.innerHTML += `<div class="num-item">${myNum}<div class="prize-item">¥${prizeStr}</div></div>`;
         }
 
-        // 3. 绘制磨砂涂层
-        function init() {
-            canvas.width = 324;
-            canvas.height = 355;
-            
-            // 基础银灰色
-            ctx.fillStyle = '#BDBDBD'; 
-            ctx.fillRect(0, 0, 324, 355);
-            
-            // 模拟真实涂层颗粒
-            for(let i=0; i<1800; i++) {
-                ctx.fillStyle = Math.random() > 0.5 ? '#E0E0E0' : '#828282';
-                ctx.fillRect(Math.random()*324, Math.random()*355, 1.2, 1.2);
-            }
+        // 更新位置函数
+        function updateStyles() {
+            const wt = document.getElementById('winTop').value;
+            const wl = document.getElementById('winLeft').value;
+            const gt = document.getElementById('gridTop').value;
+            const gl = document.getElementById('gridLeft').value;
+            const rg = document.getElementById('rowGap').value;
 
-            // 涂层上的说明文字
-            ctx.fillStyle = '#444';
-            ctx.font = 'bold 14px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('玩法区', 162, 45);
-            ctx.fillText('刮 开 区 (30次机会)', 162, 200);
+            // 应用样式
+            winBox.style.top = wt + 'px';
+            winBox.style.left = wl + 'px';
+            myGrid.style.top = gt + 'px';
+            myGrid.style.left = gl + 'px';
+            myGrid.style.rowGap = rg + 'px';
+
+            // 更新数值显示
+            document.getElementById('winTopVal').innerText = wt;
+            document.getElementById('winLeftVal').innerText = wl;
+            document.getElementById('gridTopVal').innerText = gt;
+            document.getElementById('gridLeftVal').innerText = gl;
+            document.getElementById('rowGapVal').innerText = rg;
+
+            // 生成代码参考
+            output.innerText = `中奖号 Top: ${wt}px, Left: ${wl}px\n30个圆圈 Top: ${gt}px, Left: ${gl}px\n行间距: ${rg}px`;
         }
 
-        let isDrawing = false;
-        function scratch(e) {
-            if (!isDrawing) return;
-            const rect = canvas.getBoundingClientRect();
-            const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-            const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-            
-            ctx.globalCompositeOperation = 'destination-out';
-            ctx.beginPath();
-            ctx.arc(x, y, 18, 0, Math.PI * 2);
-            ctx.fill();
-        }
+        // 监听所有滑块
+        document.querySelectorAll('input[type="range"]').forEach(input => {
+            input.addEventListener('input', updateStyles);
+        });
 
-        canvas.addEventListener('mousedown', () => isDrawing = true);
-        canvas.addEventListener('touchstart', (e) => { isDrawing = true; scratch(e); });
-        window.addEventListener('mouseup', () => isDrawing = false);
-        window.addEventListener('touchend', () => isDrawing = false);
-        canvas.addEventListener('mousemove', scratch);
-        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); scratch(e); }, {passive: false});
-
-        init();
+        refreshGrid();
+        updateStyles();
     </script>
 </body>
 </html>
