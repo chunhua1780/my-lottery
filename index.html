@@ -1,170 +1,522 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>刮刮乐-金属圆形刮开效果</title>
-<style>
-body{
-    margin:0;
-    background:#000;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    height:100vh;
-}
-.card{
-    position:relative;
-    width:360px;
-    height:740px;
-    background:url('64005.jpg') no-repeat;
-    background-size:cover;
-}
-.layer{
-    position:absolute;
-    width:320px;
-    height:560px;
-    left:20px;
-    top:150px;
-}
-/* 小圆圈数字 */
-.cell{
-    position:absolute;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    font-weight:700;
-    font-family: 'Arial', sans-serif;
-    color:#000;
-    text-align:center;
-    pointer-events:none; /* 防止干扰刮奖 */
-}
-.num{
-    font-size:18px;
-    font-weight:700;
-}
-.money{
-    font-size:12px;
-    color:#660000;
-    margin-top:-2px;
-}
-/* canvas */
-canvas{
-    position:absolute;
-    left:0;
-    top:0;
-    z-index:10;
-    border-radius:4px;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中国龙刮奖游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #ff4757, #ff3838);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .lottery-container {
+            width: 400px;
+            background: #ff0000;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .header {
+            background: linear-gradient(45deg, #ff0000, #cc0000);
+            padding: 15px 20px;
+            text-align: center;
+            position: relative;
+            color: white;
+        }
+
+        .logo {
+            position: absolute;
+            top: 10px;
+            left: 15px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .price {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .dragon-title {
+            font-size: 36px;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            margin: 10px 0;
+        }
+
+        .dragon-image {
+            position: absolute;
+            left: -20px;
+            top: 50px;
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(45deg, #00bcd4, #0097a7);
+            border-radius: 50% 0 50% 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+            color: #ffd700;
+        }
+
+        .game-info {
+            padding: 20px;
+            text-align: center;
+            color: white;
+        }
+
+        .chances {
+            background: #990000;
+            border: 2px solid #ffd700;
+            border-radius: 8px;
+            padding: 8px 15px;
+            margin: 10px auto;
+            width: fit-content;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .prize-area {
+            margin: 20px 0;
+        }
+
+        .winning-number {
+            background: #ffd700;
+            color: #990000;
+            padding: 10px;
+            border-radius: 25px;
+            margin: 10px auto;
+            width: px;
+            height: 4080px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .grid-container {
+            background: #cc0000;
+            margin: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            border: 3px solid #ffd700;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .grid-item {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+            border: 2px solid #ff8f00;
+        }
+
+        .grid-item:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(255,215,0,0.5);
+        }
+
+        .grid-item.scratched {
+            background: linear-gradient(45deg, #4caf50, #45a049);
+            color: white;
+        }
+
+        .grid-item.prize-special {
+            background: linear-gradient(45deg, #ff5722, #e64a19);
+            color: white;
+            animation: sparkle 1s infinite;
+        }
+
+        @keyframes sparkle {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .instructions {
+            padding: 15px 20px;
+            background: #990000;
+            color: white;
+            font-size: 12px;
+            line-height: 1.4;
+            text-align: center;
+        }
+
+        .footer {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #cc0000;
+        }
+
+        .scratch-btn {
+            background: linear-gradient(45deg, #ff9800, #f57c00);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .scratch-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255,152,0,0.4);
+        }
+
+        .qr-code {
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            color: #333;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+        }
+
+        .result {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 1000;
+            text-align: center;
+            display: none;
+        }
+
+        .result h2 {
+            color: #ff4757;
+            margin-bottom: 15px;
+        }
+
+        .result p {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .close-btn {
+            background: #ff4757;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            display: none;
+        }
+
+        .win-effect {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #ffd700;
+            animation: fall 3s linear infinite;
+        }
+
+        @keyframes fall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+    </style>
 </head>
 <body>
-<div class="card">
-    <!-- 数据层 -->
-    <div class="layer" id="layer"></div>
-    <!-- 玩法区刮层 -->
-    <canvas id="scratchWin"></canvas>
-    <!-- 刮奖区刮层 -->
-    <canvas id="scratchPrize"></canvas>
-</div>
+    <div class="lottery-container">
+        <div class="header">
+            <div class="logo">🎲 中国福利彩票</div>
+            <div class="price">面值20元</div>
+            <div class="dragon-image">🐉</div>
+            <div class="dragon-title">中国龙</div>
+        </div>
 
-<script>
-const layer = document.getElementById('layer');
+        <div class="game-info">
+            <div class="chances">30次中奖机会</div>
+            <div style="margin: 10px 0;">
+                <div style="font-size: 14px; margin-bottom: 5px;">▼ 玩法区</div>
+                <div class="winning-number" id="winningNumber">?</div>
+                <div style="font-size: 12px; margin-top: 5px;">▼ 我的号码</div>
+            </div>
+            <div style="font-size: 16px; font-weight: bold; color: #ffd700;">
+                最高奖金100万元
+            </div>
+        </div>
 
-/* 瓜奖区5x6圆圈坐标 */
-const positions = [];
-let startX = 32;
-let startY = 150;
-let gapX = 52;
-let gapY = 60;
-let circleRadius = 24; // 小圆半径
-for(let r=0;r<5;r++){
-    for(let c=0;c<6;c++){
-        positions.push({ x: startX+c*gapX, y: startY+r*gapY });
-    }
-}
+        <div class="grid-container">
+            <div class="grid" id="gameGrid"></div>
+        </div>
 
-/* 生成瓜奖区数字和奖金 */
-function formatPrize(num){
-    if(num===0) return '0';
-    return (num/10000)+'W';
-}
-positions.forEach(pos=>{
-    let num = Math.floor(Math.random()*90)+10;
-    let prize = Math.floor(Math.random()*101)*10000; // 0~100万
-    const d = document.createElement('div');
-    d.className='cell';
-    d.style.left = pos.x+'px';
-    d.style.top = pos.y+'px';
-    d.style.transform = 'translate(-50%, -50%)';
-    d.innerHTML = `<div class="num">${num}</div><div class="money">${formatPrize(prize)}</div>`;
-    layer.appendChild(d);
-});
+        <div class="instructions">
+            刮开覆盖膜，如果任意一个"我的号码"与"中奖号码"相同，即可获得该"我的号码"下方所对应的奖金；
+            如果刮出特殊图符，即可获得该图符下方所对应的奖金，中奖奖金兼中兼得。
+            如果刮出超级图符，即可获得玩法区内所有的奖金之和。
+        </div>
 
-/* Canvas 金属刮层 */
-function setup(canvas, width, height){
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d');
+        <div class="footer">
+            <button class="scratch-btn" onclick="startScratch()">刮开扫码兑奖</button>
+            <div class="qr-code">J0000-00000-0000000-000-3</div>
+        </div>
 
-    // 金属渐变涂层
-    const grad = ctx.createLinearGradient(0,0,width,height);
-    grad.addColorStop(0,'#ccc');
-    grad.addColorStop(0.5,'#eee');
-    grad.addColorStop(1,'#999');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0,0,width,height);
+        <div class="win-effect" id="winEffect"></div>
+    </div>
 
-    // 随机颗粒增强质感
-    for(let i=0;i<1500;i++){
-        ctx.fillStyle = `rgba(${Math.floor(180+Math.random()*50)},${Math.floor(180+Math.random()*50)},${Math.floor(180+Math.random()*50)},0.8)`;
-        ctx.fillRect(Math.random()*width, Math.random()*height,1,1);
-    }
-    return ctx;
-}
+    <div class="overlay" id="overlay"></div>
+   <div  class="result" id="result">
+        <h2 id="resultTitle">恭喜您！</h2>
+        <p id="resultText">您获得了神秘奖励！
+        <button class="close-btn" onclick="closeResult()">确定</button>
+    </div>
 
-/* 玩法区刮层 */
-const scratchWinCanvas = document.getElementById('scratchWin');
-scratchWinCanvas.style.top='10px';
-scratchWinCanvas.style.left='20px';
-const ctxWin = setup(scratchWinCanvas,320,80);
+    <script>
+        // 游戏配置
+        const GRID_SIZE = 30;
+        const PRIZES = [1000, 2000, 5000, 10000, 50000, 100000, 1000000];
+        const SPECIAL_SYMBOLS = ['💰', '🎯', '🏆'];
+        const SPECIAL_PRIZES = [10000, 50000, 100000];
 
-/* 刮奖区刮层 */
-const scratchPrizeCanvas = document.getElementById('scratchPrize');
-scratchPrizeCanvas.style.top='150px';
-scratchPrizeCanvas.style.left='20px';
-scratchPrizeCanvas.style.height='380px';
-const ctxPrize = setup(scratchPrizeCanvas,320,380);
+        let gameState = {
+            isPlaying: false,
+            winningNumber: null,
+            revealedCount: 0,
+            totalPrize: 0
+        };
 
-/* 圆形刮开逻辑带羽化边缘 */
-function scratch(canvas, ctx){
-    let down=false;
-    function draw(e){
-        if(!down) return;
-        const rect = canvas.getBoundingClientRect();
-        const x=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
-        const y=(e.touches?e.touches[0].clientY:e.clientY)-rect.top;
+        // 初始化游戏
+        function initGame() {
+            gameState.winningNumber = Math.floor(Math.random() * 9) + 1; // 1-9
+            document.getElementById('winningNumber').textContent = gameState.winningNumber;
+            
+            const grid = document.getElementById('gameGrid');
+            grid.innerHTML = '';
+            
+            for (let i = 0; i < GRID_SIZE; i++) {
+                const item = document.createElement('div');
+                item.className = 'grid-item';
+                item.textContent = '?';
+                item.dataset.index = i;
+                item.addEventListener('click', () => scratchItem(i));
+                grid.appendChild(item);
+            }
+        }
 
-        ctx.globalCompositeOperation='destination-out';
-        const gradient = ctx.createRadialGradient(x,y,0,x,y,20);
-        gradient.addColorStop(0,'rgba(0,0,0,1)');
-        gradient.addColorStop(1,'rgba(0,0,0,0)');
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.arc(x,y,20,0,Math.PI*2);
-        ctx.fill();
-    }
-    canvas.onmousedown=()=>down=true;
-    canvas.onmouseup=()=>down=false;
-    canvas.onmousemove=draw;
-    canvas.ontouchstart=e=>{down=true;draw(e)};
-    canvas.ontouchend=()=>down=false;
-    canvas.ontouchmove=e=>{e.preventDefault();draw(e)};
-}
+        // 刮奖功能
+        function scratchItem(index) {
+            if (gameState.isPlaying || gameState.revealedCount >= GRID_SIZE) return;
 
-scratch(scratchWinCanvas, ctxWin);
-scratch(scratchPrizeCanvas, ctxPrize);
-</script>
+            const item = document.querySelector(`[data-index="${index}"]`);
+            if (item.classList.contains('scratched')) return;
+
+            item.classList.add('scratched');
+            gameState.revealedCount++;
+
+            // 随机生成内容
+            const isWinning = Math.random() < 0.15; // 15%中奖率
+            const isSpecial = Math.random() < 0.05; // 5%特殊符号
+            const isSuper = Math.random() < 0.02; // 2%超级奖励
+
+            let content, prize;
+
+            if (isSuper) {
+                content = '🎉';
+                prize = SPECIAL_PRIZES[SPECIAL_PRIZES.length - 1];
+                item.classList.add('prize-special');
+                showWinEffect();
+            } else if (isSpecial) {
+                const symbolIndex = Math.floor(Math.random() * SPECIAL_SYMBOLS.length);
+                content = SPECIAL_SYMBOLS[symbolIndex];
+                prize = SPECIAL_PRIZES[symbolIndex];
+            } else if (isWinning) {
+                content = gameState.winningNumber;
+                prize = PRIZES[Math.floor(Math.random() * PRIZES.length)];
+            } else {
+                content = Math.floor(Math.random() * 9) + 1;
+                prize = 0;
+            }
+
+            item.textContent = content;
+            
+            if (prize > 0) {
+                gameState.totalPrize += prize;
+                showTemporaryMessage(`获得奖金: ¥${prize.toLocaleString()}`, item);
+            }
+
+            // 检查游戏结束
+            if (gameState.revealedCount === GRID_SIZE) {
+                setTimeout(() => {
+                    endGame();
+                }, 500);
+            }
+        }
+
+        // 开始刮奖
+        function startScratch() {
+            if (gameState.isPlaying) return;
+            
+            gameState.isPlaying = true;
+            gameState.revealedCount = 0;
+            gameState.totalPrize = 0;
+            
+            // 重置所有格子
+            const items = document.querySelectorAll('.grid-item');
+            items.forEach(item => {
+                item.classList.remove('scratched', 'prize-special');
+                item.textContent = '?';
+            });
+
+            showResult('游戏开始！', '请点击格子进行刮奖，祝您好运！');
+            
+            setTimeout(() => {
+                gameState.isPlaying = false;
+            }, 1000);
+        }
+
+        // 结束游戏
+        function endGame() {
+            let message, title;
+            
+            if (gameState.totalPrize >= 1000000) {
+                title = '🎊 大奖得主！';
+                message = `恭喜您获得了¥${gameState.totalPrize.toLocaleString()}的最高奖金！`;
+                showWinEffect();
+            } else if (gameState.totalPrize > 0) {
+                title = '🎉 恭喜中奖！';
+                message = `您的总奖金为¥${gameState.totalPrize.toLocaleString()}！`;
+            } else {
+                title = '谢谢参与！';
+                message = '虽然这次没有中奖，但运气总会来的，再试一次吧！';
+            }
+            
+            showResult(title, message);
+        }
+
+        // 显示结果
+        function showResult(title, text) {
+            document.getElementById('resultTitle').textContent = title;
+            document.getElementById('resultText').textContent = text;
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById('result').style.display = 'block';
+        }
+
+        // 关闭结果
+        function closeResult() {
+            document.getElementById('overlay').style.display = 'none';
+            document.getElementById('result').style.display = 'none';
+        }
+
+        // 显示临时消息
+        function showTemporaryMessage(message, element) {
+            const msgDiv = document.createElement('div');
+            msgDiv.textContent = message;
+            msgDiv.style.cssText = `
+                position: absolute;
+                top: -30px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #4caf50;
+                color: white;
+                padding: 5px 10px;
+                border-radius: 5px;
+                font-size: 12px;
+                z-index: 100;
+                pointer-events: none;
+            `;
+            
+            element.style.position = 'relative';
+            element.appendChild(msgDiv);
+            
+            setTimeout(() => {
+                msgDiv.remove();
+            }, 2000);
+        }
+
+        // 显示中奖效果
+        function showWinEffect() {
+            const winEffect = document.getElementById('winEffect');
+            winEffect.innerHTML = '';
+            
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.animationDelay = Math.random() * 3 + 's';
+                confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 70%, 60%)`;
+                winEffect.appendChild(confetti);
+            }
+            
+            setTimeout(() => {
+                winEffect.innerHTML = '';
+            }, 3000);
+        }
+
+        // 页面加载完成后初始化游戏
+        window.onload = function() {
+            initGame();
+        };
+    </script>
 </body>
 </html>
