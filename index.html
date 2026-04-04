@@ -135,3 +135,19 @@
     </script>
 </body>
 </html>
+// 初始化 Telegram Web App
+const tg = window.Telegram.WebApp;
+tg.ready(); // 告诉 TG 页面加载完了
+tg.expand(); // 自动拉伸到全屏，用户体验更好
+
+// 比如：如果用户刮出了 100W，你可以让它震动手机
+if (prize === 1000000) {
+    tg.HapticFeedback.notificationOccurred('success');
+}
+
+// 刮完之后，你可以加一个“确定”按钮，点击后关闭网页并把结果传给机器人
+function closeAndSend() {
+    // 这里的 data 会发送回机器人后端
+    tg.sendData("用户刚刚刮了一张，中奖金额：" + finalPrize);
+    tg.close();
+}
