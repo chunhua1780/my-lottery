@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>刮刮乐精确版</title>
+<title>刮刮乐精确对齐版</title>
 <style>
 body{
     margin:0;
@@ -22,7 +22,6 @@ body{
     background-size:cover;
 }
 
-/* 数据层 */
 .layer{
     position:absolute;
     width:320px;
@@ -85,8 +84,8 @@ const layer = document.getElementById('layer');
    🎯 5x6 圆圈坐标
 ========================= */
 const positions = [];
-let startX = 32;  // 左侧起点
-let startY = 140; // 上侧起点
+let startX = 32;   // 左侧起点
+let startY = 120;  // 上移 20px，让数字更靠上
 let gapX = 52;
 let gapY = 60;
 
@@ -107,7 +106,7 @@ const winNumber = Math.floor(Math.random()*90)+10;
 const winDiv = document.createElement('div');
 winDiv.className='cell num';
 winDiv.style.left='160px';
-winDiv.style.top='40px';
+winDiv.style.top='40px'; // 放在如意黄色方框里
 winDiv.innerHTML = `<div class="num">${winNumber}</div>`;
 layer.appendChild(winDiv);
 
@@ -149,15 +148,15 @@ function setup(canvas, width, height){
     return ctx;
 }
 
-/* 玩法区刮层（对应黄色方框） */
+/* 玩法区刮层（覆盖如意黄色方框） */
 const scratchWinCanvas = document.getElementById('scratchWin');
 scratchWinCanvas.style.top='10px';
 scratchWinCanvas.style.left='20px';
-const ctxWin = setup(scratchWinCanvas,320,80); // 宽度320，高度80
+const ctxWin = setup(scratchWinCanvas,320,80);
 
-/* 刮奖区刮层（对应下方黄色圆圈区域） */
+/* 刮奖区刮层（覆盖整个下方黄色方框） */
 const scratchPrizeCanvas = document.getElementById('scratchPrize');
-scratchPrizeCanvas.style.top='130px'; // 调整到圆圈区域
+scratchPrizeCanvas.style.top='120px'; // 对应圆圈区域
 scratchPrizeCanvas.style.left='20px';
 const ctxPrize = setup(scratchPrizeCanvas,320,380);
 
