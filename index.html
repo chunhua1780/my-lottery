@@ -3,168 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>中国龙-网格间距校准器</title>
+    <title>中国龙-刮刮乐</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { background: #1a1a1a; margin: 0; display: flex; justify-content: center; font-family: sans-serif; overflow: hidden; }
-        .card-container { position: relative; width: 360px; height: 720px; background: url('64005.jpg') no-repeat; background-size: cover; flex-shrink: 0; box-shadow: 0 0 50px #000; margin-top: 5px; }
+        body { 
+            background: #000; margin: 0; padding: 0;
+            display: flex; justify-content: center; align-items: flex-start;
+            min-height: 100vh; overflow: hidden;
+            font-family: "Microsoft YaHei", "Arial", sans-serif;
+            -webkit-user-select: none; user-select: none;
+        }
 
-        /* 中奖号预览 */
-        #win-box { position: absolute; z-index: 5; display: flex; justify-content: center; align-items: center; border: 1px dashed gold; background: rgba(255,215,0,0.1); pointer-events: none; }
-        
-        /* 我的号码网格预览 */
-        #my-grid { position: absolute; z-index: 5; display: grid; grid-template-columns: repeat(6, 1fr); border: 1px dashed cyan; background: rgba(0,255,255,0.05); pointer-events: none; }
-        
-        .num-item { display: flex; flex-direction: column; justify-content: center; align-items: center; color: #000; font-weight: 900; text-shadow: 1px 1px 0 #fff; line-height: 1; border: 0.5px solid rgba(0,255,255,0.2); }
-        .prize-item { color: #8B0000; font-weight: 900; }
+        .card-container { 
+            position: relative; width: 360px; height: 720px;
+            background: url('64005.jpg') no-repeat; background-size: cover;
+            flex-shrink: 0;
+        }
 
-        /* 调试控制台 */
-        .console { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; padding: 12px; border-radius: 20px 20px 0 0; z-index: 1000; max-height: 60vh; overflow-y: auto; box-shadow: 0 -5px 30px rgba(0,0,0,0.8); }
-        .tab-bar { display: flex; gap: 5px; margin-bottom: 12px; position: sticky; top: 0; background: #fff; padding-bottom: 5px; }
-        .tab-btn { flex: 1; padding: 12px 5px; font-size: 13px; border: none; background: #eee; border-radius: 8px; font-weight: bold; }
-        .tab-btn.active { background: #ff4400; color: #fff; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-
-        .control-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; background: #f1f1f1; padding: 10px; border-radius: 10px; }
-        .label { font-size: 13px; font-weight: bold; color: #333; width: 120px; }
-        .stepper { display: flex; align-items: center; gap: 5px; }
-        .stepper button { width: 36px; height: 36px; border: none; background: #444; color: #fff; border-radius: 8px; font-size: 20px; font-weight: bold; }
-        .stepper button:active { background: #ff4400; }
-        .stepper input { width: 50px; text-align: center; border: 1px solid #ccc; height: 32px; border-radius: 4px; font-weight: bold; font-size: 14px; }
+        /* 1. 中奖号码 (根据您的参数: T=274, L=177) */
+        #win-box { 
+            position: absolute; top: 274px; left: 177px; 
+            width: 40px; height: 35px; z-index: 1;
+            display: flex; justify-content: center; align-items: center; 
+            font-size: 22px; color: #000; font-weight: 900;
+            text-shadow: 1px 1px 0 #fff;
+        }
         
-        .report-box { background: #000; color: #0f0; padding: 15px; font-family: 'Courier New', monospace; font-size: 12px; border-radius: 10px; white-space: pre-wrap; line-height: 1.5; }
-        .hide-btn { width: 100%; padding: 12px; background: #ff4400; color: #fff; border: none; border-radius: 8px; font-weight: bold; margin-bottom: 10px; }
+        /* 2. 我的号码网格 (根据您的参数: T=326, L=25, W=310, RG=2, CG=9) */
+        #my-grid { 
+            position: absolute; top: 326px; left: 25px; 
+            width: 310px; z-index: 1;
+            display: grid; grid-template-columns: repeat(6, 1fr);
+            row-gap: 2px; column-gap: 9px;
+        }
+
+        .num-item { 
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: #000; font-weight: 900; line-height: 1.1;
+            height: 55px; /* 您设定的 ItemHeight */
+            font-size: 14px; /* 您设定的 FontSize */
+            text-shadow: 1px 1px 0 #fff;
+        }
+        .prize-item { font-size: 10px; color: #8B0000; font-weight: 900; }
+
+        /* 3. 刮奖涂层 (Canvas) */
+        .scratch-layer { position: absolute; z-index: 10; touch-action: none; cursor: crosshair; }
+        
+        /* 涂层位置 (微调以完美覆盖数字) */
+        #canv-win { top: 268px; left: 168px; width: 55px; height: 45px; }
+        #canv-mine { top: 322px; left: 21px; width: 318px; height: 299px; }
     </style>
 </head>
 <body>
 
     <div class="card-container">
-        <div id="win-box">88</div>
-        
+        <div id="win-box"></div>
         <div id="my-grid"></div>
-    </div>
-
-    <div class="console">
-        <div class="tab-bar">
-            <button class="tab-btn active" onclick="showTab(0)">1. 中奖号位置</button>
-            <button class="tab-btn" onclick="showTab(1)">2. 号码网格间距</button>
-            <button class="tab-btn" onclick="showTab(2)">3. 生成最终参数</button>
-        </div>
-
-        <div id="tab0" class="tab-content active">
-            <div class="control-row">
-                <div class="label">上下位置 (Top)</div>
-                <div class="stepper"><button onclick="adj('wt',-1)">-</button><input id="wt" value="248"><button onclick="adj('wt',1)">+</button></div>
-            </div>
-            <div class="control-row">
-                <div class="label">左右位置 (Left)</div>
-                <div class="stepper"><button onclick="adj('wl',-1)">-</button><input id="wl" value="126"><button onclick="adj('wl',1)">+</button></div>
-            </div>
-            <div class="control-row">
-                <div class="label">字体大小 (Size)</div>
-                <div class="stepper"><button onclick="adj('ws',-1)">-</button><input id="ws" value="22"><button onclick="adj('ws',1)">+</button></div>
-            </div>
-        </div>
-
-        <div id="tab1" class="tab-content">
-            <div class="control-row">
-                <div class="label">整体 Top</div>
-                <div class="stepper"><button onclick="adj('gt',-1)">-</button><input id="gt" value="339"><button onclick="adj('gt',1)">+</button></div>
-            </div>
-            <div class="control-row">
-                <div class="label">整体 Left</div>
-                <div class="stepper"><button onclick="adj('gl',-1)">-</button><input id="gl" value="24"><button onclick="adj('gl',1)">+</button></div>
-            </div>
-            <div class="control-row">
-                <div class="label">整体 宽度</div>
-                <div class="stepper"><button onclick="adj('gw',-1)">-</button><input id="gw" value="312"><button onclick="adj('gw',1)">+</button></div>
-            </div>
-            <div class="control-row">
-                <div class="label">行间距 (上下)</div>
-                <div class="stepper"><button onclick="adj('rg',-0.5)">-</button><input id="rg" value="5.0"><button onclick="adj('rg',0.5)">+</button></div>
-            </div>
-            <div class="control-row">
-                <div class="label">列间距 (左右)</div>
-                <div class="stepper"><button onclick="adj('cg',-0.5)">-</button><input id="cg" value="0.0"><button onclick="adj('cg',0.5)">+</button></div>
-            </div>
-            <div class="control-row">
-                <div class="label">格子高度 (Height)</div>
-                <div class="stepper"><button onclick="adj('gh',-1)">-</button><input id="gh" value="55"><button onclick="adj('gh',1)">+</button></div>
-            </div>
-            <div class="control-row">
-                <div class="label">号码字体大小</div>
-                <div class="stepper"><button onclick="adj('gs',-0.5)">-</button><input id="gs" value="14.0"><button onclick="adj('gs',0.5)">+</button></div>
-            </div>
-        </div>
-
-        <div id="tab2" class="tab-content">
-            <button class="hide-btn" onclick="document.querySelector('.console').style.display='none'">点击隐藏工具 (看全屏效果)</button>
-            <p style="font-size: 12px; color: #666; margin: 5px;">调好后，请将下方数据复制给我：</p>
-            <div class="report-box" id="output">数据实时生成中...</div>
-            <button onclick="location.reload()" style="width:100%; padding:10px; border:none; background:#ddd; border-radius:8px; margin-top:10px;">重置/刷新</button>
-        </div>
+        
+        <canvas id="canv-win" class="scratch-layer"></canvas>
+        <canvas id="canv-mine" class="scratch-layer"></canvas>
     </div>
 
     <script>
+        // 初始化 Telegram SDK
         const tg = window.Telegram.WebApp;
-        tg.ready(); tg.expand();
+        tg.ready();
+        tg.expand();
+        tg.setHeaderColor('#000000');
 
-        const grid = document.getElementById('my-grid');
-        
-        function initGrid() {
-            grid.innerHTML = '';
-            for (let i = 0; i < 30; i++) {
-                grid.innerHTML += `<div class="num-item">18<div class="prize-item">¥500</div></div>`;
+        // --- 游戏逻辑 ---
+        const luckyNum = Math.floor(Math.random() * 89) + 10;
+        document.getElementById('win-box').innerText = luckyNum;
+
+        let pool = Array.from({length: 90}, (_, i) => i + 10).sort(() => Math.random() - 0.5);
+        const myBox = document.getElementById('my-grid');
+        const prizeList = [10, 20, 50, 100, 500, 1000, 5000, 10000, 1000000];
+
+        for (let i = 0; i < 30; i++) {
+            let isWin = Math.random() > 0.88; // 模拟约 12% 中奖率
+            let num = isWin ? luckyNum : (pool[i] === luckyNum ? pool[35] : pool[i]);
+            let prize = isWin ? prizeList[Math.floor(Math.random() * prizeList.length)] : [2, 5, 10][Math.floor(Math.random()*3)];
+            
+            let prizeStr = prize >= 10000 ? (prize/10000) + "W" : prize;
+            myBox.innerHTML += `<div class="num-item">${num}<div class="prize-item">¥${prizeStr}</div></div>`;
+            
+            // 中大奖触发手机震动反馈
+            if (isWin && prize >= 500) tg.HapticFeedback.notificationOccurred('success');
+        }
+
+        // --- 涂层绘制函数 ---
+        function initScratch(id, w, h) {
+            const c = document.getElementById(id);
+            const ctx = c.getContext('2d');
+            c.width = w; c.height = h;
+
+            // 绘制高级感银灰色涂层
+            ctx.fillStyle = '#C0C0C0';
+            ctx.fillRect(0, 0, w, h);
+            
+            // 增加防伪颗粒感
+            for(let i=0; i<600; i++) {
+                ctx.fillStyle = Math.random() > 0.5 ? '#DCDCDC' : '#999';
+                ctx.fillRect(Math.random()*w, Math.random()*h, 1.2, 1.2);
             }
+
+            // 刮除逻辑
+            let active = false;
+            const scratch = (e) => {
+                if (!active) return;
+                const rect = c.getBoundingClientRect();
+                const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+                const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+                
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath();
+                ctx.arc(x, y, 20, 0, Math.PI * 2);
+                ctx.fill();
+            };
+
+            c.addEventListener('mousedown', () => active = true);
+            c.addEventListener('touchstart', (e) => { active = true; scratch(e); });
+            window.addEventListener('mouseup', () => active = false);
+            window.addEventListener('touchend', () => active = false);
+            c.addEventListener('mousemove', scratch);
+            c.addEventListener('touchmove', (e) => { e.preventDefault(); scratch(e); }, {passive: false});
         }
 
-        window.adj = (id, d) => {
-            const el = document.getElementById(id);
-            let val = parseFloat(el.value) + d;
-            el.value = val.toFixed(1);
-            update();
-        };
-
-        window.showTab = (n) => {
-            document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === n));
-            document.querySelectorAll('.tab-content').forEach((c, i) => c.classList.toggle('active', i === n));
-        };
-
-        function update() {
-            const v = (id) => parseFloat(document.getElementById(id).value);
-            
-            // 1. 更新中奖号
-            const wb = document.getElementById('win-box');
-            wb.style.top = v('wt') + 'px';
-            wb.style.left = v('wl') + 'px';
-            wb.style.fontSize = v('ws') + 'px';
-            wb.style.width = '100px'; // 固定宽度
-            wb.style.height = '60px'; // 固定高度
-
-            // 2. 更新网格
-            grid.style.top = v('gt') + 'px';
-            grid.style.left = v('gl') + 'px';
-            grid.style.width = v('gw') + 'px';
-            grid.style.rowGap = v('rg') + 'px';
-            grid.style.columnGap = v('cg') + 'px';
-            
-            // 3. 更新网格内数字
-            document.querySelectorAll('.num-item').forEach(item => {
-                item.style.height = v('gh') + 'px';
-                item.style.fontSize = v('gs') + 'px';
-            });
-
-            // 4. 生成报告
-            document.getElementById('output').innerText = 
-                `【中奖号参数】\nTop: ${v('wt')}, Left: ${v('wl')}, Size: ${v('ws')}\n\n` +
-                `【网格区参数】\nTop: ${v('gt')}, Left: ${v('gl')}, Width: ${v('gw')}\n` +
-                `RowGap: ${v('rg')}, ColGap: ${v('cg')}\n` +
-                `ItemHeight: ${v('gh')}, FontSize: ${v('gs')}`;
-        }
-
-        initGrid();
-        update();
+        // 启动涂层 (基于背景图的最佳覆盖范围)
+        initScratch('canv-win', 55, 45);
+        initScratch('canv-mine', 318, 299);
     </script>
 </body>
 </html>
