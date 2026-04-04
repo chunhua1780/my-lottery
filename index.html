@@ -1,117 +1,195 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>中国龙-全真精修版</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        body { background: #000; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: "Arial Rounded MT Bold", "Verdana", sans-serif; }
-        
-        .card-container { position: relative; width: 360px; height: 720px; background: url('64005.jpg') no-repeat; background-size: cover; border-radius: 10px; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>刮刮乐精确版</title>
+<style>
+body{
+    margin:0;
+    background:#000;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
 
-        /* 整个可刮区域容器 */
-        /* 向右移动了 0.3cm (约 11px)，起始位置调至 21px */
-        .scratch-wrapper { position: absolute; top: 348px; left: 21px; width: 324px; height: 350px; z-index: 1; }
+.card{
+    position:relative;
+    width:360px;
+    height:740px;
+    background:url('64005.jpg') no-repeat;
+    background-size:cover;
+}
 
-        /* 1. 中奖号码区 (如意红框) */
-        .winning-area { position: absolute; top: 0px; left: 110px; width: 100px; height: 75px; display: flex; justify-content: center; align-items: center; z-index: 2; }
+/* 数据层 */
+.layer{
+    position:absolute;
+    width:320px;
+    height:560px;
+    left:20px;
+    top:150px;
+}
 
-        /* 2. 我的号码区 (6列 x 5行) */
-        /* 下移 1cm (约 38px)，top 从 100px 调至 138px */
-        .my-numbers-grid { position: absolute; top: 138px; left: 0; width: 324px; height: 210px; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(5, 1fr); z-index: 2; }
+/* 小圆圈 */
+.cell{
+    position:absolute;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    font-weight:900;
+    color:#000;
+    -webkit-text-stroke:1.5px #fff;
+    text-align:center;
+}
 
-        /* 数字样式优化：小一号(14px)、圆滑、纯黑 */
-        .number-box { display: flex; flex-direction: column; justify-content: center; align-items: center; color: #000; font-weight: 900; font-size: 14px; text-shadow: 1px 1px 0 #fff; line-height: 1.2; }
-        
-        /* 奖金样式：深红色 (#8B0000)、加粗 */
-        .prize-tag { font-size: 9px; color: #8B0000; font-weight: 900; margin-top: 1px; }
+.num{
+    font-size:26px;
+}
 
-        /* 覆盖全图的刮奖画布 (确保覆盖玩法区) */
-        #scratch-canvas { position: absolute; top: 348px; left: 21px; width: 324px; height: 350px; z-index: 10; touch-action: none; cursor: crosshair; }
-    </style>
+.money{
+    font-size:12px;
+    color:#d40000;
+    margin-top:-3px;
+}
+
+/* canvas */
+canvas{
+    position:absolute;
+    left:0;
+    top:0;
+    z-index:10;
+    border-radius:4px;
+}
+</style>
 </head>
 <body>
-    <div class="card-container">
-        <div class="scratch-wrapper">
-            <div class="winning-area" id="win-number-box"></div>
-            <div class="my-numbers-grid" id="my-numbers-box"></div>
-        </div>
-        <canvas id="scratch-canvas"></canvas>
-    </div>
+<div class="card">
 
-    <script>
-        const canvas = document.getElementById('scratch-canvas');
-        const ctx = canvas.getContext('2d');
-        const tg = window.Telegram.WebApp;
-        tg.expand();
+    <!-- 数据层 -->
+    <div class="layer" id="layer"></div>
 
-        // 1. 生成中奖号码 (玩法区)
-        const winNum = Math.floor(Math.random() * 89) + 10;
-        document.getElementById('win-number-box').innerHTML = `<div class="number-box" style="font-size:20px">${winNum}</div>`;
+    <!-- 玩法区刮层 -->
+    <canvas id="scratchWin"></canvas>
 
-        // 2. 生成30个号码 (6列 x 5行)
-        const myNumbersBox = document.getElementById('my-numbers-box');
-        for (let i = 0; i < 30; i++) {
-            let n;
-            let isWin = Math.random() > 0.92; // 约8%中奖率
-            if (isWin) {
-                n = winNum;
-            } else {
-                do { n = Math.floor(Math.random() * 89) + 10; } while (n === winNum);
-            }
+    <!-- 刮奖区刮层 -->
+    <canvas id="scratchPrize"></canvas>
 
-            const prizePool = [20, 50, 100, 200, 500, 1000];
-            const prize = isWin ? prizePool[Math.floor(Math.random()*prizePool.length)] : 0;
-            
-            myNumbersBox.innerHTML += `
-                <div class="number-box">
-                    ${n}
-                    <div class="prize-tag">${prize > 0 ? '¥'+prize : '￥0'}</div>
-                </div>`;
-        }
+</div>
 
-        // 3. 绘制磨砂金属涂层
-        function init() {
-            canvas.width = 324;
-            canvas.height = 350;
-            ctx.fillStyle = '#BDBDBD'; // 稍深的银灰色
-            ctx.fillRect(0, 0, 324, 350);
-            
-            // 增加更密集的颗粒感
-            for(let i=0; i<1500; i++) {
-                ctx.fillStyle = Math.random() > 0.5 ? '#E0E0E0' : '#828282';
-                ctx.fillRect(Math.random()*324, Math.random()*350, 1.2, 1.2);
-            }
-            
-            // 添加提示文字
-            ctx.fillStyle = '#555';
-            ctx.font = 'bold 13px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('玩法区', 162, 35);
-            ctx.fillText('刮开区', 162, 160);
-        }
+<script>
+const layer = document.getElementById('layer');
 
-        let isDown = false;
-        function scratch(e) {
-            if (!isDown) return;
-            const rect = canvas.getBoundingClientRect();
-            const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-            const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-            ctx.globalCompositeOperation = 'destination-out';
-            ctx.beginPath();
-            ctx.arc(x, y, 16, 0, Math.PI * 2); // 减小一点刮除圆圈，更精致
-            ctx.fill();
-        }
+/* =========================
+   🎯 5x6 圆圈坐标
+========================= */
+const positions = [];
+let startX = 32;  // 左侧起点
+let startY = 140; // 上侧起点
+let gapX = 52;
+let gapY = 60;
 
-        canvas.addEventListener('mousedown', () => isDown = true);
-        canvas.addEventListener('touchstart', (e) => { isDown = true; scratch(e); });
-        window.addEventListener('mouseup', () => isDown = false);
-        window.addEventListener('touchend', () => isDown = false);
-        canvas.addEventListener('mousemove', scratch);
-        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); scratch(e); }, {passive:false});
+for(let r=0;r<5;r++){
+    for(let c=0;c<6;c++){
+        positions.push({
+            x: startX + c*gapX,
+            y: startY + r*gapY
+        });
+    }
+}
 
-        init();
-    </script>
+/* =========================
+   🎰 玩法区中奖号码
+========================= */
+const winNumber = Math.floor(Math.random()*90)+10;
+
+const winDiv = document.createElement('div');
+winDiv.className='cell num';
+winDiv.style.left='160px';
+winDiv.style.top='40px';
+winDiv.innerHTML = `<div class="num">${winNumber}</div>`;
+layer.appendChild(winDiv);
+
+/* =========================
+   🎯 生成 5x6 圆圈数字和奖金
+========================= */
+positions.forEach(pos=>{
+    let num = Math.floor(Math.random()*90)+10;
+    let prize = Math.floor(Math.random()*1000000); // 0~100万
+
+    const d = document.createElement('div');
+    d.className='cell';
+    d.style.left=pos.x+'px';
+    d.style.top=pos.y+'px';
+    d.style.transform='translate(-50%, -50%)';
+    d.innerHTML = `
+        <div class="num">${num}</div>
+        <div class="money">¥${prize}</div>
+    `;
+    layer.appendChild(d);
+});
+
+/* =========================
+   🎰 Canvas 涂层函数
+========================= */
+function setup(canvas, width, height){
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = '#bbb';
+    ctx.fillRect(0,0,width,height);
+
+    for(let i=0;i<1200;i++){
+        ctx.fillStyle = Math.random()>0.5?'#eee':'#888';
+        ctx.fillRect(Math.random()*width, Math.random()*height,1,1);
+    }
+
+    return ctx;
+}
+
+/* 玩法区刮层（对应黄色方框） */
+const scratchWinCanvas = document.getElementById('scratchWin');
+scratchWinCanvas.style.top='10px';
+scratchWinCanvas.style.left='20px';
+const ctxWin = setup(scratchWinCanvas,320,80); // 宽度320，高度80
+
+/* 刮奖区刮层（对应下方黄色圆圈区域） */
+const scratchPrizeCanvas = document.getElementById('scratchPrize');
+scratchPrizeCanvas.style.top='130px'; // 调整到圆圈区域
+scratchPrizeCanvas.style.left='20px';
+const ctxPrize = setup(scratchPrizeCanvas,320,380);
+
+/* =========================
+   ✋ 通用刮奖逻辑
+========================= */
+function scratch(canvas, ctx){
+    let down=false;
+
+    function draw(e){
+        if(!down) return;
+        const rect = canvas.getBoundingClientRect();
+        const x=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
+        const y=(e.touches?e.touches[0].clientY:e.clientY)-rect.top;
+
+        ctx.globalCompositeOperation='destination-out';
+        ctx.beginPath();
+        ctx.arc(x,y,18,0,Math.PI*2);
+        ctx.fill();
+    }
+
+    canvas.onmousedown=()=>down=true;
+    canvas.onmouseup=()=>down=false;
+    canvas.onmousemove=draw;
+
+    canvas.ontouchstart=e=>{down=true;draw(e)};
+    canvas.ontouchend=()=>down=false;
+    canvas.ontouchmove=e=>{e.preventDefault();draw(e)};
+}
+
+scratch(scratchWinCanvas, ctxWin);
+scratch(scratchPrizeCanvas, ctxPrize);
+</script>
 </body>
 </html>
