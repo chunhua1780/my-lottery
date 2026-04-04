@@ -3,46 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>中国龙-超级配置器 V2.0</title>
+    <title>中国龙-双区独立调试器</title>
     <style>
-        body { background: #1a1a1a; margin: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; font-family: -apple-system, sans-serif; overflow: hidden; }
-        
-        /* 彩票容器 */
-        .card-container { position: relative; width: 360px; height: 720px; background: url('64005.jpg') no-repeat; background-size: cover; margin-top: 5px; flex-shrink: 0; box-shadow: 0 0 50px #000; overflow: hidden; }
+        body { background: #1a1a1a; margin: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; font-family: sans-serif; overflow: hidden; }
+        .card-container { position: relative; width: 360px; height: 720px; background: url('64005.jpg') no-repeat; background-size: cover; margin-top: 5px; flex-shrink: 0; box-shadow: 0 0 50px #000; }
 
-        /* 1. 玩法区 (中奖号码) - 独立控制层 */
-        #win-box { position: absolute; width: 100px; height: 60px; z-index: 5; display: flex; justify-content: center; align-items: center; border: 1px dashed rgba(255,255,0,0.5); pointer-events: none; }
-        
-        /* 2. 我的号码区 (30个圆圈) - 独立控制层 */
-        #my-grid { position: absolute; width: 312px; height: 280px; z-index: 5; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(5, 1fr); border: 1px dashed rgba(0,255,255,0.3); pointer-events: none; }
-
+        /* 数字层 */
+        #win-box { position: absolute; z-index: 5; display: flex; justify-content: center; align-items: center; border: 1px dashed gold; pointer-events: none; }
+        #my-grid { position: absolute; z-index: 5; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(5, 1fr); border: 1px dashed cyan; pointer-events: none; }
         .num-item { display: flex; flex-direction: column; justify-content: center; align-items: center; color: #000; font-weight: 900; text-shadow: 1px 1px 0 #fff; line-height: 1.1; }
         .prize-item { color: #8B0000; font-weight: 900; }
 
-        /* 3. 刮奖图层 (Canvas) - 可视化控制 */
-        #scratch-canvas { position: absolute; z-index: 10; touch-action: none; cursor: crosshair; outline: 3px solid rgba(255,0,0,0.5); /* 调试模式红色边框 */ }
+        /* 刮奖图层 A & B */
+        .scratch-layer { position: absolute; z-index: 10; touch-action: none; outline: 2px solid rgba(255,0,0,0.6); }
 
-        /* --- 调试控制台 --- */
-        .console { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-radius: 20px 20px 0 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.5); z-index: 1000; max-height: 60vh; overflow-y: auto; }
-        .console-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid #eee; background: #f8f9fa; border-radius: 20px 20px 0 0; }
-        .console-header h3 { margin: 0; font-size: 16px; }
-        .tab-group { display: flex; gap: 5px; }
-        .tab-btn { padding: 5px 10px; background: #ddd; border: none; border-radius: 5px; font-size: 12px; cursor: pointer; }
+        /* 控制台 */
+        .console { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; padding: 10px; border-radius: 20px 20px 0 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.5); z-index: 1000; max-height: 50vh; overflow-y: auto; }
+        .tab-bar { display: flex; gap: 5px; margin-bottom: 10px; sticky: top; background: #fff; }
+        .tab-btn { flex: 1; padding: 8px; font-size: 12px; border: none; background: #eee; border-radius: 5px; }
         .tab-btn.active { background: #ff4400; color: #fff; }
-
-        .tab-content { display: none; padding: 15px; }
+        .tab-content { display: none; }
         .tab-content.active { display: block; }
-
-        .control-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; background: #f4f4f4; padding: 6px 10px; border-radius: 8px; }
-        .label-txt { font-size: 13px; font-weight: bold; flex: 1; }
-        .label-txt span { font-size: 11px; color: #666; font-weight: normal; }
-        .btn-group { display: flex; align-items: center; gap: 4px; }
-        .btn-group button { width: 32px; height: 32px; border: none; background: #333; color: #fff; border-radius: 4px; font-size: 18px; cursor: pointer; }
-        .btn-group button:active { background: #000; }
-        .btn-group input { width: 50px; text-align: center; border: 1px solid #ccc; height: 28px; font-weight: bold; font-size: 14px; }
-
-        .final-code-btn { width: 100%; padding: 12px; background: #28a745; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 15px; }
-        .final-code-btn:active { background: #1e7e34; }
+        .row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; background: #f9f9f9; padding: 5px; border-radius: 5px; }
+        .btn-group { display: flex; align-items: center; gap: 3px; }
+        .btn-group button { width: 30px; height: 30px; background: #444; color: #fff; border: none; border-radius: 4px; }
+        .btn-group input { width: 45px; text-align: center; border: 1px solid #ccc; font-weight: bold; }
+        .code-box { background: #222; color: #0f0; padding: 10px; font-family: monospace; font-size: 11px; margin-top: 5px; white-space: pre-wrap; }
     </style>
 </head>
 <body>
@@ -50,282 +36,99 @@
     <div class="card-container">
         <div id="win-box"><div id="win-text" class="num-item">88</div></div>
         <div id="my-grid"></div>
-        <canvas id="scratch-canvas"></canvas>
+        <canvas id="canv-a" class="scratch-layer"></canvas>
+        <canvas id="canv-b" class="scratch-layer"></canvas>
     </div>
 
     <div class="console">
-        <div class="console-header">
-            <h3>中国龙配置器</h3>
-            <div class="tab-group">
-                <button class="tab-btn active" onclick="showTab('tab-win')">玩法区</button>
-                <button class="tab-btn" onclick="showTab('tab-my')">数字区</button>
-                <button class="tab-btn" onclick="showTab('tab-canv')">刮奖区</button>
-            </div>
+        <div class="tab-bar">
+            <button class="tab-btn active" onclick="tab(0)">1.数字对齐</button>
+            <button class="tab-btn" onclick="tab(1)">2.玩法区涂层(A)</button>
+            <button class="tab-btn" onclick="tab(2)">3.数字区涂层(B)</button>
         </div>
 
-        <div id="tab-win" class="tab-content active">
-            <div class="control-row"><span class="label-txt">上下 (Top)</span><div class="btn-group"><button onclick="adj('wt',-1)">-</button><input type="number" id="wt" value="285" onchange="update()"> <button onclick="adj('wt',1)">+</button></div></div>
-            <div class="control-row"><span class="label-txt">左右 (Left)</span><div class="btn-group"><button onclick="adj('wl',-1)">-</button><input type="number" id="wl" value="130" onchange="update()"> <button onclick="adj('wl',1)">+</button></div></div>
-            <div class="control-row"><span class="label-txt">字体大小 (Size)</span><div class="btn-group"><button onclick="adj('ws',-1)">-</button><input type="number" id="ws" value="22" onchange="update()"> <button onclick="adj('ws',1)">+</button></div></div>
+        <div id="t0" class="tab-content active">
+            <div class="row"><span>玩法区 Top</span><div class="btn-group"><button onclick="adj('wt',-1)">-</button><input id="wt" value="242"><button onclick="adj('wt',1)">+</button></div></div>
+            <div class="row"><span>数字区 Top</span><div class="btn-group"><button onclick="adj('gt',-1)">-</button><input id="gt" value="328"><button onclick="adj('gt',1)">+</button></div></div>
+            <div class="row"><span>数字区 Left</span><div class="btn-group"><button onclick="adj('gl',-1)">-</button><input id="gl" value="21"><button onclick="adj('gl',1)">+</button></div></div>
         </div>
 
-        <div id="tab-my" class="tab-content">
-            <div class="control-row"><span class="label-txt">上下 (Top)</span><div class="btn-group"><button onclick="adj('gt',-1)">-</button><input type="number" id="gt" value="385" onchange="update()"> <button onclick="adj('gt',1)">+</button></div></div>
-            <div class="control-row"><span class="label-txt">左右 (Left)</span><div class="btn-group"><button onclick="adj('gl',-1)">-</button><input type="number" id="gl" value="24" onchange="update()"> <button onclick="adj('gl',1)">+</button></div></div>
-            <div class="control-row"><span class="label-txt">行间距 (Gap)</span><div class="btn-group"><button onclick="adj('rg',-1)">-</button><input type="number" id="rg" value="5" onchange="update()"> <button onclick="adj('rg',1)">+</button></div></div>
-            <div class="control-row"><span class="label-txt">字体大小 (Size)</span><div class="btn-group"><button onclick="adj('fs',-1)">-</button><input type="number" id="fs" value="14" onchange="update()"> <button onclick="adj('fs',1)">+</button></div></div>
+        <div id="t1" class="tab-content">
+            <div class="row"><span>涂层A Top</span><div class="btn-group"><button onclick="adj('at',-1)">-</button><input id="at" value="235"><button onclick="adj('at',1)">+</button></div></div>
+            <div class="row"><span>涂层A Left</span><div class="btn-group"><button onclick="adj('al',-1)">-</button><input id="al" value="120"><button onclick="adj('al',1)">+</button></div></div>
+            <div class="row"><span>涂层A 宽</span><div class="btn-group"><button onclick="adj('aw',-1)">-</button><input id="aw" value="115"><button onclick="adj('aw',1)">+</button></div></div>
+            <div class="row"><span>涂层A 高</span><div class="btn-group"><button onclick="adj('ah',-1)">-</button><input id="ah" value="70"><button onclick="adj('ah',1)">+</button></div></div>
         </div>
 
-        <div id="tab-canv" class="tab-content">
-            <div style="font-size:12px; color:red; margin-bottom:10px;">* 调整下方参数，使<span style="outline:2px solid red;">红色边框</span>完美覆盖所有要刮开的数字。</div>
-            <div class="control-row"><span class="label-txt">Canvas 上下 (Top)</span><div class="btn-group"><button onclick="adj('ct',-1)">-</button><input type="number" id="ct" value="280" onchange="update()"> <button onclick="adj('ct',1)">+</button></div></div>
-            <div class="control-row"><span class="label-txt">Canvas 左右 (Left)</span><div class="btn-group"><button onclick="adj('cl',-1)">-</button><input type="number" id="cl" value="18" onchange="update()"> <button onclick="adj('cl',1)">+</button></div></div>
-            <div class="control-row"><span class="label-txt">Canvas 宽度 (Width)</span><div class="btn-group"><button onclick="adj('cw',-1)">-</button><input type="number" id="cw" value="324" onchange="update()"> <button onclick="adj('cw',1)">+</button></div></div>
-            <div class="control-row"><span class="label-txt">Canvas 高度 (Height)</span><div class="btn-group"><button onclick="adj('ch',-1)">-</button><input type="number" id="ch" value="360" onchange="update()"> <button onclick="adj('ch',1)">+</button></div></div>
-            <div class="control-row"><span class="label-txt">刮除半径 (Radius)<span>数值越大刮得越粗</span></span><div class="btn-group"><button onclick="adj('cr',-1)">-</button><input type="number" id="cr" value="18" onchange="update()"> <button onclick="adj('cr',1)">+</button></div></div>
-            <div class="control-row"><span class="label-txt">图层颗粒度<span>数值越小越清晰</span></span><div class="btn-group"><button onclick="adj('cp',-100)">-</button><input type="number" id="cp" value="1500" step="100" onchange="update()"> <button onclick="adj('cp',100)">+</button></div></div>
-            
-            <button class="final-code-btn" onclick="copyFinalCode()">复制最终成品代码 (带全逻辑)</button>
+        <div id="t2" class="tab-content">
+            <div class="row"><span>涂层B Top</span><div class="btn-group"><button onclick="adj('bt',-1)">-</button><input id="bt" value="320"><button onclick="adj('bt',1)">+</button></div></div>
+            <div class="row"><span>涂层B Left</span><div class="btn-group"><button onclick="adj('bl',-1)">-</button><input id="bl" value="18"><button onclick="adj('bl',1)">+</button></div></div>
+            <div class="row"><span>涂层B 宽</span><div class="btn-group"><button onclick="adj('bw',-1)">-</button><input id="bw" value="324"><button onclick="adj('bw',1)">+</button></div></div>
+            <div class="row"><span>涂层B 高</span><div class="btn-group"><button onclick="adj('bh',-1)">-</button><input id="bh" value="320"><button onclick="adj('bh',1)">+</button></div></div>
         </div>
+
+        <div class="code-box" id="output">调好后，复制参数发给我</div>
     </div>
 
     <script>
-        const canvas = document.getElementById('scratch-canvas');
-        const ctx = canvas.getContext('2d');
-        let params = {}; // 存储当前所有参数
+        const grid = document.getElementById('my-grid');
+        for (let i = 0; i < 30; i++) grid.innerHTML += `<div class="num-item">10<div class="prize-item">¥10</div></div>`;
 
-        function init() {
-            // 初始化30个格子
-            const grid = document.getElementById('my-grid');
-            grid.innerHTML = '';
-            for (let i = 0; i < 30; i++) {
-                grid.innerHTML += `<div class="num-item" id="n-${i}">10<div class="prize-item">¥10W</div></div>`;
-            }
-            update();
+        window.adj = (id, d) => { document.getElementById(id).value = parseInt(document.getElementById(id).value) + d; update(); }
+        window.tab = (n) => { 
+            document.querySelectorAll('.tab-btn, .tab-content').forEach((el, i) => {
+                el.classList.toggle('active', i % 3 === n);
+            });
         }
 
-        // 通用加减函数
-        window.adj = function(id, delta) {
-            const el = document.getElementById(id);
-            el.value = parseInt(el.value) + delta;
-            update();
-        }
-
-        // 显示标签页
-        window.showTab = function(tabId) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-            event.target.classList.add('active');
-        }
-
-        // 核心更新函数：获取所有数值并应用
         function update() {
-            // 获取所有参数
-            params = {
-                wt: parseInt(document.getElementById('wt').value),
-                wl: parseInt(document.getElementById('wl').value),
-                ws: parseInt(document.getElementById('ws').value),
-                gt: parseInt(document.getElementById('gt').value),
-                gl: parseInt(document.getElementById('gl').value),
-                rg: parseInt(document.getElementById('rg').value),
-                fs: parseInt(document.getElementById('fs').value),
-                ct: parseInt(document.getElementById('ct').value),
-                cl: parseInt(document.getElementById('cl').value),
-                cw: parseInt(document.getElementById('cw').value),
-                ch: parseInt(document.getElementById('ch').value),
-                cr: parseInt(document.getElementById('cr').value),
-                cp: parseInt(document.getElementById('cp').value)
-            };
-
-            // 应用玩法区
-            const winBox = document.getElementById('win-box');
-            winBox.style.top = params.wt + 'px';
-            winBox.style.left = params.wl + 'px';
-            document.getElementById('win-text').style.fontSize = params.ws + 'px';
-
-            // 应用数字区
-            const myGrid = document.getElementById('my-grid');
-            myGrid.style.top = params.gt + 'px';
-            myGrid.style.left = params.gl + 'px';
-            myGrid.style.rowGap = params.rg + 'px';
-
-            document.querySelectorAll('.num-item').forEach(el => {
-                if(el.id !== 'win-text') el.style.fontSize = params.fs + 'px';
-            });
-            document.querySelectorAll('.prize-item').forEach(el => {
-                el.style.fontSize = (params.fs * 0.75) + 'px';
-            });
-
-            // 应用刮奖Canvas区 (可视化红色边框)
-            canvas.style.top = params.ct + 'px';
-            canvas.style.left = params.cl + 'px';
-            canvas.width = params.cw;
-            canvas.height = params.ch;
-
-            // 重新绘制涂层 (模拟实时效果)
-            initCanvasLayer();
-        }
-
-        // 绘制涂层效果
-        function initCanvasLayer() {
-            ctx.fillStyle = '#C0C0C0'; // 基础银色
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            // 颗粒感
-            for(let i=0; i<params.cp; i++) {
-                ctx.fillStyle = Math.random() > 0.5 ? '#DCDCDC' : '#8F8F8F';
-                ctx.fillRect(Math.random()*canvas.width, Math.random()*canvas.height, 1.2, 1.2);
-            }
-        }
-
-        // 添加刮除逻辑用于实时测试
-        let isDrawing = false;
-        function scratch(e) {
-            if (!isDrawing) return;
-            const rect = canvas.getBoundingClientRect();
-            const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-            const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-            ctx.globalCompositeOperation = 'destination-out';
-            ctx.beginPath(); ctx.arc(x, y, params.cr, 0, Math.PI * 2); ctx.fill();
-        }
-        canvas.addEventListener('mousedown', () => isDrawing = true);
-        canvas.addEventListener('touchstart', (e) => {isDrawing = true; scratch(e);});
-        window.addEventListener('mouseup', () => isDrawing = false);
-        window.addEventListener('touchend', () => isDrawing = false);
-        canvas.addEventListener('mousemove', scratch);
-        canvas.addEventListener('touchmove', (e) => {e.preventDefault(); scratch(e);}, {passive:false});
-
-        init();
-
-        // 终极函数：根据当前参数，生成一个完整的、干净的、包含中奖逻辑和全功能的 HTML
-        window.copyFinalCode = function() {
-            const finalHtml = `<!DOCTYPE html>
-<html lang="zh">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>中国龙-至尊兌奖版</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        body { background: #000; margin: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; overflow: hidden; font-family: "Arial Rounded MT Bold", "Helvetica", sans-serif; }
-        .card-container { position: relative; width: 360px; height: 720px; background: url('64005.jpg') no-repeat; background-size: cover; border-radius: 10px; flex-shrink: 0; }
-        
-        /* 玩法区位置 */
-        .win-box { position: absolute; top: ${params.wt}px; left: ${params.wl}px; width: 100px; height: 60px; display: flex; justify-content: center; align-items: center; z-index: 1; }
-        
-        /* 数字区位置 */
-        .my-grid { position: absolute; top: ${params.gt}px; left: ${params.gl}px; width: 312px; height: 280px; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(5, 1fr); row-gap: ${params.rg}px; z-index: 1; }
-
-        .num-item { display: flex; flex-direction: column; justify-content: center; align-items: center; color: #000; font-weight: 900; font-size: ${params.fs}px; text-shadow: 1px 1px 0 #fff; line-height: 1.1; }
-        .prize-item { font-size: ${params.fs*0.75}px; color: #8B0000; font-weight: 900; }
-
-        /* 刮奖图层位置 */
-        #scratch-canvas { position: absolute; top: ${params.ct}px; left: ${params.cl}px; width: ${params.cw}px; height: ${params.ch}px; z-index: 10; touch-action: none; cursor: crosshair; }
-    </style>
-</head>
-<body>
-    <div class="card-container">
-        <div class="win-box" id="win-num"></div>
-        <div class="my-grid" id="my-nums"></div>
-        <canvas id="scratch-canvas"></canvas>
-    </div>
-
-    <script>
-        const canvas = document.getElementById('scratch-canvas');
-        const ctx = canvas.getContext('2d');
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-
-        // 1. 生成随机中奖号码 (10-99)
-        const luckyNum = Math.floor(Math.random() * 89) + 10;
-        document.getElementById('win-num').innerHTML = \`<div class="num-item" style="font-size:${params.ws}px">\${luckyNum}</div>\`;
-
-        // 2. 生成30个格子 (严格对准圆圈)
-        const myBox = document.getElementById('my-nums');
-        // 奖金池（不包含百万大奖，百万只有中奖才触发）
-        const normalPrizes = [20, 50, 100, 500, 1000, "1W", "10W"];
-
-        for (let i = 0; i < 30; i++) {
-            // 设置中奖概率（如20%）
-            let isWinner = Math.random() > 0.8;
-            let myNum;
-            let prize;
-
-            if (isWinner) {
-                // 中奖了：号码等于中奖号码
-                myNum = luckyNum;
-                // 中大奖逻辑：随机一个大奖金
-                const prizes = [1000, 5000, 10000, 1000000];
-                prize = prizes[Math.floor(Math.random()*prizes.length)];
-            } else {
-                // 没中奖：号码绝不等于中奖号码
-                do {
-                    myNum = Math.floor(Math.random() * 89) + 10;
-                } while (myNum === luckyNum); // 确保不等
-                // 显示小额保底
-                prize = normalPrizes[Math.floor(Math.random()*normalPrizes.length)];
-            }
-
-            // 格式化金额 (万单位简写)
-            let prizeStr;
-            if (prize >= 10000) {
-                prizeStr = (prize / 10000) + "W";
-            } else if (typeof prize === 'string') {
-                prizeStr = prize;
-            } else {
-                prizeStr = prize.toLocaleString();
-            }
+            const v = (id) => parseInt(document.getElementById(id).value);
+            // 应用数字
+            document.getElementById('win-box').style.cssText = `top:${v('wt')}px; left:126px; width:100px; height:60px;`;
+            grid.style.cssText = `top:${v('gt')}px; left:${v('gl')}px; row-gap:5px; font-size:14px;`;
             
-            myBox.innerHTML += \`<div class="num-item">\${myNum}<div class="prize-item">¥\${prizeStr}</div></div>\`;
+            // 应用涂层A
+            const ca = document.getElementById('canv-a');
+            ca.style.top = v('at') + 'px'; ca.style.left = v('al') + 'px';
+            ca.width = v('aw'); ca.height = v('ah');
+            draw(ca);
+
+            // 应用涂层B
+            const cb = document.getElementById('canv-b');
+            cb.style.top = v('bt') + 'px'; cb.style.left = v('bl') + 'px';
+            cb.width = v('bw'); cb.height = v('bh');
+            draw(cb);
+
+            document.getElementById('output').innerText = `涂层A: Top=${v('at')}, Left=${v('al')}, W=${v('aw')}, H=${v('ah')}\n涂层B: Top=${v('bt')}, Left=${v('bl')}, W=${v('bw')}, H=${v('bh')}`;
         }
 
-        // 3. 绘制磨砂涂层
-        function initCanvas() {
-            canvas.width = ${params.cw};
-            canvas.height = ${params.ch};
-            // 银灰色遮盖
-            ctx.fillStyle = '#BDBDBD'; 
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            // 防伪颗粒
-            for(let i=0; i<${params.cp}; i++) {
-                ctx.fillStyle = Math.random() > 0.5 ? '#E0E0E0' : '#828282';
-                ctx.fillRect(Math.random()*canvas.width, Math.random()*canvas.height, 1.2, 1.2);
+        function draw(c) {
+            const ctx = c.getContext('2d');
+            ctx.fillStyle = '#BDBDBD'; ctx.fillRect(0,0,c.width,c.height);
+            for(let i=0; i<500; i++) { ctx.fillStyle = Math.random()>0.5?'#EEE':'#888'; ctx.fillRect(Math.random()*c.width, Math.random()*c.height, 1, 1); }
+        }
+
+        // 刮开逻辑
+        function setupScratch(c) {
+            const ctx = c.getContext('2d'); let drawing = false;
+            const handler = (e) => {
+                if(!drawing) return;
+                const r = c.getBoundingClientRect();
+                const x = (e.touches?e.touches[0].clientX:e.clientX) - r.left;
+                const y = (e.touches?e.touches[0].clientY:e.clientY) - r.top;
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath(); ctx.arc(x,y,15,0,Math.PI*2); ctx.fill();
             }
-            // 引导文字
-            ctx.fillStyle = '#666'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
-            ctx.fillText('玩 法 区', canvas.width/2, 45);
-            ctx.fillText('刮 开 区', canvas.width/2, 220);
+            c.onmousedown = () => drawing = true;
+            window.onmouseup = () => drawing = false;
+            c.onmousemove = handler;
+            c.ontouchstart = (e) => { drawing=true; handler(e); };
+            c.ontouchmove = (e) => { e.preventDefault(); handler(e); };
         }
 
-        // 4. 刮除逻辑
-        let Drawing = false;
-        function scratch(e) {
-            if (!Drawing) return;
-            const rect = canvas.getBoundingClientRect();
-            const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-            const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-            ctx.globalCompositeOperation = 'destination-out';
-            ctx.beginPath();
-            ctx.arc(x, y, ${params.cr}, 0, Math.PI * 2);
-            ctx.fill();
-        }
-        canvas.addEventListener('mousedown', () => Drawing = true);
-        canvas.addEventListener('touchstart', (e) => { Drawing = true; scratch(e); });
-        window.addEventListener('mouseup', () => Drawing = false);
-        window.addEventListener('touchend', () => Drawing = false);
-        canvas.addEventListener('mousemove', scratch);
-        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); scratch(e); }, {passive: false});
-
-        initCanvas();
-    </script>
-</body>
-</html>`;
-
-            // 复制到剪贴板
-            navigator.clipboard.writeText(finalHtml).then(() => {
-                alert('完美！正式版代码已复制。可以去GitHub上创建一个新的页面提交试试了！');
-            });
-        }
+        setupScratch(document.getElementById('canv-a'));
+        setupScratch(document.getElementById('canv-b'));
+        update();
     </script>
 </body>
 </html>
