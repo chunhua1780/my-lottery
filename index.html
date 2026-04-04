@@ -10,7 +10,7 @@
             background: #000; margin: 0; padding: 0;
             display: flex; justify-content: center; align-items: flex-start;
             min-height: 100vh; overflow: hidden;
-            font-family: "Microsoft YaHei", "Arial", sans-serif;
+            font-family: "Microsoft YaHei", sans-serif;
             -webkit-user-select: none; user-select: none;
         }
 
@@ -20,16 +20,18 @@
             flex-shrink: 0;
         }
 
-        /* 1. 中奖号码 (根据您的参数: T=274, L=177) */
+        /* 1. 中奖号码 (修正后: T=266, L=169) */
         #win-box { 
-            position: absolute; top: 274px; left: 177px; 
+            position: absolute; 
+            top: 266px; /* 原274 - 8 */
+            left: 169px; /* 原177 - 8 */
             width: 40px; height: 35px; z-index: 1;
             display: flex; justify-content: center; align-items: center; 
             font-size: 22px; color: #000; font-weight: 900;
             text-shadow: 1px 1px 0 #fff;
         }
         
-        /* 2. 我的号码网格 (根据您的参数: T=326, L=25, W=310, RG=2, CG=9) */
+        /* 2. 我的号码网格 (维持之前校准好的参数) */
         #my-grid { 
             position: absolute; top: 326px; left: 25px; 
             width: 310px; z-index: 1;
@@ -40,17 +42,21 @@
         .num-item { 
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             color: #000; font-weight: 900; line-height: 1.1;
-            height: 55px; /* 您设定的 ItemHeight */
-            font-size: 14px; /* 您设定的 FontSize */
+            height: 55px; font-size: 14px;
             text-shadow: 1px 1px 0 #fff;
         }
         .prize-item { font-size: 10px; color: #8B0000; font-weight: 900; }
 
-        /* 3. 刮奖涂层 (Canvas) */
-        .scratch-layer { position: absolute; z-index: 10; touch-action: none; cursor: crosshair; }
+        /* 3. 刮奖涂层 */
+        .scratch-layer { position: absolute; z-index: 10; touch-action: none; }
         
-        /* 涂层位置 (微调以完美覆盖数字) */
-        #canv-win { top: 268px; left: 168px; width: 55px; height: 45px; }
+        /* 中奖号涂层同步修正 (修正后: T=260, L=160) */
+        #canv-win { 
+            top: 260px; /* 原268 - 8 */
+            left: 160px; /* 原168 - 8 */
+            width: 55px; height: 45px; 
+        }
+        /* 我的号码涂层保持不变 */
         #canv-mine { top: 322px; left: 21px; width: 318px; height: 299px; }
     </style>
 </head>
@@ -65,59 +71,49 @@
     </div>
 
     <script>
-        // 初始化 Telegram SDK
         const tg = window.Telegram.WebApp;
         tg.ready();
         tg.expand();
         tg.setHeaderColor('#000000');
 
-        // --- 游戏逻辑 ---
+        // 随机生成逻辑
         const luckyNum = Math.floor(Math.random() * 89) + 10;
         document.getElementById('win-box').innerText = luckyNum;
 
         let pool = Array.from({length: 90}, (_, i) => i + 10).sort(() => Math.random() - 0.5);
         const myBox = document.getElementById('my-grid');
-        const prizeList = [10, 20, 50, 100, 500, 1000, 5000, 10000, 1000000];
+        const prizeList = [10, 20, 50, 100, 500, 1000, 5000];
 
         for (let i = 0; i < 30; i++) {
-            let isWin = Math.random() > 0.88; // 模拟约 12% 中奖率
+            let isWin = Math.random() > 0.9; 
             let num = isWin ? luckyNum : (pool[i] === luckyNum ? pool[35] : pool[i]);
             let prize = isWin ? prizeList[Math.floor(Math.random() * prizeList.length)] : [2, 5, 10][Math.floor(Math.random()*3)];
-            
             let prizeStr = prize >= 10000 ? (prize/10000) + "W" : prize;
             myBox.innerHTML += `<div class="num-item">${num}<div class="prize-item">¥${prizeStr}</div></div>`;
-            
-            // 中大奖触发手机震动反馈
             if (isWin && prize >= 500) tg.HapticFeedback.notificationOccurred('success');
         }
 
-        // --- 涂层绘制函数 ---
+        // 初始化涂层
         function initScratch(id, w, h) {
             const c = document.getElementById(id);
             const ctx = c.getContext('2d');
             c.width = w; c.height = h;
-
-            // 绘制高级感银灰色涂层
             ctx.fillStyle = '#C0C0C0';
             ctx.fillRect(0, 0, w, h);
-            
-            // 增加防伪颗粒感
-            for(let i=0; i<600; i++) {
+            for(let i=0; i<400; i++) {
                 ctx.fillStyle = Math.random() > 0.5 ? '#DCDCDC' : '#999';
                 ctx.fillRect(Math.random()*w, Math.random()*h, 1.2, 1.2);
             }
 
-            // 刮除逻辑
             let active = false;
             const scratch = (e) => {
                 if (!active) return;
                 const rect = c.getBoundingClientRect();
                 const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
                 const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-                
                 ctx.globalCompositeOperation = 'destination-out';
                 ctx.beginPath();
-                ctx.arc(x, y, 20, 0, Math.PI * 2);
+                ctx.arc(x, y, 18, 0, Math.PI * 2);
                 ctx.fill();
             };
 
@@ -129,7 +125,6 @@
             c.addEventListener('touchmove', (e) => { e.preventDefault(); scratch(e); }, {passive: false});
         }
 
-        // 启动涂层 (基于背景图的最佳覆盖范围)
         initScratch('canv-win', 55, 45);
         initScratch('canv-mine', 318, 299);
     </script>
