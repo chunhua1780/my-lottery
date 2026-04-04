@@ -3,32 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>中国龙-双区独立调试器</title>
+    <title>中国龙-双区深度调试器</title>
     <style>
-        body { background: #1a1a1a; margin: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; font-family: sans-serif; overflow: hidden; }
+        body { background: #1a1a1a; margin: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; font-family: sans-serif; overflow-x: hidden; }
+        
+        /* 彩票容器 */
         .card-container { position: relative; width: 360px; height: 720px; background: url('64005.jpg') no-repeat; background-size: cover; margin-top: 5px; flex-shrink: 0; box-shadow: 0 0 50px #000; }
 
         /* 数字层 */
-        #win-box { position: absolute; z-index: 5; display: flex; justify-content: center; align-items: center; border: 1px dashed gold; pointer-events: none; }
-        #my-grid { position: absolute; z-index: 5; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(5, 1fr); border: 1px dashed cyan; pointer-events: none; }
+        #win-box { position: absolute; z-index: 5; display: flex; justify-content: center; align-items: center; pointer-events: none; }
+        #my-grid { position: absolute; z-index: 5; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(5, 1fr); pointer-events: none; }
+        
         .num-item { display: flex; flex-direction: column; justify-content: center; align-items: center; color: #000; font-weight: 900; text-shadow: 1px 1px 0 #fff; line-height: 1.1; }
         .prize-item { color: #8B0000; font-weight: 900; }
 
-        /* 刮奖图层 A & B */
-        .scratch-layer { position: absolute; z-index: 10; touch-action: none; outline: 2px solid rgba(255,0,0,0.6); }
+        /* 两个独立的刮奖 Canvas */
+        .scratch-layer { position: absolute; z-index: 10; touch-action: none; }
+        #canv-win { outline: 2px dashed red; } /* 玩法区涂层提示框 */
+        #canv-mine { outline: 2px dashed cyan; } /* 数字区涂层提示框 */
 
         /* 控制台 */
-        .console { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; padding: 10px; border-radius: 20px 20px 0 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.5); z-index: 1000; max-height: 50vh; overflow-y: auto; }
-        .tab-bar { display: flex; gap: 5px; margin-bottom: 10px; sticky: top; background: #fff; }
-        .tab-btn { flex: 1; padding: 8px; font-size: 12px; border: none; background: #eee; border-radius: 5px; }
+        .console { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; padding: 10px; border-radius: 20px 20px 0 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.5); z-index: 1000; max-height: 55vh; overflow-y: auto; }
+        .tab-bar { display: flex; gap: 4px; margin-bottom: 10px; position: sticky; top: 0; background: #fff; z-index: 11; padding-bottom: 5px; }
+        .tab-btn { flex: 1; padding: 10px 5px; font-size: 11px; border: none; background: #eee; border-radius: 6px; font-weight: bold; }
         .tab-btn.active { background: #ff4400; color: #fff; }
-        .tab-content { display: none; }
+        
+        .tab-content { display: none; padding: 5px; }
         .tab-content.active { display: block; }
-        .row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; background: #f9f9f9; padding: 5px; border-radius: 5px; }
-        .btn-group { display: flex; align-items: center; gap: 3px; }
-        .btn-group button { width: 30px; height: 30px; background: #444; color: #fff; border: none; border-radius: 4px; }
-        .btn-group input { width: 45px; text-align: center; border: 1px solid #ccc; font-weight: bold; }
-        .code-box { background: #222; color: #0f0; padding: 10px; font-family: monospace; font-size: 11px; margin-top: 5px; white-space: pre-wrap; }
+
+        .row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; background: #f4f4f4; padding: 8px; border-radius: 8px; }
+        .label-txt { font-size: 13px; font-weight: bold; }
+        .btn-group { display: flex; align-items: center; gap: 4px; }
+        .btn-group button { width: 34px; height: 34px; border: none; background: #333; color: #fff; border-radius: 6px; font-size: 20px; cursor: pointer; }
+        .btn-group input { width: 50px; text-align: center; border: 1px solid #ccc; height: 30px; font-weight: bold; font-size: 14px; }
+
+        .code-output { background: #000; color: #0f0; padding: 12px; font-family: monospace; font-size: 11px; border-radius: 8px; white-space: pre-wrap; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -36,98 +45,98 @@
     <div class="card-container">
         <div id="win-box"><div id="win-text" class="num-item">88</div></div>
         <div id="my-grid"></div>
-        <canvas id="canv-a" class="scratch-layer"></canvas>
-        <canvas id="canv-b" class="scratch-layer"></canvas>
+        
+        <canvas id="canv-win" class="scratch-layer"></canvas>
+        <canvas id="canv-mine" class="scratch-layer"></canvas>
     </div>
 
     <div class="console">
         <div class="tab-bar">
-            <button class="tab-btn active" onclick="tab(0)">1.数字对齐</button>
-            <button class="tab-btn" onclick="tab(1)">2.玩法区涂层(A)</button>
-            <button class="tab-btn" onclick="tab(2)">3.数字区涂层(B)</button>
+            <button class="tab-btn active" onclick="showTab(0)">1. 中奖号码区(上)</button>
+            <button class="tab-btn" onclick="showTab(1)">2. 我的号码区(下)</button>
+            <button class="tab-btn" onclick="showTab(2)">3. 参数汇总</button>
         </div>
 
-        <div id="t0" class="tab-content active">
-            <div class="row"><span>玩法区 Top</span><div class="btn-group"><button onclick="adj('wt',-1)">-</button><input id="wt" value="242"><button onclick="adj('wt',1)">+</button></div></div>
-            <div class="row"><span>数字区 Top</span><div class="btn-group"><button onclick="adj('gt',-1)">-</button><input id="gt" value="328"><button onclick="adj('gt',1)">+</button></div></div>
-            <div class="row"><span>数字区 Left</span><div class="btn-group"><button onclick="adj('gl',-1)">-</button><input id="gl" value="21"><button onclick="adj('gl',1)">+</button></div></div>
+        <div id="tab0" class="tab-content active">
+            <div style="font-size:12px; color:#666; margin-bottom:10px;">调整红色虚线框，使其覆盖上方“中奖号码”</div>
+            <div class="row"><span>文字 Top</span><div class="btn-group"><button onclick="adj('wt',-1)">-</button><input id="wt" value="242"><button onclick="adj('wt',1)">+</button></div></div>
+            <div class="row"><span>文字 Left</span><div class="btn-group"><button onclick="adj('wl',-1)">-</button><input id="wl" value="126"><button onclick="adj('wl',1)">+</button></div></div>
+            <hr>
+            <div class="row"><span>涂层 Top</span><div class="btn-group"><button onclick="adj('at',-1)">-</button><input id="at" value="235"><button onclick="adj('at',1)">+</button></div></div>
+            <div class="row"><span>涂层 Left</span><div class="btn-group"><button onclick="adj('al',-1)">-</button><input id="al" value="120"><button onclick="adj('al',1)">+</button></div></div>
+            <div class="row"><span>宽度 (W)</span><div class="btn-group"><button onclick="adj('aw',-1)">-</button><input id="aw" value="115"><button onclick="adj('aw',1)">+</button></div></div>
+            <div class="row"><span>高度 (H)</span><div class="btn-group"><button onclick="adj('ah',-1)">-</button><input id="ah" value="70"><button onclick="adj('ah',1)">+</button></div></div>
         </div>
 
-        <div id="t1" class="tab-content">
-            <div class="row"><span>涂层A Top</span><div class="btn-group"><button onclick="adj('at',-1)">-</button><input id="at" value="235"><button onclick="adj('at',1)">+</button></div></div>
-            <div class="row"><span>涂层A Left</span><div class="btn-group"><button onclick="adj('al',-1)">-</button><input id="al" value="120"><button onclick="adj('al',1)">+</button></div></div>
-            <div class="row"><span>涂层A 宽</span><div class="btn-group"><button onclick="adj('aw',-1)">-</button><input id="aw" value="115"><button onclick="adj('aw',1)">+</button></div></div>
-            <div class="row"><span>涂层A 高</span><div class="btn-group"><button onclick="adj('ah',-1)">-</button><input id="ah" value="70"><button onclick="adj('ah',1)">+</button></div></div>
+        <div id="tab1" class="tab-content">
+            <div style="font-size:12px; color:#666; margin-bottom:10px;">调整蓝色虚线框，使其覆盖下方“30个圆圈”</div>
+            <div class="row"><span>网格 Top</span><div class="btn-group"><button onclick="adj('gt',-1)">-</button><input id="gt" value="328"><button onclick="adj('gt',1)">+</button></div></div>
+            <div class="row"><span>网格 Left</span><div class="btn-group"><button onclick="adj('gl',-1)">-</button><input id="gl" value="21"><button onclick="adj('gl',1)">+</button></div></div>
+            <hr>
+            <div class="row"><span>涂层 Top</span><div class="btn-group"><button onclick="adj('bt',-1)">-</button><input id="bt" value="320"><button onclick="adj('bt',1)">+</button></div></div>
+            <div class="row"><span>涂层 Left</span><div class="btn-group"><button onclick="adj('bl',-1)">-</button><input id="bl" value="18"><button onclick="adj('bl',1)">+</button></div></div>
+            <div class="row"><span>宽度 (W)</span><div class="btn-group"><button onclick="adj('bw',-1)">-</button><input id="bw" value="324"><button onclick="adj('bw',1)">+</button></div></div>
+            <div class="row"><span>高度 (H)</span><div class="btn-group"><button onclick="adj('bh',-1)">-</button><input id="bh" value="320"><button onclick="adj('bh',1)">+</button></div></div>
         </div>
 
-        <div id="t2" class="tab-content">
-            <div class="row"><span>涂层B Top</span><div class="btn-group"><button onclick="adj('bt',-1)">-</button><input id="bt" value="320"><button onclick="adj('bt',1)">+</button></div></div>
-            <div class="row"><span>涂层B Left</span><div class="btn-group"><button onclick="adj('bl',-1)">-</button><input id="bl" value="18"><button onclick="adj('bl',1)">+</button></div></div>
-            <div class="row"><span>涂层B 宽</span><div class="btn-group"><button onclick="adj('bw',-1)">-</button><input id="bw" value="324"><button onclick="adj('bw',1)">+</button></div></div>
-            <div class="row"><span>涂层B 高</span><div class="btn-group"><button onclick="adj('bh',-1)">-</button><input id="bh" value="320"><button onclick="adj('bh',1)">+</button></div></div>
+        <div id="tab2" class="tab-content">
+            <p style="font-size:13px; font-weight:bold;">全部调准后，复制下方数据发给我：</p>
+            <div class="code-output" id="output">正在汇总数据...</div>
         </div>
-
-        <div class="code-box" id="output">调好后，复制参数发给我</div>
     </div>
 
     <script>
         const grid = document.getElementById('my-grid');
-        for (let i = 0; i < 30; i++) grid.innerHTML += `<div class="num-item">10<div class="prize-item">¥10</div></div>`;
+        function initGrid() {
+            grid.innerHTML = '';
+            for (let i = 0; i < 30; i++) grid.innerHTML += `<div class="num-item">10<div class="prize-item">¥10</div></div>`;
+        }
 
-        window.adj = (id, d) => { document.getElementById(id).value = parseInt(document.getElementById(id).value) + d; update(); }
-        window.tab = (n) => { 
-            document.querySelectorAll('.tab-btn, .tab-content').forEach((el, i) => {
-                el.classList.toggle('active', i % 3 === n);
-            });
+        window.adj = (id, delta) => {
+            const el = document.getElementById(id);
+            el.value = parseInt(el.value) + delta;
+            update();
+        }
+
+        window.showTab = (n) => {
+            document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === n));
+            document.querySelectorAll('.tab-content').forEach((c, i) => c.classList.toggle('active', i === n));
         }
 
         function update() {
-            const v = (id) => parseInt(document.getElementById(id).value);
-            // 应用数字
-            document.getElementById('win-box').style.cssText = `top:${v('wt')}px; left:126px; width:100px; height:60px;`;
-            grid.style.cssText = `top:${v('gt')}px; left:${v('gl')}px; row-gap:5px; font-size:14px;`;
+            const get = (id) => parseInt(document.getElementById(id).value);
             
-            // 应用涂层A
-            const ca = document.getElementById('canv-a');
-            ca.style.top = v('at') + 'px'; ca.style.left = v('al') + 'px';
-            ca.width = v('aw'); ca.height = v('ah');
-            draw(ca);
+            // 1. 更新文字位置
+            document.getElementById('win-box').style.cssText = `top:${get('wt')}px; left:${get('wl')}px; width:100px; height:60px;`;
+            grid.style.cssText = `top:${get('gt')}px; left:${get('gl')}px; width:312px; row-gap:5px; font-size:14px;`;
 
-            // 应用涂层B
-            const cb = document.getElementById('canv-b');
-            cb.style.top = v('bt') + 'px'; cb.style.left = v('bl') + 'px';
-            cb.width = v('bw'); cb.height = v('bh');
-            draw(cb);
+            // 2. 更新 Canvas A (中奖号区)
+            const ca = document.getElementById('canv-win');
+            ca.style.top = get('at') + 'px'; ca.style.left = get('al') + 'px';
+            ca.width = get('aw'); ca.height = get('ah');
+            draw(ca, "中奖号区");
 
-            document.getElementById('output').innerText = `涂层A: Top=${v('at')}, Left=${v('al')}, W=${v('aw')}, H=${v('ah')}\n涂层B: Top=${v('bt')}, Left=${v('bl')}, W=${v('bw')}, H=${v('bh')}`;
+            // 3. 更新 Canvas B (我的号码区)
+            const cb = document.getElementById('canv-mine');
+            cb.style.top = get('bt') + 'px'; cb.style.left = get('bl') + 'px';
+            cb.width = get('bw'); cb.height = get('bh');
+            draw(cb, "我的号码区");
+
+            // 汇总输出
+            document.getElementById('output').innerText = 
+                `【中奖号区参数】\nTop: ${get('at')}, Left: ${get('al')}, W: ${get('aw')}, H: ${get('ah')}\n文字位置: T=${get('wt')}, L=${get('wl')}\n\n` +
+                `【我的号码区参数】\nTop: ${get('bt')}, Left: ${get('bl')}, W: ${get('bw')}, H: ${get('bh')}\n文字位置: T=${get('gt')}, L=${get('gl')}`;
         }
 
-        function draw(c) {
+        function draw(c, txt) {
             const ctx = c.getContext('2d');
-            ctx.fillStyle = '#BDBDBD'; ctx.fillRect(0,0,c.width,c.height);
-            for(let i=0; i<500; i++) { ctx.fillStyle = Math.random()>0.5?'#EEE':'#888'; ctx.fillRect(Math.random()*c.width, Math.random()*c.height, 1, 1); }
+            ctx.fillStyle = 'rgba(192, 192, 192, 0.9)';
+            ctx.fillRect(0, 0, c.width, c.height);
+            ctx.fillStyle = '#666'; ctx.font = '12px Arial'; ctx.textAlign = 'center';
+            ctx.fillText(txt, c.width/2, c.height/2 + 5);
         }
 
-        // 刮开逻辑
-        function setupScratch(c) {
-            const ctx = c.getContext('2d'); let drawing = false;
-            const handler = (e) => {
-                if(!drawing) return;
-                const r = c.getBoundingClientRect();
-                const x = (e.touches?e.touches[0].clientX:e.clientX) - r.left;
-                const y = (e.touches?e.touches[0].clientY:e.clientY) - r.top;
-                ctx.globalCompositeOperation = 'destination-out';
-                ctx.beginPath(); ctx.arc(x,y,15,0,Math.PI*2); ctx.fill();
-            }
-            c.onmousedown = () => drawing = true;
-            window.onmouseup = () => drawing = false;
-            c.onmousemove = handler;
-            c.ontouchstart = (e) => { drawing=true; handler(e); };
-            c.ontouchmove = (e) => { e.preventDefault(); handler(e); };
-        }
-
-        setupScratch(document.getElementById('canv-a'));
-        setupScratch(document.getElementById('canv-b'));
+        initGrid();
         update();
     </script>
 </body>
