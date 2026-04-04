@@ -3,27 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>至尊龙年-全真模拟版</title>
+    <title>龙年大吉-全真对齐版</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { background: #000; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: "Microsoft YaHei", sans-serif; }
+        body { background: #000; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: "Helvetica", "Arial", sans-serif; }
         
-        .card-container { position: relative; width: 360px; height: 700px; background: url('64005.jpg') no-repeat; background-size: cover; border-radius: 15px; overflow: hidden; }
+        .card-container { position: relative; width: 360px; height: 700px; background: url('64005.jpg') no-repeat; background-size: cover; border-radius: 15px; }
 
-        /* 核心修改：让数据层背景透明，显示彩票原图条纹 */
-        .data-layer { position: absolute; top: 350px; left: 20px; width: 320px; height: 320px; z-index: 1; display: flex; flex-direction: column; background: rgba(255,255,255,0.05); /* 极低透明度，露出底图 */ }
+        /* 数据层：完全透明，直接利用底图的龙圆圈作为背景 */
+        .data-layer { 
+            position: absolute; 
+            top: 345px; /* 起始位置根据你的图片微调 */
+            left: 20px; 
+            width: 320px; 
+            height: 330px; 
+            z-index: 1; 
+        }
 
-        /* 中奖号码区 - 对应原图上两行 */
-        .win-area { height: 80px; display: flex; justify-content: space-around; align-items: center; padding: 0 10px; }
+        /* 中奖号码区：精准对齐上面两排圆圈 */
+        .win-area { 
+            height: 90px; 
+            display: flex; 
+            justify-content: space-around; 
+            align-items: center; 
+            padding: 0 5px;
+        }
         
-        /* 我的号码区 */
-        .my-area { flex: 1; display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(4, 1fr); }
+        /* 我的号码区：4行5列，对齐下面的圆圈 */
+        .my-area { 
+            height: 240px;
+            display: grid; 
+            grid-template-columns: repeat(5, 1fr); 
+            grid-template-rows: repeat(4, 1fr); 
+        }
 
-        .number-item { display: flex; flex-direction: column; justify-content: center; align-items: center; color: #d42323; font-weight: bold; text-shadow: 1px 1px 0px rgba(255,255,255,0.5); }
-        .prize-text { font-size: 9px; color: #9b1c1c; margin-top: 2px; }
+        .number-item { 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            /* 使用深黑色或深蓝色，确保压过底部的龙纹 */
+            color: #1a1a1a; 
+            font-weight: 900; 
+            font-size: 18px;
+            text-align: center;
+        }
+
+        .prize-text { 
+            font-size: 10px; 
+            color: #b30000; 
+            margin-top: 1px; 
+            font-weight: bold;
+        }
 
         /* 覆盖全区域的刮奖层 */
-        #scratch-canvas { position: absolute; top: 350px; left: 20px; width: 320px; height: 320px; z-index: 10; cursor: crosshair; touch-action: none; }
+        #scratch-canvas { 
+            position: absolute; 
+            top: 345px; 
+            left: 20px; 
+            width: 320px; 
+            height: 330px; 
+            z-index: 10; 
+            touch-action: none; 
+        }
     </style>
 </head>
 <body>
@@ -38,65 +80,82 @@
     <script>
         const canvas = document.getElementById('scratch-canvas');
         const ctx = canvas.getContext('2d');
-        const tg = window.Telegram.WebApp;
-        tg.expand();
 
-        // 1. 生成随机中奖逻辑
-        const winningNumbers = Array.from({length: 4}, () => Math.floor(Math.random() * 89) + 10);
+        // --- 核心逻辑：中奖规则控制 ---
+        
+        // 1. 生成不重复的“中奖号码” (5个)
+        const winningNumbers = [];
+        while(winningNumbers.length < 5) {
+            let n = Math.floor(Math.random() * 89) + 10;
+            if(!winningNumbers.includes(n)) winningNumbers.push(n);
+        }
+
+        // 填充上方中奖区
         document.getElementById('win-nums-box').innerHTML = winningNumbers.map(n => 
-            `<div class="number-item" style="color:#000">${n}<div class="prize-text" style="color:#666">中奖号码</div></div>`
+            `<div class="number-item">${n}<div class="prize-text">中奖号</div></div>`
         ).join('');
 
+        // 2. 生成“我的号码” (20个)
         const myBox = document.getElementById('my-nums-box');
         for (let i = 0; i < 20; i++) {
-            const num = Math.floor(Math.random() * 89) + 10;
-            const isWin = winningNumbers.includes(num);
-            const prize = isWin ? [50, 100, 500, 1000][Math.floor(Math.random()*4)] : 0;
+            let myNum;
+            let isWinner = Math.random() > 0.8; // 20%的中奖概率
+            
+            if (isWinner) {
+                // 中奖了：从winningNumbers里随机挑一个
+                myNum = winningNumbers[Math.floor(Math.random() * winningNumbers.length)];
+            } else {
+                // 没中奖：生成一个绝对不在winningNumbers里的号码
+                do {
+                    myNum = Math.floor(Math.random() * 89) + 10;
+                } while (winningNumbers.includes(myNum));
+            }
+
+            const prize = isWinner ? [20, 50, 100, 1000][Math.floor(Math.random()*4)] : 0;
+            
             myBox.innerHTML += `
                 <div class="number-item">
-                    ${num}
+                    ${myNum}
                     <div class="prize-text">${prize > 0 ? '¥'+prize : '￥0'}</div>
                 </div>`;
         }
 
-        // 2. 绘制涂层 (增加仿金属质感)
+        // --- 绘图与刮奖逻辑 ---
+
         function initScratch() {
             canvas.width = 320;
-            canvas.height = 320;
+            canvas.height = 330;
             
-            // 绘制银灰色底色
-            ctx.fillStyle = '#CCCCCC'; 
-            ctx.fillRect(0, 0, 320, 320);
+            // 银色涂层
+            ctx.fillStyle = '#C0C0C0'; 
+            ctx.fillRect(0, 0, 320, 330);
             
-            // 绘制杂色点，模拟真实的涂层颗粒感
-            for(let i=0; i<400; i++) {
-                ctx.fillStyle = Math.random() > 0.5 ? '#E0E0E0' : '#A0A0A0';
-                ctx.fillRect(Math.random()*320, Math.random()*320, 1.5, 1.5);
+            // 增加金属质感噪点
+            for(let i=0; i<800; i++) {
+                ctx.fillStyle = Math.random() > 0.5 ? '#E0E0E0' : '#888';
+                ctx.fillRect(Math.random()*320, Math.random()*320, 1, 1);
             }
 
-            // 在涂层上写一些引导字
-            ctx.fillStyle = '#777';
-            ctx.font = 'bold 18px Arial';
+            // 涂层文字提示
+            ctx.fillStyle = '#555';
+            ctx.font = 'bold 15px sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText('SCRATCH AREA', 160, 45);
-            ctx.fillText('刮奖区', 160, 160);
+            ctx.fillText('中奖号码区', 160, 45);
+            ctx.fillText('我的号码区', 160, 180);
         }
 
-        // 3. 触摸刮除逻辑
         let isPressed = false;
-        function getPos(e) {
+        function scratch(e) {
+            if (!isPressed) return;
             const rect = canvas.getBoundingClientRect();
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            return { x: clientX - rect.left, y: clientY - rect.top };
-        }
+            const x = clientX - rect.left;
+            const y = clientY - rect.top;
 
-        function scratch(e) {
-            if (!isPressed) return;
-            const pos = getPos(e);
             ctx.globalCompositeOperation = 'destination-out';
             ctx.beginPath();
-            ctx.arc(pos.x, pos.y, 25, 0, Math.PI * 2);
+            ctx.arc(x, y, 20, 0, Math.PI * 2);
             ctx.fill();
         }
 
@@ -105,7 +164,7 @@
         window.addEventListener('mouseup', () => isPressed = false);
         window.addEventListener('touchend', () => isPressed = false);
         canvas.addEventListener('mousemove', scratch);
-        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); scratch(e); });
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); scratch(e); }, {passive: false});
 
         initScratch();
     </script>
