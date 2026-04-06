@@ -7,34 +7,42 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body { background: #000; margin: 0; font-family: "Microsoft YaHei", sans-serif; overflow: hidden; }
-        
-        /* --- 倒计时加载层 --- */
+
+        /* --- 科幻倒计时层 --- */
         #loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #1a1a1a; z-index: 100;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            color: #d4af37;
+            background: rgba(0,0,0,0.9); z-index: 100;
+            display: flex; justify-content: center; align-items: center;
         }
-        .spinner {
-            width: 50px; height: 50px; border: 3px solid rgba(212,175,55,0.3);
-            border-top: 3px solid #d4af37; border-radius: 50%;
-            animation: spin 1s linear infinite; margin-bottom: 15px;
+        #countdown-num {
+            font-size: 120px; font-weight: 900;
+            background: linear-gradient(45deg, #00f2fe, #4facfe, #7000ff);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(79, 172, 254, 0.8);
+            transform: scale(0); opacity: 0;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .zoom-in-out { animation: zoomAnim 1s ease-out; }
+        @keyframes zoomAnim {
+            0% { transform: scale(0); opacity: 0; }
+            30% { transform: scale(1.5); opacity: 1; }
+            100% { transform: scale(2.5); opacity: 0; }
+        }
 
-        /* --- 主容器（初始隐藏） --- */
+        /* --- 主容器 --- */
         .card-container { 
             position: relative; width: 360px; height: 720px;
             background: url('64005.jpg') no-repeat; background-size: cover;
-            visibility: hidden; margin: 0 auto;
+            display: none; margin: 0 auto;
         }
 
-        /* 中奖号码及网格样式 (保持之前的校准) */
+        /* 元素定位保持精准 */
         #win-box { position: absolute; top: 266px; left: 169px; width: 40px; height: 35px; z-index: 1; display: flex; justify-content: center; align-items: center; font-size: 22px; color: #000; font-weight: 900; }
         #my-grid { position: absolute; top: 326px; left: 25px; width: 310px; z-index: 1; display: grid; grid-template-columns: repeat(6, 1fr); row-gap: 2px; column-gap: 9px; }
-        .num-item { display: flex; flex-direction: column; justify-content: center; align-items: center; color: #000; font-weight: 900; height: 55px; font-size: 14px; }
-        .prize-item { font-size: 10px; color: #8B0000; }
-        .scratch-layer { position: absolute; z-index: 10; touch-action: none; }
+        .num-item { display: flex; flex-direction: column; justify-content: center; align-items: center; color: #000; font-weight: 900; height: 55px; font-size: 14px; line-height: 1.2; }
+        .prize-item { font-size: 9px; color: #8B0000; font-weight: bold; }
+
+        /* 刮奖层 */
+        .scratch-layer { position: absolute; z-index: 10; cursor: crosshair; touch-action: none; }
         #canv-win { top: 260px; left: 160px; width: 55px; height: 45px; }
         #canv-mine { top: 322px; left: 21px; width: 318px; height: 299px; }
     </style>
@@ -42,8 +50,7 @@
 <body>
 
     <div id="loader">
-        <div class="spinner"></div>
-        <div id="loader-text">正在开启拾光之旅... 3s</div>
+        <div id="countdown-num"></div>
     </div>
 
     <div class="card-container" id="main-card">
@@ -58,48 +65,71 @@
         tg.ready();
         tg.expand();
 
-        // --- 核心盈利控制算法 (40% 利润) ---
-        function generateGameData() {
+        // --- 1. 严格商业算法 (20元面值，40% 利润) ---
+        function getGameData() {
             const luckyNum = Math.floor(Math.random() * 89) + 10;
-            const cardDice = Math.random(); 
-            let maxPrize = 0;
+            const dice = Math.random(); 
+            let totalWinAmount = 0;
 
-            // 策略：70%全空，25%小额回扣，5%惊喜
-            if (cardDice < 0.70) {
-                maxPrize = 0;
-            } else if (cardDice < 0.95) {
-                maxPrize = Math.random() * 50 + 10; // 10-60积分
+            // 核心概率分配
+            if (dice < 0.70) {
+                totalWinAmount = 0; // 70% 的卡：一分不中，纯利润
+            } else if (dice < 0.95) {
+                totalWinAmount = Math.floor(Math.random() * 15) + 2; // 25% 的卡：中奖 2-17 元 (回个本)
             } else {
-                maxPrize = Math.random() * 500 + 100; // 100-600积分
+                totalWinAmount = Math.floor(Math.random() * 80) + 20; // 5% 的卡：中奖 20-100 元 (刺激消费)
             }
 
-            let currentAwarded = 0;
             const spots = [];
-            for (let i = 0; i < 30; i++) {
-                let isWin = false;
-                let prize = 0;
-                let num = Math.floor(Math.random() * 89) + 10;
-                if (num === luckyNum) num += 1;
+            let currentWin = 0;
 
-                // 如果有配额且触发概率
-                if (currentAwarded < maxPrize && Math.random() < 0.15) {
-                    isWin = true;
-                    num = luckyNum;
-                    prize = Math.floor((maxPrize - currentAwarded) * (Math.random() * 0.5 + 0.3));
-                    if (prize < 2) prize = Math.floor(maxPrize - currentAwarded);
-                    currentAwarded += prize;
+            for (let i = 0; i < 30; i++) {
+                let num = Math.floor(Math.random() * 89) + 10;
+                if (num === luckyNum) num += 1; // 强制不匹配
+
+                let prize = [2, 5, 10, 20, 50, 100, 500, 1000][Math.floor(Math.random() * 4)];
+                let isMatch = false;
+
+                // 如果还有中奖余额，且运气好，把这个格子设为中奖
+                if (currentWin < totalWinAmount && Math.random() < 0.1) {
+                    num = luckyNum; // 强制匹配
+                    isMatch = true;
+                    // 分配这格奖金
+                    let thisPrize = Math.floor(totalWinAmount - currentWin);
+                    if (totalWinAmount > 10 && currentWin < totalWinAmount) {
+                         thisPrize = Math.max(2, Math.floor(thisPrize * (Math.random() * 0.6 + 0.4)));
+                    }
+                    prize = thisPrize;
+                    currentWin += prize;
                 }
-                
-                // 如果没中奖，显示一个干扰奖金
-                if (!isWin) prize = [10, 50, 100, 500][Math.floor(Math.random()*4)];
-                spots.push({ num, prize, isWin });
+                spots.push({ num, prize, isMatch });
             }
             return { luckyNum, spots };
         }
 
-        // --- 渲染与加载控制 ---
-        window.onload = function() {
-            const data = generateGameData();
+        // --- 2. 倒计时逻辑 ---
+        const countdown = document.getElementById('countdown-num');
+        const nums = ['3', '2', '1'];
+        let idx = 0;
+
+        function runCountdown() {
+            if (idx < nums.length) {
+                countdown.innerText = nums[idx];
+                countdown.className = '';
+                void countdown.offsetWidth; // 触发重绘
+                countdown.className = 'zoom-in-out';
+                idx++;
+                setTimeout(runCountdown, 1000);
+            } else {
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('main-card').style.display = 'block';
+                initGame();
+            }
+        }
+
+        // --- 3. 游戏初始化与刮奖功能修复 ---
+        function initGame() {
+            const data = getGameData();
             document.getElementById('win-box').innerText = data.luckyNum;
             const grid = document.getElementById('my-grid');
             
@@ -107,49 +137,60 @@
                 grid.innerHTML += `<div class="num-item">${s.num}<div class="prize-item">¥${s.prize}</div></div>`;
             });
 
-            initScratch('canv-win', 55, 45);
-            initScratch('canv-mine', 318, 299);
+            setupScratch('canv-win', 55, 45);
+            setupScratch('canv-mine', 318, 299);
+        }
 
-            // 模拟 3 秒优雅倒计时
-            let count = 3;
-            const timer = setInterval(() => {
-                count--;
-                document.getElementById('loader-text').innerText = `正在开启拾光之旅... ${count}s`;
-                if (count <= 0) {
-                    clearInterval(timer);
-                    document.getElementById('loader').style.display = 'none';
-                    document.getElementById('main-card').style.visibility = 'visible';
-                }
-            }, 800);
-        };
+        function setupScratch(id, w, h) {
+            const canvas = document.getElementById(id);
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            canvas.width = w;
+            canvas.height = h;
 
-        function initScratch(id, w, h) {
-            const c = document.getElementById(id);
-            const ctx = c.getContext('2d');
-            c.width = w; c.height = h;
+            // 填充涂层
             ctx.fillStyle = '#C0C0C0';
             ctx.fillRect(0, 0, w, h);
-            // 绘制金属质感干扰线
-            for(let i=0; i<300; i++) {
-                ctx.fillStyle = Math.random() > 0.5 ? '#DCDCDC' : '#aaa';
+            // 增加杂色感
+            for(let i=0; i<400; i++) {
+                ctx.fillStyle = Math.random() > 0.5 ? '#E0E0E0' : '#A0A0A0';
                 ctx.fillRect(Math.random()*w, Math.random()*h, 1, 1);
             }
 
-            let active = false;
-            const scratch = (e) => {
-                if (!active) return;
-                const rect = c.getBoundingClientRect();
-                const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-                const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+            let isDrawing = false;
+
+            const handleStart = (e) => { isDrawing = true; handleMove(e); };
+            const handleEnd = () => { isDrawing = false; };
+            const handleMove = (e) => {
+                if (!isDrawing) return;
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const x = clientX - rect.left;
+                const y = clientY - rect.top;
+
                 ctx.globalCompositeOperation = 'destination-out';
                 ctx.beginPath();
-                ctx.arc(x, y, 18, 0, Math.PI * 2);
+                ctx.arc(x, y, 20, 0, Math.PI * 2);
                 ctx.fill();
             };
-            c.addEventListener('touchstart', (e) => { active = true; scratch(e); }, {passive: false});
-            c.addEventListener('touchmove', (e) => { e.preventDefault(); scratch(e); }, {passive: false});
-            window.addEventListener('touchend', () => active = false);
+
+            // 监听鼠标和触摸 (核心修复: 确保监听器绑定在 canvas 上)
+            canvas.addEventListener('mousedown', handleStart);
+            window.addEventListener('mouseup', handleEnd);
+            canvas.addEventListener('mousemove', handleMove);
+
+            canvas.addEventListener('touchstart', (e) => { 
+                e.preventDefault(); 
+                handleStart(e); 
+            }, { passive: false });
+            canvas.addEventListener('touchmove', (e) => { 
+                e.preventDefault(); 
+                handleMove(e); 
+            }, { passive: false });
+            canvas.addEventListener('touchend', handleEnd);
         }
+
+        window.onload = runCountdown;
     </script>
 </body>
 </html>
