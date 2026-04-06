@@ -1,354 +1,268 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SCRATCH PRO - UI CALIBRATION TOOL</title>
+    <title>刮刮乐全权限调校工作台</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&family=Oswald:wght@700&family=Bebas+Neue&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&family=Oswald:wght@700&family=Noto+Sans+SC:wght@900&display=swap');
 
         :root {
-            /* 基础布局 - 由JS实时驱动更新 */
-            --win-num-size: 32px;
-            --slot-num-size: 20px;
-            --slot-amt-size: 12px;
-            --amt-spacing: 2px;
-            --grid-gap-x: 10px;
-            --grid-gap-y: 15px;
-            --grid-x: 20px;
-            --grid-y: 240px;
-            --num-color: #ffffff;
-            --amt-color: #d32f2f;
+            /* 默认参数 - 将被JS控制面板覆盖 */
+            --win-x: 145px; --win-y: 135px; --win-w: 80px; --win-h: 80px;
+            --win-num-x: 0px; --win-num-y: 0px; /* 中奖数字在容器内的微调 */
+            --win-fs: 36px; --win-color: #000000;
+
+            --grid-x: 18px; --grid-y: 260px; --grid-w: 324px;
+            --gap-x: 10px; --gap-y: 18px;
+            
+            --num-fs: 22px; --num-color: #ffffff; --num-weight: 900;
+            --num-inner-x: 0px; --num-inner-y: 0px; /* 普通数字在格子内的微调 */
+            
+            --amt-fs: 14px; --amt-color: #d32f2f; --amt-spacing: 2px;
+            --main-cvs-h: 420px;
         }
 
-        body {
-            margin: 0; padding: 0; background: #0a0a0a;
-            color: #fff; font-family: 'Montserrat', sans-serif;
-            display: flex; height: 100vh; overflow: hidden;
-        }
+        body { margin: 0; background: #050505; color: #fff; font-family: 'Montserrat', sans-serif; display: flex; height: 100vh; overflow: hidden; }
 
-        /* --- 1. 高端倒计时动画 --- */
-        #loader {
-            position: fixed; inset: 0; background: #000; z-index: 2000;
-            display: flex; justify-content: center; align-items: center;
-        }
-        .count-wrap {
-            font-size: 180px; font-family: 'Bebas Neue';
-            background: linear-gradient(45deg, #ff00cc, #3333ff, #00ffcc);
-            background-size: 200%;
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 20px rgba(0, 255, 204, 0.5));
-            animation: flow 2s linear infinite, countIn 1s cubic-bezier(0.17, 0.89, 0.32, 1.49) infinite;
-        }
-        @keyframes flow { to { background-position: 200%; } }
-        @keyframes countIn {
-            0% { transform: scale(0.5) rotate(-10deg); opacity: 0; filter: blur(10px); }
-            50% { transform: scale(1.2) rotate(5deg); opacity: 1; filter: blur(0); }
-            100% { transform: scale(1) rotate(0); opacity: 0; }
-        }
-
-        /* --- 2. 调试面板 UI --- */
+        /* --- 左侧超强控制面板 --- */
         #debug-panel {
-            width: 320px; background: #151515; border-right: 1px solid #333;
-            padding: 15px; overflow-y: auto; z-index: 1000;
-            font-size: 12px; color: #ccc;
+            width: 380px; background: #1a1a1a; border-right: 1px solid #333;
+            padding: 20px; overflow-y: auto; z-index: 1000; box-shadow: 10px 0 30px rgba(0,0,0,0.5);
         }
-        .debug-section { margin-bottom: 20px; border-bottom: 1px solid #222; padding-bottom: 10px; }
-        .debug-section h3 { color: #00ffcc; font-size: 14px; margin-bottom: 10px; }
-        .ctrl-row { margin-bottom: 8px; }
-        .ctrl-row label { display: block; margin-bottom: 4px; color: #888; }
-        .ctrl-row input[type="range"] { width: 100%; accent-color: #ff00cc; }
-        .ctrl-row select, .ctrl-row input[type="color"] { width: 100%; background: #222; border: 1px solid #444; color: #fff; padding: 5px; }
-        button.primary-btn { width: 100%; padding: 10px; background: #ff00cc; border: none; color: #fff; font-weight: 900; cursor: pointer; border-radius: 4px; }
-        button.secondary-btn { width: 100%; padding: 8px; background: #333; border: 1px solid #444; color: #fff; margin-top: 5px; cursor: pointer; }
+        .panel-h { color: #ff4444; border-bottom: 2px solid #ff4444; padding-bottom: 10px; margin-bottom: 20px; font-size: 18px; text-align: center; }
+        .group { background: #252525; border-radius: 8px; padding: 12px; margin-bottom: 15px; border: 1px solid #333; }
+        .group h4 { margin: 0 0 12px 0; color: #00ffcc; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
+        .item { display: flex; align-items: center; margin-bottom: 8px; justify-content: space-between; }
+        .item label { width: 110px; font-size: 11px; color: #aaa; }
+        input[type="range"] { flex: 1; accent-color: #ff4444; cursor: pointer; }
+        .val { width: 40px; text-align: right; font-family: monospace; color: #ff4444; font-size: 12px; }
+        input[type="color"] { background: none; border: 1px solid #444; width: 30px; height: 20px; cursor: pointer; }
+        
+        .btn-box { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        button { padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-view { background: #444; color: white; }
+        .btn-view:hover { background: #666; }
+        .btn-export { background: #ff4444; color: white; }
 
-        /* --- 3. 游戏预览区 --- */
-        #viewport {
-            flex: 1; display: flex; justify-content: center; align-items: center;
-            background-image: radial-gradient(#222 1px, transparent 1px); background-size: 20px 20px;
-            position: relative;
-        }
-
-        #game-container {
+        /* --- 右侧实时预览区 --- */
+        #stage { flex: 1; display: flex; justify-content: center; align-items: center; background: #000; perspective: 1000px; }
+        
+        #card {
             position: relative; width: 360px; height: 720px;
-            background-image: url('64005.jpg'); /* 请确保图片在同级目录 */
-            background-size: 100% 100%;
-            background-color: #333;
-            border-radius: 10px; box-shadow: 0 0 50px rgba(0,0,0,0.8);
-            overflow: hidden;
-            opacity: 0; transform: scale(0.9);
-            transition: opacity 0.8s, transform 0.8s cubic-bezier(0.17, 0.89, 0.32, 1.49);
-        }
-        #game-container.active { opacity: 1; transform: scale(1); }
-
-        /* 底层号码 */
-        #win-area {
-            position: absolute; display: flex; justify-content: center; align-items: center;
-            font-weight: 900; font-family: 'Bebas Neue';
+            background: url('64005.jpg') center/100% 100% no-repeat;
+            border-radius: 10px; overflow: hidden;
+            box-shadow: 0 0 60px rgba(0,0,0,0.8);
         }
 
-        #grid-container {
-            position: absolute; display: grid; grid-template-columns: repeat(5, 1fr);
+        /* 1. 中奖区数字权限 */
+        #win-box {
+            position: absolute; left: var(--win-x); top: var(--win-y);
+            width: var(--win-w); height: var(--win-h);
+            display: flex; justify-content: center; align-items: center;
+            /* 允许数字在容器内再次偏移 */
+            transform: translate(var(--win-num-x), var(--win-num-y));
         }
-        .cell { display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .cell .n { font-weight: 900; line-height: 1; }
-        .cell .a { font-family: 'Oswald'; font-weight: 700; }
+        #win-num {
+            font-size: var(--win-fs); color: var(--win-color); font-weight: 900;
+            font-family: 'Montserrat', sans-serif;
+        }
 
-        /* Canvas 层 */
+        /* 2. 刮奖区数字权限 */
+        #grid {
+            position: absolute; left: var(--grid-x); top: var(--grid-y);
+            width: var(--grid-w); display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            column-gap: var(--gap-x); row-gap: var(--gap-y);
+        }
+        .cell {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            /* 赋予每个格子内部数字的微调权限 */
+            transform: translate(var(--num-inner-x), var(--num-inner-y));
+        }
+        .cell-n { 
+            font-size: var(--num-fs); color: var(--num-color); 
+            font-weight: var(--num-weight); line-height: 1; 
+        }
+        .cell-a { 
+            font-size: var(--amt-fs); color: var(--amt-color); 
+            font-weight: 700; margin-top: var(--amt-spacing); font-family: 'Oswald'; 
+        }
+
+        /* 3. 画布层权限 */
         canvas { position: absolute; z-index: 10; cursor: crosshair; touch-action: none; transition: opacity 0.2s; }
-        .canvas-hidden { opacity: 0 !important; pointer-events: none; }
-
-        /* --- 4. 结果弹窗 --- */
-        #result-pop {
-            position: absolute; left: 50%; top: 100px; transform: translateX(-50%) translateY(20px);
-            width: 260px; background: rgba(255, 255, 255, 0.95); border-radius: 20px;
-            padding: 20px; text-align: center; color: #222; z-index: 100;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5); display: none; opacity: 0;
-            transition: all 0.5s cubic-bezier(0.17, 0.89, 0.32, 1.49);
-        }
-        #result-pop.show { display: block; opacity: 1; transform: translateX(-50%) translateY(0); }
-        .pop-title { font-size: 22px; font-weight: 900; margin-bottom: 5px; }
-        .pop-msg { font-size: 14px; line-height: 1.4; margin-bottom: 15px; }
+        .hide-cvs { opacity: 0 !important; pointer-events: none; }
     </style>
 </head>
 <body>
 
-    <div id="loader"><div class="count-wrap" id="cd">3</div></div>
-
-    <div id="debug-panel">
-        <div class="debug-section">
-            <h3>🎨 刮层视觉系统</h3>
-            <div class="ctrl-row">
-                <label>涂层主颜色</label>
-                <input type="color" id="cfg-canvasColor" value="#aaaaaa" oninput="updateUI()">
-            </div>
-            <div class="ctrl-row">
-                <label>颗粒密度 (Density)</label>
-                <input type="range" id="cfg-grainDensity" min="0" max="100" value="50" oninput="updateUI()">
-            </div>
-            <div class="ctrl-row">
-                <label>纹理类型</label>
-                <select id="cfg-textureType" onchange="updateUI()">
-                    <option value="none">无纹理</option>
-                    <option value="noise">噪点颗粒</option>
-                    <option value="brushed">金属拉丝</option>
-                    <option value="stripes">防伪条纹</option>
-                </select>
-            </div>
-            <button class="secondary-btn" onclick="toggleCanvas()">👁️ 显示/隐藏 刮层</button>
-        </div>
-
-        <div class="debug-section">
-            <h3>📐 区域 1 (中奖号码区)</h3>
-            <div class="ctrl-row"><label>Canvas X</label><input type="range" id="cfg-winX" min="0" max="360" value="145" oninput="updateUI()"></div>
-            <div class="ctrl-row"><label>Canvas Y</label><input type="range" id="cfg-winY" min="0" max="720" value="130" oninput="updateUI()"></div>
-            <div class="ctrl-row"><label>字体大小</label><input type="range" id="cfg-winFS" min="10" max="60" value="32" oninput="updateUI()"></div>
-        </div>
-
-        <div class="debug-section">
-            <h3>📐 区域 2 (主刮奖区)</h3>
-            <div class="ctrl-row"><label>Grid Y 偏移</label><input type="range" id="cfg-gridY" min="100" max="600" value="260" oninput="updateUI()"></div>
-            <div class="ctrl-row"><label>横向间距 (GapX)</label><input type="range" id="cfg-gapX" min="0" max="40" value="10" oninput="updateUI()"></div>
-            <div class="ctrl-row"><label>纵向间距 (GapY)</label><input type="range" id="cfg-gapY" min="0" max="40" value="18" oninput="updateUI()"></div>
-            <div class="ctrl-row"><label>Canvas 宽度</label><input type="range" id="cfg-mainW" min="100" max="360" value="320" oninput="updateUI()"></div>
-            <div class="ctrl-row"><label>Canvas 高度</label><input type="range" id="cfg-mainH" min="100" max="500" value="420" oninput="updateUI()"></div>
-        </div>
-
-        <div class="debug-section">
-            <h3>💰 数字样式</h3>
-            <div class="ctrl-row">
-                <label>奖金颜色</label>
-                <input type="color" id="cfg-amtColor" value="#d32f2f" oninput="updateUI()">
-            </div>
-            <div class="ctrl-row"><label>奖金字体大小</label><input type="range" id="cfg-amtFS" min="8" max="24" value="12" oninput="updateUI()"></div>
-        </div>
-
-        <button class="primary-btn" onclick="copyConfig()">📋 导出当前参数</button>
+<div id="debug-panel">
+    <div class="panel-h">ENGINEER CALIBRATION</div>
+    
+    <div class="btn-box">
+        <button class="btn-view" onclick="toggleView()">👁️ 隐藏刮层</button>
+        <button class="btn-export" onclick="exportConfig()">📋 导出参数</button>
     </div>
 
-    <div id="viewport">
-        <div id="game-container">
-            <div id="win-area">88</div>
-            <div id="grid-container"></div>
-            
-            <canvas id="cvs-win"></canvas>
-            <canvas id="cvs-main"></canvas>
-
-            <div id="result-pop">
-                <div class="pop-title" id="pop-status">WINNER!</div>
-                <div class="pop-msg" id="pop-text">Amazing luck!</div>
-                <button class="secondary-btn" style="background:#ff00cc;border:none" onclick="location.reload()">Try Again</button>
-            </div>
-        </div>
+    <div class="group">
+        <h4>上方中奖号码 (Winning Zone)</h4>
+        <div class="item"><label>容器 X (左右)</label><input type="range" data-v="win-x" min="0" max="300" value="145"><span class="val"></span></div>
+        <div class="item"><label>容器 Y (上下)</label><input type="range" data-v="win-y" min="0" max="300" value="135"><span class="val"></span></div>
+        <div class="item"><label>数字微调 X</label><input type="range" data-v="win-num-x" min="-50" max="50" value="0"><span class="val"></span></div>
+        <div class="item"><label>数字微调 Y</label><input type="range" data-v="win-num-y" min="-50" max="50" value="0"><span class="val"></span></div>
+        <div class="item"><label>数字大小</label><input type="range" data-v="win-fs" min="10" max="80" value="36"><span class="val"></span></div>
+        <div class="item"><label>颜色</label><input type="color" data-v="win-color" value="#000000"></div>
     </div>
 
-    <script>
-        // --- 初始化配置 ---
-        const cfg = {};
-        const winTarget = Math.floor(Math.random() * 90) + 10;
-        let isWinDone = false;
-        let isMainDone = false;
+    <div class="group">
+        <h4>下方刮奖区域 (Grid Zone)</h4>
+        <div class="item"><label>起始 X (左右)</label><input type="range" data-v="grid-x" min="0" max="100" value="18"><span class="val"></span></div>
+        <div class="item"><label>起始 Y (上下)</label><input type="range" data-v="grid-y" min="100" max="600" value="260"><span class="val"></span></div>
+        <div class="item"><label>网格总宽度</label><input type="range" data-v="grid-w" min="200" max="360" value="324"><span class="val"></span></div>
+        <div class="item"><label>水平间距 (GapX)</label><input type="range" data-v="gap-x" min="0" max="50" value="10"><span class="val"></span></div>
+        <div class="item"><label>垂直间距 (GapY)</label><input type="range" data-v="gap-y" min="0" max="50" value="18"><span class="val"></span></div>
+    </div>
 
-        // 获取所有输入项并初始化
-        function updateUI() {
-            const inputs = document.querySelectorAll('#debug-panel input, #debug-panel select');
-            inputs.forEach(input => {
-                const key = input.id.replace('cfg-', '');
-                cfg[key] = input.value;
-            });
+    <div class="group">
+        <h4>数字/奖金细节 (Number Styles)</h4>
+        <div class="item"><label>数字微调 X</label><input type="range" data-v="num-inner-x" min="-30" max="30" value="0"><span class="val"></span></div>
+        <div class="item"><label>数字微调 Y</label><input type="range" data-v="num-inner-y" min="-30" max="30" value="0"><span class="val"></span></div>
+        <div class="item"><label>数字大小</label><input type="range" data-v="num-fs" min="10" max="40" value="22"><span class="val"></span></div>
+        <div class="item"><label>奖金大小</label><input type="range" data-v="amt-fs" min="8" max="30" value="14"><span class="val"></span></div>
+        <div class="item"><label>奖金间距</label><input type="range" data-v="amt-spacing" min="-10" max="20" value="2"><span class="val"></span></div>
+        <div class="item"><label>数字颜色</label><input type="color" data-v="num-color" value="#ffffff"></div>
+        <div class="item"><label>奖金颜色</label><input type="color" data-v="amt-color" value="#d32f2f"></div>
+    </div>
 
-            // 更新 CSS 变量
-            const root = document.documentElement;
-            root.style.setProperty('--win-num-size', cfg.winFS + 'px');
-            root.style.setProperty('--grid-y', cfg.gridY + 'px');
-            root.style.setProperty('--grid-gap-x', cfg.gapX + 'px');
-            root.style.setProperty('--grid-gap-y', cfg.gapY + 'px');
-            root.style.setProperty('--slot-amt-size', cfg.amtFS + 'px');
-            root.style.setProperty('--amt-color', cfg.amtColor);
+    <div class="group">
+        <h4>刮层画布控制 (Canvas)</h4>
+        <div class="item"><label>主区画布高度</label><input type="range" data-v="main-cvs-h" min="100" max="600" value="420"><span class="val"></span></div>
+    </div>
+</div>
 
-            // 更新中奖区位置
-            const winBox = document.getElementById('win-area');
-            winBox.style.left = cfg.winX + 'px';
-            winBox.style.top = cfg.winY + 'px';
-            winBox.style.width = "80px"; // 默认固定宽度
-            winBox.style.height = "80px";
+<div id="stage">
+    <div id="card">
+        <div id="win-box"><span id="win-num">88</span></div>
+        <div id="grid"></div>
+        
+        <canvas id="cvs-win"></canvas>
+        <canvas id="cvs-main"></canvas>
+    </div>
+</div>
 
-            // 重绘 Canvas
-            renderCanvas('cvs-win', cfg.winX, cfg.winY, 80, 80);
-            renderCanvas('cvs-main', 20, cfg.gridY - 10, cfg.mainW, cfg.mainH);
-        }
+<script>
+    // --- 核心驱动引擎 ---
+    function initEngine() {
+        const inputs = document.querySelectorAll('input');
+        
+        inputs.forEach(input => {
+            const varName = `--${input.dataset.v}`;
+            const valLabel = input.nextElementSibling;
 
-        // --- 核心纹理渲染引擎 ---
-        function renderCanvas(id, x, y, w, h) {
-            const cvs = document.getElementById(id);
-            if(cvs.dataset.init === "true" && !configChanged()) return; // 避免刮的时候重刷
-
-            cvs.width = w; cvs.height = h;
-            cvs.style.left = x + 'px';
-            cvs.style.top = y + 'px';
-            const ctx = cvs.getContext('2d');
-
-            // 1. 填充基色
-            ctx.fillStyle = cfg.canvasColor;
-            ctx.fillRect(0, 0, w, h);
-
-            // 2. 噪点颗粒感
-            const density = cfg.grainDensity / 100;
-            for (let i = 0; i < (w * h * density * 0.2); i++) {
-                ctx.fillStyle = `rgba(0,0,0,${Math.random() * 0.3})`;
-                ctx.fillRect(Math.random() * w, Math.random() * h, 1, 1);
-            }
-
-            // 3. 纹理合成
-            ctx.globalAlpha = 0.15;
-            if (cfg.textureType === 'brushed') {
-                for (let i = 0; i < h; i += 2) {
-                    ctx.fillRect(0, i, w, 1);
+            const applyValue = () => {
+                let val = input.value;
+                // 判断是否需要加单位
+                if(input.type === 'range' && !varName.includes('weight')) {
+                    val += (varName.includes('color') ? '' : 'px');
                 }
-            } else if (cfg.textureType === 'stripes') {
-                ctx.lineWidth = 2;
-                for (let i = -w; i < w; i += 10) {
-                    ctx.beginPath();
-                    ctx.moveTo(i, 0); ctx.lineTo(i + h, h);
-                    ctx.stroke();
-                }
-            }
-            ctx.globalAlpha = 1.0;
-            initScratchLogic(cvs, ctx);
-        }
+                document.documentElement.style.setProperty(varName, val);
+                if(valLabel) valLabel.innerText = input.value;
 
-        // --- 刮开逻辑 ---
-        function initScratchLogic(cvs, ctx) {
-            let isDrawing = false;
-            const scrub = (e) => {
-                if (!isDrawing) return;
-                const rect = cvs.getBoundingClientRect();
-                const pos = e.touches ? e.touches[0] : e;
-                const offsetX = pos.clientX - rect.left;
-                const offsetY = pos.clientY - rect.top;
-
-                ctx.globalCompositeOperation = 'destination-out';
-                ctx.beginPath();
-                ctx.arc(offsetX, offsetY, 18, 0, Math.PI * 2);
-                ctx.fill();
+                // 涉及位置尺寸变化时，同步重绘画布覆盖层
+                updateCanvasPositions();
             };
 
-            const end = () => {
-                isDrawing = false;
-                checkWin(cvs, ctx);
-            };
+            input.addEventListener('input', applyValue);
+            applyValue(); // 初始化
+        });
+    }
 
-            cvs.onmousedown = (e) => { isDrawing = true; scrub(e); };
-            cvs.ontouchstart = (e) => { isDrawing = true; scrub(e); };
-            window.onmousemove = scrub;
-            window.ontouchmove = scrub;
-            window.onmouseup = end;
-            window.ontouchend = end;
+    // --- 画布位置实时同步系统 ---
+    function updateCanvasPositions() {
+        const root = getComputedStyle(document.documentElement);
+        
+        // 1. 同步中奖区画布
+        const winCvs = document.getElementById('cvs-win');
+        winCvs.style.left = root.getPropertyValue('--win-x');
+        winCvs.style.top = root.getPropertyValue('--win-y');
+        winCvs.width = parseInt(root.getPropertyValue('--win-w'));
+        winCvs.height = parseInt(root.getPropertyValue('--win-h'));
+        drawLayer(winCvs);
+
+        // 2. 同步主游戏区画布
+        const mainCvs = document.getElementById('cvs-main');
+        mainCvs.style.left = root.getPropertyValue('--grid-x');
+        mainCvs.style.top = root.getPropertyValue('--grid-y');
+        mainCvs.width = parseInt(root.getPropertyValue('--grid-w'));
+        mainCvs.height = parseInt(root.getPropertyValue('--main-cvs-h'));
+        drawLayer(mainCvs);
+    }
+
+    function drawLayer(canvas) {
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#c0c0c0'; // 银色
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // 增加金属质感颗粒
+        for(let i=0; i<150; i++) {
+            ctx.fillStyle = 'rgba(255,255,255,0.2)';
+            ctx.fillRect(Math.random()*canvas.width, Math.random()*canvas.height, 1, 1);
+            ctx.fillStyle = 'rgba(0,0,0,0.1)';
+            ctx.fillRect(Math.random()*canvas.width, Math.random()*canvas.height, 1, 1);
         }
+        setupScratching(canvas, ctx);
+    }
 
-        // --- 完成度检测 ---
-        function checkWin(cvs, ctx) {
-            const data = ctx.getImageData(0, 0, cvs.width, cvs.height).data;
-            let count = 0;
-            for (let i = 3; i < data.length; i += 4) { if (data[i] === 0) count++; }
-            const ratio = count / (cvs.width * cvs.height);
-
-            if (ratio > 0.95) {
-                cvs.style.opacity = "0";
-                if (cvs.id === 'cvs-win') isWinDone = true;
-                if (cvs.id === 'cvs-main') isMainDone = true;
-                if (isWinDone && isMainDone) showPop();
-            }
-        }
-
-        function showPop() {
-            const pop = document.getElementById('result-pop');
-            pop.style.display = 'block';
-            setTimeout(() => pop.classList.add('show'), 50);
-        }
-
-        function toggleCanvas() {
-            document.querySelectorAll('canvas').forEach(c => c.classList.toggle('canvas-hidden'));
-        }
-
-        function configChanged() { return false; } // 调优工具简易化处理
-
-        function copyConfig() {
-            const json = JSON.stringify(cfg, null, 2);
-            navigator.clipboard.writeText(json);
-            alert("配置已复制到剪贴板！\n" + json);
-        }
-
-        // --- 启动流程 ---
-        window.onload = () => {
-            // 生成数字
-            const grid = document.getElementById('grid-container');
-            const winArea = document.getElementById('win-area');
-            winArea.innerText = winTarget;
-            
-            let gridHtml = '';
-            for(let i=0; i<30; i++) {
-                const n = Math.random() > 0.8 ? winTarget : Math.floor(Math.random()*90)+10;
-                const p = [5,10,20,50,100,500][Math.floor(Math.random()*6)];
-                gridHtml += `<div class="cell"><div class="n">${n}</div><div class="a">$${p}$</div></div>`;
-            }
-            grid.innerHTML = gridHtml;
-
-            updateUI();
-
-            // 倒计时
-            let count = 3;
-            const cd = document.getElementById('cd');
-            const timer = setInterval(() => {
-                count--;
-                if(count > 0) cd.innerText = count;
-                else {
-                    clearInterval(timer);
-                    document.getElementById('loader').style.display = 'none';
-                    document.getElementById('game-container').classList.add('active');
-                }
-            }, 1000);
+    // --- 刮开交互逻辑 ---
+    function setupScratching(canvas, ctx) {
+        let active = false;
+        const op = (e) => {
+            if(!active) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+            const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.beginPath();
+            ctx.arc(x, y, 18, 0, Math.PI*2);
+            ctx.fill();
         };
-    </script>
+        canvas.onmousedown = (e) => { active = true; op(e); };
+        canvas.ontouchstart = (e) => { active = true; op(e); };
+        window.onmousemove = op;
+        window.ontouchmove = op;
+        window.onmouseup = () => active = false;
+        window.ontouchend = () => active = false;
+    }
+
+    function toggleView() {
+        document.querySelectorAll('canvas').forEach(c => c.classList.toggle('hide-cvs'));
+    }
+
+    function exportConfig() {
+        let output = "/* 调优参数清单 */\n";
+        document.querySelectorAll('input').forEach(input => {
+            output += `${input.dataset.v}: ${input.value}\n`;
+        });
+        console.log(output);
+        alert("参数已导出到浏览器控制台 (F12)，请查看 console 列表。");
+    }
+
+    // --- 填充号码 ---
+    function populate() {
+        const grid = document.getElementById('grid');
+        let h = '';
+        for(let i=0; i<25; i++) {
+            const n = Math.floor(Math.random()*90)+10;
+            const a = [5, 10, 20, 50, 100, 1000][Math.floor(Math.random()*6)];
+            h += `<div class="cell"><div class="cell-n">${n}</div><div class="cell-a">$${a}$</div></div>`;
+        }
+        grid.innerHTML = h;
+    }
+
+    window.onload = () => {
+        populate();
+        initEngine();
+    };
+</script>
+
 </body>
 </html>
