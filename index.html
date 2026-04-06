@@ -8,41 +8,45 @@
     <style>
         body { background: #000; margin: 0; font-family: "Microsoft YaHei", sans-serif; overflow: hidden; }
 
-        /* --- 科幻倒计时层 --- */
+        /* --- 炫酷流光倒计时 --- */
         #loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 100;
-            display: flex; justify-content: center; align-items: center;
+            background: radial-gradient(circle, #1a1a2e 0%, #000 100%);
+            z-index: 100; display: flex; justify-content: center; align-items: center;
         }
         #countdown-num {
-            font-size: 120px; font-weight: 900;
-            background: linear-gradient(45deg, #00f2fe, #4facfe, #7000ff);
+            font-size: 150px; font-weight: 900;
+            background: linear-gradient(to right, #00f2fe, #4facfe, #f093fb, #f5576c);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 30px rgba(79, 172, 254, 0.8);
+            filter: drop-shadow(0 0 20px rgba(79, 172, 254, 0.8));
+            animation: hueRotate 2s infinite linear;
             transform: scale(0); opacity: 0;
         }
-        .zoom-in-out { animation: zoomAnim 1s ease-out; }
-        @keyframes zoomAnim {
-            0% { transform: scale(0); opacity: 0; }
-            30% { transform: scale(1.5); opacity: 1; }
-            100% { transform: scale(2.5); opacity: 0; }
+        @keyframes hueRotate {
+            from { filter: hue-rotate(0deg) drop-shadow(0 0 20px rgba(79, 172, 254, 0.8)); }
+            to { filter: hue-rotate(360deg) drop-shadow(0 0 20px rgba(79, 172, 254, 0.8)); }
+        }
+        .zoom-effect { animation: zoomInBlur 1s ease-out forwards; }
+        @keyframes zoomInBlur {
+            0% { transform: scale(0.5) blur(10px); opacity: 0; }
+            50% { transform: scale(1.2) blur(0); opacity: 1; }
+            100% { transform: scale(2.5) blur(20px); opacity: 0; }
         }
 
-        /* --- 主容器 --- */
+        /* --- 彩票整体容器 (初始完全隐藏) --- */
+        #app-wrapper { display: none; opacity: 0; transition: opacity 0.5s ease; }
+        
         .card-container { 
             position: relative; width: 360px; height: 720px;
-            background: url('64005.jpg') no-repeat; background-size: cover;
-            display: none; margin: 0 auto;
+            background-size: cover; margin: 0 auto;
         }
 
-        /* 元素定位保持精准 */
         #win-box { position: absolute; top: 266px; left: 169px; width: 40px; height: 35px; z-index: 1; display: flex; justify-content: center; align-items: center; font-size: 22px; color: #000; font-weight: 900; }
         #my-grid { position: absolute; top: 326px; left: 25px; width: 310px; z-index: 1; display: grid; grid-template-columns: repeat(6, 1fr); row-gap: 2px; column-gap: 9px; }
-        .num-item { display: flex; flex-direction: column; justify-content: center; align-items: center; color: #000; font-weight: 900; height: 55px; font-size: 14px; line-height: 1.2; }
+        .num-item { display: flex; flex-direction: column; justify-content: center; align-items: center; color: #000; font-weight: 900; height: 55px; font-size: 14px; }
         .prize-item { font-size: 9px; color: #8B0000; font-weight: bold; }
 
-        /* 刮奖层 */
-        .scratch-layer { position: absolute; z-index: 10; cursor: crosshair; touch-action: none; }
+        .scratch-layer { position: absolute; z-index: 10; touch-action: none; }
         #canv-win { top: 260px; left: 160px; width: 55px; height: 45px; }
         #canv-mine { top: 322px; left: 21px; width: 318px; height: 299px; }
     </style>
@@ -53,144 +57,134 @@
         <div id="countdown-num"></div>
     </div>
 
-    <div class="card-container" id="main-card">
-        <div id="win-box"></div>
-        <div id="my-grid"></div>
-        <canvas id="canv-win" class="scratch-layer"></canvas>
-        <canvas id="canv-mine" class="scratch-layer"></canvas>
+    <div id="app-wrapper">
+        <div class="card-container" id="main-card">
+            <div id="win-box"></div>
+            <div id="my-grid"></div>
+            <canvas id="canv-win" class="scratch-layer"></canvas>
+            <canvas id="canv-mine" class="scratch-layer"></canvas>
+        </div>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
+        tg.ready(); tg.expand();
 
-        // --- 1. 严格商业算法 (20元面值，40% 利润) ---
-        function getGameData() {
+        const BG_IMAGE_URL = '64005.jpg';
+        let bgLoaded = false;
+
+        // --- 核心算法：小确幸盈利模型 (面值20, 期待支出16) ---
+        function getSecureData() {
             const luckyNum = Math.floor(Math.random() * 89) + 10;
-            const dice = Math.random(); 
-            let totalWinAmount = 0;
+            const dice = Math.random();
+            let totalWin = 0;
 
-            // 核心概率分配
-            if (dice < 0.70) {
-                totalWinAmount = 0; // 70% 的卡：一分不中，纯利润
-            } else if (dice < 0.95) {
-                totalWinAmount = Math.floor(Math.random() * 15) + 2; // 25% 的卡：中奖 2-17 元 (回个本)
+            if (dice < 0.45) {
+                totalWin = 0; // 45% 全空
+            } else if (dice < 0.90) {
+                totalWin = Math.floor(Math.random() * 11) + 5; // 45% 奖 5-15元 (核心诱惑)
             } else {
-                totalWinAmount = Math.floor(Math.random() * 80) + 20; // 5% 的卡：中奖 20-100 元 (刺激消费)
+                totalWin = Math.floor(Math.random() * 30) + 20; // 10% 奖 20-50元 (惊喜)
             }
 
             const spots = [];
-            let currentWin = 0;
-
+            let allocated = 0;
             for (let i = 0; i < 30; i++) {
                 let num = Math.floor(Math.random() * 89) + 10;
-                if (num === luckyNum) num += 1; // 强制不匹配
-
-                let prize = [2, 5, 10, 20, 50, 100, 500, 1000][Math.floor(Math.random() * 4)];
+                if (num === luckyNum) num += 1;
+                let prize = [5, 10, 20, 50, 100][Math.floor(Math.random()*3)];
                 let isMatch = false;
 
-                // 如果还有中奖余额，且运气好，把这个格子设为中奖
-                if (currentWin < totalWinAmount && Math.random() < 0.1) {
-                    num = luckyNum; // 强制匹配
+                if (allocated < totalWin && Math.random() < 0.15) {
+                    num = luckyNum;
                     isMatch = true;
-                    // 分配这格奖金
-                    let thisPrize = Math.floor(totalWinAmount - currentWin);
-                    if (totalWinAmount > 10 && currentWin < totalWinAmount) {
-                         thisPrize = Math.max(2, Math.floor(thisPrize * (Math.random() * 0.6 + 0.4)));
-                    }
-                    prize = thisPrize;
-                    currentWin += prize;
+                    let p = totalWin - allocated;
+                    if (totalWin > 10) p = Math.max(5, Math.floor(p * 0.6));
+                    prize = p;
+                    allocated += p;
                 }
                 spots.push({ num, prize, isMatch });
             }
             return { luckyNum, spots };
         }
 
-        // --- 2. 倒计时逻辑 ---
-        const countdown = document.getElementById('countdown-num');
-        const nums = ['3', '2', '1'];
-        let idx = 0;
-
-        function runCountdown() {
-            if (idx < nums.length) {
-                countdown.innerText = nums[idx];
-                countdown.className = '';
-                void countdown.offsetWidth; // 触发重绘
-                countdown.className = 'zoom-in-out';
-                idx++;
-                setTimeout(runCountdown, 1000);
-            } else {
-                document.getElementById('loader').style.display = 'none';
-                document.getElementById('main-card').style.display = 'block';
-                initGame();
-            }
+        // --- 资源预加载逻辑 ---
+        function preloadAssets(callback) {
+            const img = new Image();
+            img.src = BG_IMAGE_URL;
+            img.onload = () => {
+                document.getElementById('main-card').style.backgroundImage = `url(${BG_IMAGE_URL})`;
+                callback();
+            };
         }
 
-        // --- 3. 游戏初始化与刮奖功能修复 ---
-        function initGame() {
-            const data = getGameData();
-            document.getElementById('win-box').innerText = data.luckyNum;
-            const grid = document.getElementById('my-grid');
-            
-            data.spots.forEach(s => {
-                grid.innerHTML += `<div class="num-item">${s.num}<div class="prize-item">¥${s.prize}</div></div>`;
+        // --- 倒计时与同步显示 ---
+        function startCountdown() {
+            const el = document.getElementById('countdown-num');
+            const nums = ['3', '2', '1'];
+            let i = 0;
+
+            const run = () => {
+                if (i < nums.length) {
+                    el.innerText = nums[i];
+                    el.className = 'zoom-effect';
+                    setTimeout(() => { el.className = ''; }, 950);
+                    i++;
+                    setTimeout(run, 1000);
+                } else {
+                    // 瞬间同步显示
+                    document.getElementById('loader').style.display = 'none';
+                    const wrapper = document.getElementById('app-wrapper');
+                    wrapper.style.display = 'block';
+                    setTimeout(() => { wrapper.style.opacity = '1'; }, 50);
+                }
+            };
+            run();
+        }
+
+        // --- 初始化 ---
+        window.onload = () => {
+            preloadAssets(() => {
+                const data = getSecureData();
+                document.getElementById('win-box').innerText = data.luckyNum;
+                const grid = document.getElementById('my-grid');
+                data.spots.forEach(s => {
+                    grid.innerHTML += `<div class="num-item">${s.num}<div class="prize-item">¥${s.prize}</div></div>`;
+                });
+                
+                initCanv('canv-win', 55, 45);
+                initCanv('canv-mine', 318, 299);
+                startCountdown();
             });
+        };
 
-            setupScratch('canv-win', 55, 45);
-            setupScratch('canv-mine', 318, 299);
-        }
-
-        function setupScratch(id, w, h) {
-            const canvas = document.getElementById(id);
-            const ctx = canvas.getContext('2d', { willReadFrequently: true });
-            canvas.width = w;
-            canvas.height = h;
-
-            // 填充涂层
+        function initCanv(id, w, h) {
+            const c = document.getElementById(id);
+            const ctx = c.getContext('2d', {willReadFrequently: true});
+            c.width = w; c.height = h;
             ctx.fillStyle = '#C0C0C0';
             ctx.fillRect(0, 0, w, h);
-            // 增加杂色感
-            for(let i=0; i<400; i++) {
-                ctx.fillStyle = Math.random() > 0.5 ? '#E0E0E0' : '#A0A0A0';
+            for(let i=0; i<300; i++) {
+                ctx.fillStyle = Math.random() > 0.5 ? '#EFEFEF' : '#999';
                 ctx.fillRect(Math.random()*w, Math.random()*h, 1, 1);
             }
 
-            let isDrawing = false;
-
-            const handleStart = (e) => { isDrawing = true; handleMove(e); };
-            const handleEnd = () => { isDrawing = false; };
-            const handleMove = (e) => {
-                if (!isDrawing) return;
-                const rect = canvas.getBoundingClientRect();
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-                const x = clientX - rect.left;
-                const y = clientY - rect.top;
-
+            let drawing = false;
+            const scrub = (e) => {
+                if(!drawing) return;
+                const r = c.getBoundingClientRect();
+                const x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+                const y = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
                 ctx.globalCompositeOperation = 'destination-out';
-                ctx.beginPath();
-                ctx.arc(x, y, 20, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(x, y, 20, 0, Math.PI*2); ctx.fill();
             };
-
-            // 监听鼠标和触摸 (核心修复: 确保监听器绑定在 canvas 上)
-            canvas.addEventListener('mousedown', handleStart);
-            window.addEventListener('mouseup', handleEnd);
-            canvas.addEventListener('mousemove', handleMove);
-
-            canvas.addEventListener('touchstart', (e) => { 
-                e.preventDefault(); 
-                handleStart(e); 
-            }, { passive: false });
-            canvas.addEventListener('touchmove', (e) => { 
-                e.preventDefault(); 
-                handleMove(e); 
-            }, { passive: false });
-            canvas.addEventListener('touchend', handleEnd);
+            c.onmousedown = (e) => { drawing = true; scrub(e); };
+            window.onmouseup = () => drawing = false;
+            c.onmousemove = scrub;
+            c.ontouchstart = (e) => { e.preventDefault(); drawing = true; scrub(e); };
+            c.ontouchmove = (e) => { e.preventDefault(); scrub(e); };
+            c.ontouchend = () => drawing = false;
         }
-
-        window.onload = runCountdown;
     </script>
 </body>
 </html>
