@@ -3,59 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>拾光·PTS GLOBAL</title>
+    <title>拾光·$$ GLOBAL $$</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --neon: #00f2fe; --gold: #f9d423; }
-        body { background: #000; margin: 0; font-family: "Arial", sans-serif; overflow: hidden; color: white; }
+        :root { --gold-grad: linear-gradient(135deg, #f9d423 0%, #ff4e50 100%); --glass: rgba(255, 255, 255, 0.15); }
+        body { background: #000; margin: 0; font-family: "Helvetica Neue", sans-serif; overflow: hidden; color: white; }
 
-        /* --- 极简加载逻辑 --- */
+        /* --- 1. 流光溢彩倒计时 --- */
         #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1000; display: flex; justify-content: center; align-items: center; }
-        #cd { font-size: 120px; font-weight: 200; opacity: 0; }
-        .zoom { animation: z 1s ease-in-out forwards; }
-        @keyframes z { 0% { transform: scale(0.8); opacity: 0; filter: blur(10px); } 50% { opacity: 1; filter: blur(0); } 100% { transform: scale(1.2); opacity: 0; } }
+        #cd-canvas { width: 300px; height: 300px; }
 
-        /* --- 核心容器 (应用你的参数) --- */
+        /* --- 2. 核心容器 (锁定你的精准参数) --- */
         #app { display: none; opacity: 0; transition: opacity 0.8s; }
         .card { position: relative; width: 360px; height: 720px; background-size: 100% 100%; margin: 0 auto; }
 
-        /* 中奖号码区 */
+        /* 中奖号码 */
         #w-num { 
             position: absolute; z-index: 1; display: flex; justify-content: center; align-items: center; font-weight: 900;
             top: 273px; left: 175px; font-size: 22px; color: #000000;
         }
-        /* 玩法网格区 */
+        /* 玩法网格 (双$符号) */
         #grid { 
             position: absolute; z-index: 1; display: grid; grid-template-columns: repeat(6, 1fr);
             top: 343px; left: 32px; row-gap: 29px; column-gap: 22px;
         }
         .item { display: flex; flex-direction: column; justify-content: center; align-items: center; font-weight: 900; font-size: 16px; color: #000000; }
-        .pts { font-size: 8px; color: #d00000; font-weight: bold; margin-top: -2px; }
+        .usd-box { font-size: 8px; color: #d00000; font-weight: bold; margin-top: -2px; letter-spacing: 0px; }
 
-        /* 涂层参数 */
+        /* 涂层 */
         .layer { position: absolute; z-index: 10; touch-action: none; }
         #c-win { top: 260px; left: 157px; width: 61px; height: 49px; }
         #c-main { top: 322px; left: 21px; width: 318px; height: 299px; }
 
-        /* --- 黄金比例弹窗 (0.618) --- */
-        #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(10px); }
-        #modal { 
-            width: 300px; height: 185px; background: linear-gradient(135deg, #fff 0%, #eee 100%);
-            border-radius: 24px; display: flex; flex-direction: column; justify-content: center; align-items: center;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.5); transform: scale(0.7); opacity: 0; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        /* --- 3. 玩法区上方浮动气泡 (不压人版) --- */
+        #bubble-float {
+            position: absolute; 
+            top: 140px; /* 悬浮在玩法区与中奖区中间的空白地带 */
+            left: 50%; transform: translateX(-50%) translateY(20px);
+            width: 320px; height: 100px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px; z-index: 100;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            opacity: 0; pointer-events: none; transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
         }
-        #modal.show { transform: scale(1); opacity: 1; }
-        #m-title { color: #111; font-size: 18px; margin: 0; letter-spacing: 1px; }
-        #m-amt { font-size: 38px; font-weight: 900; margin: 10px 0; background: linear-gradient(45deg, #ff416c, #ff4b2b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .retry { padding: 10px 30px; background: #000; color: #fff; border: none; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 12px; }
+        #bubble-float.active { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+        #bubble-float::after { /* 装饰性小尾巴 */
+            content: ''; position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%);
+            border-left: 10px solid transparent; border-right: 10px solid transparent;
+            border-top: 10px solid rgba(255,255,255,0.1);
+        }
+
+        .m-title { font-size: 14px; font-weight: bold; color: var(--gold-grad); background: var(--gold-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .m-amt { font-size: 32px; font-weight: 900; margin: 2px 0; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
+        .m-btn { font-size: 11px; background: #fff; color: #000; border: none; padding: 4px 15px; border-radius: 10px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div id="loader"><div id="cd"></div></div>
+<div id="loader"><canvas id="cd-canvas"></canvas></div>
 
 <div id="app">
     <div class="card" id="b-card">
+        <div id="bubble-float">
+            <div class="m-title">CONGRATS! TARGET HIT</div>
+            <div class="m-amt" id="m-amt">$ 0 $</div>
+            <button class="m-btn" onclick="location.reload()">ONE MORE TIME</button>
+        </div>
+
         <div id="w-num"></div>
         <div id="grid"></div>
         <canvas id="c-win" class="layer"></canvas>
@@ -63,36 +80,58 @@
     </div>
 </div>
 
-<div id="overlay">
-    <div id="modal">
-        <h2 id="m-title">POINTS EARNED</h2>
-        <h1 id="m-amt">0 PTS</h1>
-        <button class="retry" onclick="location.reload()">NEXT CHALLENGE</button>
-    </div>
-</div>
-
 <script>
-    const tg = window.Telegram.WebApp;
-    tg.ready(); tg.expand();
+    // --- 1. 科幻倒计时引擎 ---
+    const cvs = document.getElementById('cd-canvas');
+    const ctx = cvs.getContext('2d');
+    cvs.width = 600; cvs.height = 600;
+    let count = 3;
 
-    // 25% 盈利率逻辑 + 时尚文案
-    function generatePoints() {
-        const winNum = Math.floor(Math.random()*89)+10;
-        const dice = Math.random();
-        // 1000 PTS 面值，中奖分布
-        let totalWin = dice < 0.5 ? 200 : (dice < 0.85 ? 500 : 2500); 
-        const slots = []; let currentSum = 0;
+    function drawCD() {
+        ctx.clearRect(0, 0, 600, 600);
+        const grad = ctx.createLinearGradient(0, 0, 600, 600);
+        grad.addColorStop(0, '#00f2fe'); grad.addColorStop(0.5, '#7000ff'); grad.addColorStop(1, '#ff0055');
         
+        ctx.font = "bold 300px Impact";
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.shadowBlur = 30; ctx.shadowColor = "rgba(112, 0, 255, 0.5)";
+        
+        // 绘制彩色液态字
+        ctx.fillStyle = grad;
+        ctx.fillText(count, 300, 300);
+        
+        // 绘制外圈进度
+        ctx.beginPath();
+        ctx.strokeStyle = grad; ctx.lineWidth = 10;
+        ctx.arc(300, 300, 220, 0, Math.PI * 2 * (count/3));
+        ctx.stroke();
+
+        if (count > 0) {
+            setTimeout(() => { count--; drawCD(); }, 1000);
+        } else {
+            document.getElementById('loader').style.display = 'none';
+            const a = document.getElementById('app');
+            a.style.display = 'block'; setTimeout(()=>a.style.opacity='1', 50);
+        }
+    }
+    drawCD();
+
+    // --- 2. 逻辑引擎 ---
+    function generateGame() {
+        const winNum = 88;
+        const dice = Math.random();
+        let total = dice < 0.5 ? 200 : (dice < 0.8 ? 800 : 3000);
+        const slots = []; let current = 0;
         for(let i=0; i<30; i++) {
             let n = Math.floor(Math.random()*89)+10; if(n===winNum) n++;
-            let p = [50, 100, 150][Math.floor(Math.random()*3)];
-            if(currentSum < totalWin && Math.random() < 0.2) { n = winNum; p = Math.max(50, totalWin - currentSum); currentSum += p; }
+            let p = [20, 50, 100][Math.floor(Math.random()*3)];
+            if(current < total && Math.random() < 0.25) { n = winNum; p = Math.max(50, total-current); current += p; }
             slots.push({n, p});
         }
-        return {winNum, slots, totalWin: currentSum};
+        return {winNum, slots, total: current};
     }
 
-    const game = generatePoints();
+    const game = generateGame();
 
     window.onload = () => {
         const img = new Image(); img.src = '64005.jpg';
@@ -101,45 +140,20 @@
             document.getElementById('w-num').innerText = game.winNum;
             const grid = document.getElementById('grid');
             game.slots.forEach(s => {
-                grid.innerHTML += `<div class="item">${s.n}<div class="pts">PTS ${s.p}</div></div>`;
+                // 使用双美金符号前后包裹
+                grid.innerHTML += `<div class="item">${s.n}<div class="usd-box">$ ${s.p} $</div></div>`;
             });
             initScratch('c-win', 61, 49);
             initScratch('c-main', 318, 299, true);
-            startLoader();
         };
     };
-
-    function startLoader() {
-        const el = document.getElementById('cd');
-        const steps = ['3', '2', '1']; let i = 0;
-        const tick = () => {
-            if(i < 3) {
-                el.innerText = steps[i]; el.className = 'zoom';
-                setTimeout(()=>el.className='', 950);
-                i++; setTimeout(tick, 1000);
-            } else {
-                document.getElementById('loader').style.display='none';
-                const a = document.getElementById('app');
-                a.style.display='block'; setTimeout(()=>a.style.opacity='1', 50);
-            }
-        };
-        tick();
-    }
 
     function initScratch(id, w, h, isCheck = false) {
         const c = document.getElementById(id);
         const ctx = c.getContext('2d');
         c.width = w; c.height = h;
-        
-        // 涂层填充
         ctx.fillStyle = '#BBB'; ctx.fillRect(0,0,w,h);
-        ctx.globalAlpha = 0.6;
-        for(let i=0; i<300; i++) {
-            ctx.fillStyle = Math.random()>0.5?'#EEE':'#888';
-            ctx.fillRect(Math.random()*w, Math.random()*h, 1, 1);
-        }
-        ctx.globalAlpha = 1.0;
-
+        
         let active = false;
         const scratch = (e) => {
             if(!active) return;
@@ -147,10 +161,9 @@
             const x = (e.touches?e.touches[0].clientX:e.clientX) - r.left;
             const y = (e.touches?e.touches[0].clientY:e.clientY) - r.top;
             ctx.globalCompositeOperation = 'destination-out';
-            ctx.beginPath(); ctx.arc(x, y, 24, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(x, y, 25, 0, Math.PI*2); ctx.fill();
             if(isCheck) check(c);
         };
-
         c.onmousedown = () => active = true;
         window.onmouseup = () => active = false;
         c.onmousemove = scratch;
@@ -158,22 +171,19 @@
         c.ontouchmove = (e) => { e.preventDefault(); scratch(e); };
     }
 
-    let done = false;
+    let isDone = false;
     function check(c) {
-        if(done) return;
+        if(isDone) return;
         const data = c.getContext('2d').getImageData(0,0,c.width,c.height).data;
         let hits = 0;
         for(let i=3; i<data.length; i+=4) if(data[i] === 0) hits++;
         if(hits / (data.length/4) > 0.95) {
-            done = true;
-            setTimeout(reveal, 800); // 彻底看清后再弹窗
+            isDone = true;
+            setTimeout(() => {
+                document.getElementById('m-amt').innerText = `$ ${game.total} $`;
+                document.getElementById('bubble-float').classList.add('active');
+            }, 600);
         }
-    }
-
-    function reveal() {
-        document.getElementById('m-amt').innerText = game.totalWin + " PTS";
-        document.getElementById('overlay').style.display = 'flex';
-        setTimeout(()=>document.getElementById('modal').classList.add('show'), 100);
     }
 </script>
 </body>
