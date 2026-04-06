@@ -1,248 +1,251 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VEGAS SLOTS - INDUSTRIAL EDITION</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&family=Oswald:wght@700&display=swap');
-        
-        :root {
-            --gold: #D4AF37;
-            --dark-gold: #996515;
-            --casino-black: #1a1a1a;
-            --win-red: #ff4757;
-            --silver-matte: #b0b0b0;
-        }
+<meta charset="UTF-8">
+<title>刮刮乐Pro+</title>
 
-        body { 
-            background: #000; margin: 0; padding: 0; 
-            font-family: 'Montserrat', sans-serif; 
-            display: flex; justify-content: center; align-items: center; 
-            height: 100vh; overflow: hidden;
-        }
+<style>
+body{
+    margin:0;
+    background:#000;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+    font-family:Arial;
+}
 
-        /* --- 1. 复古霓虹加载层 --- */
-        #loader {
-            position: fixed; inset: 0; background: radial-gradient(circle, #222, #000);
-            z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center;
-        }
-        .neon-text {
-            font-size: 24px; color: #fff; font-weight: 900;
-            text-shadow: 0 0 10px var(--gold), 0 0 20px var(--gold);
-            animation: flicker 1.5s infinite;
-        }
-        @keyframes flicker { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+/* ===== 倒计时 ===== */
+#loader{
+    position:fixed;
+    width:100%;height:100%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:#000;
+    z-index:99;
+}
+#count{
+    font-size:140px;
+    font-weight:900;
+    background:linear-gradient(45deg,#ff00cc,#00fff0,#ffe600,#ff0066);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    filter:blur(1px);
+    animation:pop 1s ease;
+}
+@keyframes pop{
+    0%{transform:scale(0.3) rotate(-20deg);opacity:0;}
+    50%{transform:scale(1.3) rotate(10deg);}
+    100%{transform:scale(1);opacity:1;}
+}
 
-        /* --- 2. 欧美轻奢卡片容器 --- */
-        .card-frame {
-            position: relative; width: 360px; height: 680px;
-            background: var(--casino-black);
-            border: 4px solid var(--gold);
-            border-radius: 15px;
-            box-shadow: 0 0 40px rgba(212, 175, 55, 0.3), inset 0 0 20px #000;
-            overflow: hidden; visibility: hidden;
-        }
+/* 卡片 */
+.card{
+    position:relative;
+    width:360px;height:720px;
+    background:url('64005.jpg') no-repeat;
+    background-size:cover;
+    opacity:0;
+    transition:0.6s;
+}
 
-        /* 顶部装饰 UI */
-        .card-header {
-            height: 120px; background: linear-gradient(135deg, #222, #000);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            border-bottom: 2px solid var(--dark-gold);
-        }
-        .logo { font-family: 'Oswald', sans-serif; font-size: 32px; color: var(--gold); letter-spacing: 4px; }
-        .sub-logo { font-size: 10px; color: #888; letter-spacing: 2px; }
+/* 中奖区 */
+#win{
+    position:absolute;
+    top:140px;
+    left:160px;
+    font-size:22px;
+    font-weight:900;
+}
 
-        /* --- 3. 精准对齐层 (像素级贴合) --- */
-        .game-area { position: relative; width: 100%; height: 560px; }
-        
-        /* 中奖号码格子 (精准对齐) */
-        #winning-grid {
-            position: absolute; top: 50px; left: 145px; width: 70px; height: 70px;
-            display: flex; justify-content: center; align-items: center;
-            background: #fff; border: 2px solid var(--gold); border-radius: 8px;
-            font-size: 36px; color: #000; font-weight: 900; z-index: 1;
-        }
+/* 网格 */
+.grid{
+    position:absolute;
+    top:230px;
+    left:20px;
+    width:310px;
+    display:grid;
+    grid-template-columns:repeat(6,1fr);
+    gap:6px;
+}
+.cell{
+    height:48px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+}
+.num{font-size:15px;font-weight:900;}
+.money{font-size:11px;color:#700000;}
 
-        /* 玩法网格 (5x6) */
-        #main-grid {
-            position: absolute; top: 160px; left: 20px; width: 320px;
-            display: grid; grid-template-columns: repeat(6, 1fr);
-            row-gap: 25px; column-gap: 10px; z-index: 1;
-        }
-        .slot {
-            width: 45px; height: 55px; background: #fff;
-            border: 1px solid #ddd; display: flex; flex-direction: column;
-            justify-content: center; align-items: center; border-radius: 4px;
-        }
-        .slot .num { font-size: 18px; color: #000; font-weight: 900; line-height: 1; }
-        .slot .amt { font-size: 9px; color: var(--win-red); font-weight: 700; margin-top: 3px; }
+/* 刮层 */
+canvas{position:absolute;z-index:10;}
+#c1{top:130px;left:150px;width:70px;height:50px;}
+#c2{top:220px;left:20px;width:310px;height:300px;}
 
-        /* --- 4. 涂层画布 --- */
-        canvas { position: absolute; z-index: 10; touch-action: none; cursor: crosshair; }
-        #canvas-win { top: 45px; left: 140px; width: 80px; height: 80px; }
-        #canvas-main { top: 150px; left: 10px; width: 340px; height: 380px; }
-
-        /* --- 5. 霓虹中奖弹窗 --- */
-        #popup {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.5);
-            width: 300px; padding: 30px; background: #000; border: 4px solid #0ff;
-            box-shadow: 0 0 50px #0ff; border-radius: 20px; z-index: 100;
-            display: none; flex-direction: column; align-items: center; opacity: 0;
-            transition: all 0.5s cubic-bezier(0.17, 0.89, 0.32, 1.49);
-        }
-        #popup.active { display: flex; opacity: 1; transform: translate(-50%, -50%) scale(1); }
-        .pop-title { color: #0ff; font-size: 24px; font-weight: 900; text-shadow: 0 0 10px #0ff; }
-        .pop-amt { color: #fff; font-size: 50px; font-weight: 900; margin: 20px 0; font-family: 'Oswald'; }
-        .pop-btn { background: #0ff; border: none; padding: 10px 30px; border-radius: 50px; font-weight: 900; cursor: pointer; }
-    </style>
+/* 结果气泡 */
+#popup{
+    position:absolute;
+    top:80px;
+    left:50%;
+    transform:translateX(-50%);
+    background:#fff;
+    padding:15px 25px;
+    border-radius:20px;
+    display:none;
+    animation:fadeUp 0.5s;
+}
+@keyframes fadeUp{
+    from{opacity:0;transform:translate(-50%,20px);}
+    to{opacity:1;transform:translate(-50%,0);}
+}
+</style>
 </head>
+
 <body>
 
-<div id="loader"><div class="neon-text">LOADING CASINO... <span id="cd">3</span>S</div></div>
+<div id="loader"><div id="count">3</div></div>
 
-<div class="card-frame" id="main-card">
-    <div class="card-header">
-        <div class="logo">GOLDEN DRAGON</div>
-        <div class="sub-logo">PREMIUM LAS VEGAS EDITION</div>
-    </div>
-    <div class="game-area">
-        <div id="winning-grid">88</div>
-        <div id="main-grid"></div>
-        <canvas id="canvas-win"></canvas>
-        <canvas id="canvas-main"></canvas>
-    </div>
-
-    <div id="popup">
-        <div class="pop-title">BIG WIN!</div>
-        <div class="pop-amt" id="res-amt">$0</div>
-        <button class="pop-btn" onclick="location.reload()">REPLAY</button>
-    </div>
+<div class="card" id="card">
+    <div id="win"></div>
+    <div class="grid" id="grid"></div>
+    <canvas id="c1"></canvas>
+    <canvas id="c2"></canvas>
+    <div id="popup"></div>
 </div>
 
+<audio id="sound" src="https://actions.google.com/sounds/v1/scrapes/scratch.ogg"></audio>
+
 <script>
-    let winCount = 0, mainCount = 0;
-    const targetNum = Math.floor(Math.random()*89)+10;
 
-    // --- 1. 初始化数据 ---
-    function initData() {
-        const grid = document.getElementById('main-grid');
-        document.getElementById('winning-grid').innerText = targetNum;
-        let totalWin = 0;
-        
-        for(let i=0; i<30; i++) {
-            let isWin = Math.random() > 0.9;
-            let num = isWin ? targetNum : Math.floor(Math.random()*89)+10;
-            if(!isWin && num === targetNum) num += 7;
-            let amt = isWin ? [100, 500, 1000][Math.floor(Math.random()*3)] : [5, 10, 20][Math.floor(Math.random()*3)];
-            if(isWin) totalWin += amt;
-            
-            grid.innerHTML += `
-                <div class="slot">
-                    <div class="num">${num}</div>
-                    <div class="amt">$${amt}</div>
-                </div>`;
-        }
-        return totalWin;
-    }
-    const totalPrize = initData();
+/* ===== 概率模型 ===== */
+function getData(){
+    let lucky=Math.floor(Math.random()*90)+10;
+    let r=Math.random();
+    let total=5;
 
-    // --- 2. 工业级银色铝粉涂层引擎 ---
-    function setupScratch(id, w, h, isMain) {
-        const c = document.getElementById(id);
-        const ctx = c.getContext('2d');
-        c.width = w; c.height = h;
+    if(r<0.55) total=5;
+    else if(r<0.8) total=10;
+    else if(r<0.95) total=20;
+    else total=50;
 
-        // A. 模拟铝粉磨砂质感 (哑光银灰)
-        ctx.fillStyle = '#b0b0b0'; 
-        ctx.fillRect(0, 0, w, h);
-        
-        // B. 注入细闪铝粉颗粒
-        for(let i=0; i<1500; i++) {
-            ctx.fillStyle = `rgba(255,255,255,${Math.random()*0.3})`;
-            ctx.fillRect(Math.random()*w, Math.random()*h, 1, 1);
+    let arr=[];
+    let used=false;
+
+    for(let i=0;i<30;i++){
+        let num=Math.floor(Math.random()*90)+10;
+        let prize=0;
+
+        if(!used && Math.random()<0.2){
+            num=lucky;
+            prize=total;
+            used=true;
         }
 
-        // C. 欧美微缩暗纹 (赌场元素)
-        ctx.fillStyle = 'rgba(0,0,0,0.08)';
-        ctx.font = 'bold 12px Arial';
-        const icons = ['$', '★', '♦', '♣', '♠'];
-        for(let x=0; x<w; x+=40) {
-            for(let y=0; y<h; y+=40) {
-                ctx.fillText(icons[Math.floor(Math.random()*5)], x + Math.random()*10, y + Math.random()*10);
-            }
-        }
-
-        // --- 核心：物理剥落算法 ---
-        let isDown = false;
-        function scratch(e) {
-            if(!isDown) return;
-            const rect = c.getBoundingClientRect();
-            const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-            const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-
-            ctx.globalCompositeOperation = 'destination-out';
-            
-            // 模拟“掉漆”：不是画圆，而是绘制一组随机分布的硬边缘多边形
-            for(let i=0; i<8; i++) {
-                const size = 12 + Math.random()*15;
-                const offsetX = (Math.random()-0.5)*25;
-                const offsetY = (Math.random()-0.5)*25;
-                
-                ctx.save();
-                ctx.translate(x + offsetX, y + offsetY);
-                ctx.rotate(Math.random() * Math.PI);
-                
-                // 绘制不规则锯齿状碎片
-                ctx.beginPath();
-                ctx.moveTo(-size/2, -size/2);
-                ctx.lineTo(size/2, -size/3);
-                ctx.lineTo(size/3, size/2);
-                ctx.lineTo(-size/3, size/2);
-                ctx.closePath();
-                ctx.fill();
-                ctx.restore();
-            }
-            checkProgress(c, isMain);
-        }
-
-        c.addEventListener('mousedown', () => isDown = true);
-        window.addEventListener('mouseup', () => isDown = false);
-        c.addEventListener('mousemove', scratch);
-        c.addEventListener('touchstart', (e) => { isDown = true; scratch(e); });
-        c.addEventListener('touchmove', (e) => { e.preventDefault(); scratch(e); });
+        arr.push({num,prize});
     }
 
-    function checkProgress(c, isMain) {
-        const data = c.getContext('2d').getImageData(0,0,c.width,c.height).data;
-        let cleared = 0;
-        for(let i=3; i<data.length; i+=4) if(data[i] === 0) cleared++;
-        const percent = cleared / (data.length/4);
-        
-        if(percent > 0.9) {
-            if(isMain) mainCount = 1; else winCount = 1;
-            if(mainCount && winCount) {
-                document.getElementById('res-amt').innerText = `$${totalPrize}`;
-                document.getElementById('popup').classList.add('active');
-            }
+    return {lucky,arr,total};
+}
+
+const data=getData();
+document.getElementById('win').innerText=data.lucky;
+
+const grid=document.getElementById('grid');
+data.arr.forEach(s=>{
+    grid.innerHTML+=`
+    <div class="cell">
+        <div class="num">${s.num}</div>
+        <div class="money">${s.prize?('¥'+s.prize):''}</div>
+    </div>`;
+});
+
+/* ===== 刮层 ===== */
+let done1=false,done2=false;
+
+function setup(id,flag){
+    const c=document.getElementById(id);
+    const ctx=c.getContext('2d');
+
+    c.width=c.offsetWidth;
+    c.height=c.offsetHeight;
+
+    ctx.fillStyle='#bbb';
+    ctx.fillRect(0,0,c.width,c.height);
+
+    let down=false;
+    const sound=document.getElementById('sound');
+
+    function draw(e){
+        if(!down)return;
+
+        sound.currentTime=0;
+        sound.play();
+
+        const r=c.getBoundingClientRect();
+        const x=(e.touches?e.touches[0].clientX:e.clientX)-r.left;
+        const y=(e.touches?e.touches[0].clientY:e.clientY)-r.top;
+
+        ctx.globalCompositeOperation='destination-out';
+        ctx.beginPath();
+        ctx.arc(x,y,18,0,Math.PI*2);
+        ctx.fill();
+
+        let img=ctx.getImageData(0,0,c.width,c.height);
+        let clear=0;
+        for(let i=3;i<img.data.length;i+=4){
+            if(img.data[i]==0) clear++;
+        }
+
+        if(clear>img.data.length*0.95){
+            if(flag===1) done1=true;
+            if(flag===2) done2=true;
+            if(done1 && done2) showResult();
         }
     }
 
-    // --- 启动流程 ---
-    window.onload = () => {
-        setupScratch('canvas-win', 80, 80, false);
-        setupScratch('canvas-main', 340, 380, true);
-        
-        let s = 3;
-        const timer = setInterval(() => {
-            s--; document.getElementById('cd').innerText = s;
-            if(s<=0) {
-                clearInterval(timer);
-                document.getElementById('loader').style.display = 'none';
-                document.getElementById('main-card').style.visibility = 'visible';
-            }
-        }, 1000);
-    };
+    c.onmousedown=()=>down=true;
+    window.onmouseup=()=>down=false;
+    c.onmousemove=draw;
+}
+
+setup('c1',1);
+setup('c2',2);
+
+/* ===== 倒计时 ===== */
+let n=3;
+const el=document.getElementById('count');
+
+let timer=setInterval(()=>{
+    n--;
+    if(n>0){
+        el.innerText=n;
+        el.style.animation='none';
+        setTimeout(()=>el.style.animation='pop 1s',10);
+    }else{
+        clearInterval(timer);
+        document.getElementById('loader').style.display='none';
+        document.getElementById('card').style.opacity=1;
+    }
+},1000);
+
+/* ===== 结果 ===== */
+function showResult(){
+    let r=data.total;
+    let msg='';
+
+    if(r===5) msg='不错！小幸运 🍀';
+    else if(r===10) msg='运气在线！继续冲';
+    else if(r===20) msg='可以可以！手气不错';
+    else msg='🎉 大奖来了！';
+
+    const pop=document.getElementById('popup');
+    pop.innerText=`${msg} +¥${r}`;
+    pop.style.display='block';
+}
+
 </script>
+
 </body>
 </html>
