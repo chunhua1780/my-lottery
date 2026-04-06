@@ -2,274 +2,254 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>工程测试版 - 全维度调优工具</title>
+    <meta name="viewport" content="width=360, user-scalable=no">
+    <title>VIP SCRATCH GOLDEN EDITION</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&family=Oswald:wght@700&display=swap');
 
-        :root {
-            /* 所有的参数都通过 CSS 变量驱动，JS 实时改写 */
-            --win-x: 145px; --win-y: 135px; --win-w: 80px; --win-h: 80px;
-            --win-fs: 36px; --win-color: #000000; --win-off-x: 0px; --win-off-y: 0px;
+        :root { --gold: #ffd700; --accent: #ff3e3e; }
+        body { margin: 0; background: #0a0a0a; color: #fff; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
 
-            --grid-x: 18px; --grid-y: 260px; --grid-w: 324px;
-            --gap-x: 10px; --gap-y: 18px;
-            
-            --num-fs: 22px; --num-color: #ffffff; --num-weight: 900;
-            --num-off-x: 0px; --num-off-y: 0px;
-            
-            --amt-fs: 14px; --amt-color: #d32f2f; --amt-spacing: 2px;
-            --main-cvs-h: 420px;
-        }
-
-        body { margin: 0; background: #000; color: #fff; font-family: 'Montserrat', sans-serif; display: flex; height: 100vh; overflow: hidden; }
-
-        /* --- 超强调试面板 --- */
-        #editor-panel {
-            width: 400px; background: #111; border-right: 1px solid #333;
-            padding: 20px; overflow-y: auto; z-index: 1000; box-shadow: 10px 0 30px rgba(0,0,0,1);
-        }
-        .editor-h { color: #ff4444; border-left: 4px solid #ff4444; padding-left: 10px; margin-bottom: 20px; font-size: 18px; font-weight: 900; }
-        .group { background: #1a1a1a; border: 1px solid #222; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
-        .group h4 { margin: 0 0 15px 0; color: #ffeb3b; font-size: 12px; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 5px; }
-        .ctrl { display: flex; align-items: center; margin-bottom: 10px; justify-content: space-between; }
-        .ctrl label { width: 120px; font-size: 11px; color: #999; }
-        input[type="range"] { flex: 1; accent-color: #ff4444; cursor: pointer; }
-        .val-num { width: 45px; text-align: right; font-family: monospace; color: #ff4444; font-size: 12px; font-weight: bold; }
-        input[type="color"] { background: none; border: 1px solid #333; width: 40px; height: 25px; cursor: pointer; }
-        
-        .toolbar { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; position: sticky; top: 0; background: #111; z-index: 10; padding-bottom: 15px; }
-        button { padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: 900; font-size: 12px; }
-        .btn-eye { background: #333; color: white; border: 1px solid #444; }
-        .btn-copy { background: #ff4444; color: white; }
-
-        /* --- 预览舞台 --- */
-        #preview-stage { flex: 1; display: flex; justify-content: center; align-items: center; background: #080808; position: relative; }
-        
-        #card-mockup {
-            position: relative; width: 360px; height: 720px;
-            background: url('64005.jpg') center/100% 100% no-repeat;
-            box-shadow: 0 0 100px rgba(0,0,0,0.5); border-radius: 12px; overflow: hidden;
-        }
-
-        /* 1. 中奖号码区权限 */
-        #win-container {
-            position: absolute; 
-            left: var(--win-x); top: var(--win-y);
-            width: var(--win-w); height: var(--win-h);
+        /* --- 1. 倒计时层 --- */
+        #loader-screen {
+            position: fixed; inset: 0; background: #000; z-index: 9999;
             display: flex; justify-content: center; align-items: center;
         }
-        #win-text {
-            font-size: var(--win-fs); 
-            color: var(--win-color); 
-            transform: translate(var(--win-off-x), var(--win-off-y));
-            font-weight: 900;
+        .count-num {
+            font-family: 'Montserrat', sans-serif; font-size: 150px; color: var(--gold);
+            text-shadow: 0 0 30px rgba(255,215,0,0.5);
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: scale(1.2); opacity: 0; }
         }
 
-        /* 2. 刮奖网格权限 */
-        #grid-layout {
-            position: absolute; 
-            left: var(--grid-x); top: var(--grid-y);
-            width: var(--grid-w); 
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            column-gap: var(--gap-x); 
-            row-gap: var(--gap-y);
+        /* --- 2. 顶部状态栏 --- */
+        #top-bar {
+            position: fixed; top: 0; width: 100%; height: 60px; background: rgba(255,255,255,0.05);
+            display: flex; justify-content: space-between; align-items: center; padding: 0 20px; box-sizing: border-box; z-index: 100;
         }
-        .slot {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            /* 每个格子的独立偏移 */
-            transform: translate(var(--num-off-x), var(--num-off-y));
-        }
-        .slot-n { 
-            font-size: var(--num-fs); 
-            color: var(--num-color); 
-            font-weight: var(--num-weight); 
-            line-height: 1; 
-        }
-        .slot-a { 
-            font-size: var(--amt-fs); 
-            color: var(--amt-color); 
-            margin-top: var(--amt-spacing); 
-            font-family: 'Oswald'; font-weight: 700;
+        .balance-box { font-family: 'Oswald'; color: var(--gold); font-size: 20px; }
+
+        /* --- 3. 游戏容器 --- */
+        #app-viewport {
+            opacity: 0; transition: opacity 1s ease;
+            display: flex; flex-direction: column; align-items: center; height: 100vh; padding-top: 80px;
         }
 
-        /* 3. 画布权限 */
-        canvas { position: absolute; z-index: 10; cursor: crosshair; touch-action: none; transition: opacity 0.2s; }
-        .canvas-hidden { opacity: 0 !important; pointer-events: none; }
+        #card {
+            position: relative; width: 360px; height: 680px;
+            background: #333; border: 4px solid #444; border-radius: 15px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8); overflow: hidden;
+        }
+
+        /* 内部排版样式 (继承你提供的技术) */
+        .grid-box { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; width:100%; height:100%; padding: 5px; box-sizing: border-box; }
+        .cell { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        .val { font-family: 'Montserrat'; font-weight:900; font-size: 24px; color: #1a1a1a; line-height:1; }
+        .amt { font-family: 'Oswald'; font-weight:700; color: #d32f2f; font-size: 12px; }
+        
+        canvas { position: absolute; z-index: 10; touch-action: none; cursor: crosshair; }
+
+        /* --- 4. 弹窗样式 --- */
+        #pop-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 10000;
+            display: none; justify-content: center; align-items: center; text-align: center;
+        }
+        .modal {
+            background: linear-gradient(135deg, #222, #000); border: 2px solid var(--gold);
+            padding: 40px; border-radius: 20px; width: 280px;
+            box-shadow: 0 0 30px var(--gold);
+        }
+        .modal h2 { color: var(--gold); font-family: 'Montserrat'; margin: 0; }
+        .modal .win-amt { font-size: 40px; margin: 20px 0; font-family: 'Oswald'; }
+        .modal button { 
+            background: var(--gold); border: none; padding: 12px 30px; 
+            border-radius: 30px; font-weight: bold; cursor: pointer;
+        }
+
     </style>
 </head>
 <body>
 
-<div id="editor-panel">
-    <div class="editor-h">PARAM EDITOR v4.0</div>
-    
-    <div class="toolbar">
-        <button class="btn-eye" onclick="toggleCanvas()">👁️ 隐藏涂层对齐</button>
-        <button class="btn-copy" onclick="copyParams()">📋 导出最终参数</button>
+    <div id="loader-screen">
+        <div class="count-num" id="countdown">3</div>
     </div>
 
-    <div class="group">
-        <h4>中奖区 (Winning Zone)</h4>
-        <div class="ctrl"><label>容器 X (左右)</label><input type="range" data-p="win-x" min="0" max="300" value="145"><span class="val-num"></span></div>
-        <div class="ctrl"><label>容器 Y (上下)</label><input type="range" data-p="win-y" min="0" max="300" value="135"><span class="val-num"></span></div>
-        <div class="ctrl"><label>字体大小</label><input type="range" data-p="win-fs" min="10" max="80" value="36"><span class="val-num"></span></div>
-        <div class="ctrl"><label>数字水平微调</label><input type="range" data-p="win-off-x" min="-50" max="50" value="0"><span class="val-num"></span></div>
-        <div class="ctrl"><label>数字垂直微调</label><input type="range" data-p="win-off-y" min="-50" max="50" value="0"><span class="val-num"></span></div>
-        <div class="ctrl"><label>字体颜色</label><input type="color" data-p="win-color" value="#000000"></div>
+    <div id="top-bar">
+        <div style="color:#888;">PLAYER_01</div>
+        <div class="balance-box">BALANCE: <span id="balance-val">$100.00</span></div>
     </div>
 
-    <div class="group">
-        <h4>网格布局 (Grid Spacing)</h4>
-        <div class="ctrl"><label>起始 X</label><input type="range" data-p="grid-x" min="0" max="100" value="18"><span class="val-num"></span></div>
-        <div class="ctrl"><label>起始 Y</label><input type="range" data-p="grid-y" min="100" max="600" value="260"><span class="val-num"></span></div>
-        <div class="ctrl"><label>网格总宽</label><input type="range" data-p="grid-w" min="200" max="360" value="324"><span class="val-num"></span></div>
-        <div class="ctrl"><label>水平间距 (GapX)</label><input type="range" data-p="gap-x" min="0" max="50" value="10"><span class="val-num"></span></div>
-        <div class="ctrl"><label>垂直间距 (GapY)</label><input type="range" data-p="gap-y" min="0" max="50" value="18"><span class="val-num"></span></div>
+    <div id="app-viewport">
+        <div id="card">
+            <div id="card-bg" style="position:absolute; inset:0; background: #fff url('64005.jpg') center/100% 100%;"></div>
+
+            <div id="win-area" style="position:absolute; left:140px; top:120px; width:80px; height:100px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                <span class="val">88</span><span class="amt">WIN</span>
+            </div>
+
+            <div id="matrix-area" style="position:absolute; left:20px; top:250px; width:320px; height:400px;">
+                <div id="matrix-inner" class="grid-box"></div>
+            </div>
+
+            <canvas id="cvs-win" class="scratch-layer" data-target="win" style="left:140px; top:120px; width:80px; height:100px; z-index:11;"></canvas>
+            <canvas id="cvs-matrix" class="scratch-layer" data-target="main" style="left:20px; top:250px; width:320px; height:400px; z-index:10;"></canvas>
+        </div>
     </div>
 
-    <div class="group">
-        <h4>数字详情 (Slot Details)</h4>
-        <div class="ctrl"><label>数字字体大小</label><input type="range" data-p="num-fs" min="10" max="40" value="22"><span class="val-num"></span></div>
-        <div class="ctrl"><label>奖金字体大小</label><input type="range" data-p="amt-fs" min="8" max="30" value="14"><span class="val-num"></span></div>
-        <div class="ctrl"><label>数字奖金间距</label><input type="range" data-p="amt-spacing" min="-10" max="20" value="2"><span class="val-num"></span></div>
-        <div class="ctrl"><label>整体水平微调</label><input type="range" data-p="num-off-x" min="-30" max="30" value="0"><span class="val-num"></span></div>
-        <div class="ctrl"><label>整体垂直微调</label><input type="range" data-p="num-off-y" min="-30" max="30" value="0"><span class="val-num"></span></div>
-        <div class="ctrl"><label>数字颜色</label><input type="color" data-p="num-color" value="#ffffff"></div>
-        <div class="ctrl"><label>奖金颜色</label><input type="color" data-p="amt-color" value="#d32f2f"></div>
+    <div id="pop-overlay">
+        <div class="modal">
+            <h2 id="res-title">BIG WIN!</h2>
+            <div class="win-amt" id="res-amt">$0.00</div>
+            <button onclick="location.reload()">PLAY AGAIN</button>
+        </div>
     </div>
 
-    <div class="group">
-        <h4>涂层画布 (Canvas Overlay)</h4>
-        <div class="ctrl"><label>主区涂层高度</label><input type="range" data-p="main-cvs-h" min="100" max="600" value="420"><span class="val-num"></span></div>
-    </div>
-</div>
+    <script>
+        let balance = 100.00;
+        let isGameEnded = false;
+        const WIN_NUMBER = "88";
+        let totalWin = 0;
 
-<div id="preview-stage">
-    <div id="card-mockup">
-        <div id="win-container"><span id="win-text">88</span></div>
-        <div id="grid-layout"></div>
-        
-        <canvas id="cvs-win-layer"></canvas>
-        <canvas id="cvs-main-layer"></canvas>
-    </div>
-</div>
+        // --- 初始化与加载逻辑 ---
+        async function startSequence() {
+            // 1. 模拟后台加载背景图
+            await new Promise(resolve => {
+                const img = new Image();
+                img.src = '64005.jpg';
+                img.onload = resolve;
+            });
 
-<script>
-    // --- 核心响应式引擎 ---
-    function bootstrap() {
-        const controllers = document.querySelectorAll('input');
-        
-        controllers.forEach(input => {
-            const propertyName = `--${input.dataset.p}`;
-            const valueDisplay = input.nextElementSibling;
+            // 2. 填充矩阵
+            buildMatrix();
 
-            const sync = () => {
-                let finalValue = input.value;
-                // 非颜色值自动补充 px 单位
-                if(input.type === 'range') {
-                    finalValue += (propertyName.includes('color') ? '' : 'px');
-                }
-                document.documentElement.style.setProperty(propertyName, finalValue);
-                if(valueDisplay) valueDisplay.innerText = input.value;
+            // 3. 执行倒计时
+            const cd = document.getElementById('countdown');
+            const nums = ['2', '1', 'GO!'];
+            for (let n of nums) {
+                await new Promise(r => setTimeout(r, 1000));
+                cd.innerText = n;
+            }
 
-                // 涉及关键坐标变动时，实时刷绘画布
-                syncCanvas();
+            // 4. 展示游戏
+            document.getElementById('loader-screen').style.display = 'none';
+            document.getElementById('app-viewport').style.opacity = '1';
+
+            // 5. 初始化画布
+            initCanvases();
+        }
+
+        function buildMatrix() {
+            const inner = document.getElementById('matrix-inner');
+            let html = '';
+            for(let i=0; i<30; i++) {
+                const num = Math.random() > 0.8 ? "88" : Math.floor(Math.random()*90+10);
+                const prize = (Math.random()*100).toFixed(2);
+                if(num == WIN_NUMBER) totalWin += parseFloat(prize);
+                html += `<div class="cell"><span class="val">${num}</span><span class="amt">$${prize}</span></div>`;
+            }
+            inner.innerHTML = html;
+        }
+
+        function initCanvases() {
+            document.querySelectorAll('.scratch-layer').forEach(canvas => {
+                const ctx = canvas.getContext('2d');
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+                
+                // 绘制银色涂层
+                ctx.fillStyle = '#c0c0c0';
+                ctx.fillRect(0,0,canvas.width, canvas.height);
+                
+                // 绘制欧元暗纹
+                ctx.fillStyle = "rgba(0,0,0,0.1)";
+                ctx.font = "14px Arial";
+                for(let i=0;i<canvas.width+20;i+=30)
+                    for(let j=0;j<canvas.height+20;j+=30) ctx.fillText("€", i, j);
+
+                setupScratch(canvas, ctx);
+            });
+        }
+
+        function setupScratch(canvas, ctx) {
+            let drawing = false;
+
+            const getPos = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+                return { x: clientX - rect.left, y: clientY - rect.top };
             };
 
-            input.addEventListener('input', sync);
-            sync(); // 初始同步一次
-        });
-    }
+            const scratch = (e) => {
+                if(!drawing) return;
+                const pos = getPos(e);
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, 25, 0, Math.PI*2);
+                ctx.fill();
+                checkCompletion(canvas, ctx);
+            };
 
-    // --- 画布实时覆盖系统 ---
-    function syncCanvas() {
-        const rootStyle = getComputedStyle(document.documentElement);
-        
-        // 同步中奖区
-        const winCanvas = document.getElementById('cvs-win-layer');
-        winCanvas.style.left = rootStyle.getPropertyValue('--win-x');
-        winCanvas.style.top = rootStyle.getPropertyValue('--win-y');
-        winCanvas.width = parseInt(rootStyle.getPropertyValue('--win-w'));
-        winCanvas.height = parseInt(rootStyle.getPropertyValue('--win-h'));
-        renderLayer(winCanvas);
-
-        // 同步刮奖主网格区
-        const mainCanvas = document.getElementById('cvs-main-layer');
-        mainCanvas.style.left = rootStyle.getPropertyValue('--grid-x');
-        mainCanvas.style.top = rootStyle.getPropertyValue('--grid-y');
-        mainCanvas.width = parseInt(rootStyle.getPropertyValue('--grid-w'));
-        mainCanvas.height = parseInt(rootStyle.getPropertyValue('--main-cvs-h'));
-        renderLayer(mainCanvas);
-    }
-
-    function renderLayer(canvas) {
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#b7b7b7'; // 银灰色涂层
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // 渲染颗粒纹理 (金属磨砂感)
-        for(let i=0; i<200; i++) {
-            ctx.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)';
-            ctx.fillRect(Math.random()*canvas.width, Math.random()*canvas.height, 1, 1);
+            canvas.addEventListener('mousedown', () => drawing = true);
+            window.addEventListener('mouseup', () => drawing = false);
+            canvas.addEventListener('mousemove', scratch);
+            canvas.addEventListener('touchstart', (e) => { drawing = true; e.preventDefault(); });
+            canvas.addEventListener('touchmove', (e) => { scratch(e); e.preventDefault(); });
         }
-        attachScratchLogic(canvas, ctx);
-    }
 
-    // --- 刮卡交互 ---
-    function attachScratchLogic(canvas, ctx) {
-        let drawing = false;
-        const process = (e) => {
-            if(!drawing) return;
-            const b = canvas.getBoundingClientRect();
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            const x = clientX - b.left;
-            const y = clientY - b.top;
+        // --- 核心：计算刮除面积 ---
+        function checkCompletion(canvas, ctx) {
+            if (isGameEnded) return;
 
-            ctx.globalCompositeOperation = 'destination-out';
-            ctx.beginPath();
-            ctx.arc(x, y, 18, 0, Math.PI*2);
-            ctx.fill();
-        };
-        canvas.onmousedown = (e) => { drawing = true; process(e); };
-        canvas.ontouchstart = (e) => { drawing = true; process(e); };
-        window.onmousemove = process;
-        window.ontouchmove = process;
-        window.onmouseup = () => drawing = false;
-        window.ontouchend = () => drawing = false;
-    }
+            // 每隔 20 像素取样一次，提升性能
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+            let clearedPixels = 0;
+            for (let i = 3; i < imageData.length; i += 4) {
+                if (imageData[i] === 0) clearedPixels++;
+            }
 
-    function toggleCanvas() {
-        document.querySelectorAll('canvas').forEach(c => c.classList.toggle('canvas-hidden'));
-    }
-
-    function copyParams() {
-        let dump = "/* 导出的 UI 调优参数 */\n";
-        document.querySelectorAll('input').forEach(input => {
-            dump += `${input.dataset.p}: ${input.value}\n`;
-        });
-        console.log(dump);
-        alert("参数已生成至 Console，请按 F12 复制。");
-    }
-
-    // --- 动态生成 5x6 网格 ---
-    function buildGrid() {
-        const grid = document.getElementById('grid-layout');
-        let slots = '';
-        for(let i=0; i<30; i++) {
-            const num = Math.floor(Math.random()*90)+10;
-            const prize = [5, 10, 20, 50, 100, 500][Math.floor(Math.random()*6)];
-            slots += `<div class="slot"><div class="slot-n">${num}</div><div class="slot-a">$${prize}$</div></div>`;
+            const percent = clearedPixels / (imageData.length / 4);
+            
+            // 如果主区域刮开 90% 以上
+            if (canvas.dataset.target === 'main' && percent > 0.90) {
+                endGame();
+            }
         }
-        grid.innerHTML = slots;
-    }
 
-    window.onload = () => {
-        buildGrid();
-        bootstrap();
-    };
-</script>
+        function endGame() {
+            if(isGameEnded) return;
+            isGameEnded = true;
 
+            // 自动清除所有画布
+            document.querySelectorAll('canvas').forEach(c => c.style.display = 'none');
+
+            // 判定结果
+            setTimeout(() => {
+                const overlay = document.getElementById('pop-overlay');
+                const title = document.getElementById('res-title');
+                const amtDisp = document.getElementById('res-amt');
+                const balDisp = document.getElementById('balance-val');
+
+                if(totalWin > 0) {
+                    title.innerText = "CONGRATULATIONS!";
+                    amtDisp.innerText = `+$${totalWin.toFixed(2)}`;
+                    balance += totalWin;
+                } else {
+                    title.innerText = "NO LUCK THIS TIME";
+                    amtDisp.innerText = "$0.00";
+                    amtDisp.style.color = "#888";
+                }
+
+                balDisp.innerText = `$${balance.toFixed(2)}`;
+                overlay.style.display = 'flex';
+            }, 500);
+        }
+
+        window.onload = startSequence;
+    </script>
 </body>
 </html>
