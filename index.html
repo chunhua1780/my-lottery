@@ -3,203 +3,223 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>拾光·透视对齐工作台</title>
+    <title>拾光·至臻</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --neon: #00f2fe; --gold: #ffeb3b; }
-        body { background: #111; margin: 0; font-family: "sans-serif"; display: flex; overflow: hidden; }
+        :root { --neon: #00f2fe; --gold: #f9d423; --soft-white: #f8f9fa; }
+        body { background: #000; margin: 0; font-family: "PingFang SC", "Helvetica Neue", sans-serif; overflow: hidden; color: white; }
 
-        /* --- 左侧预览区 --- */
-        #preview-area {
-            flex: 1; height: 100vh; position: relative; 
-            display: flex; justify-content: center; align-items: center;
-            background: #222;
+        /* --- 1. 极简艺术倒计时 --- */
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 1000; display: flex; justify-content: center; align-items: center;
+        }
+        #countdown-num {
+            font-size: 140px; font-weight: 200; letter-spacing: -5px;
+            background: linear-gradient(135deg, #fff 0%, #444 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            opacity: 0;
+        }
+        .zoom-anim { animation: elegantZoom 1s ease-in-out forwards; }
+        @keyframes elegantZoom {
+            0% { transform: scale(0.8); opacity: 0; filter: blur(10px); }
+            50% { transform: scale(1); opacity: 1; filter: blur(0); }
+            100% { transform: scale(1.2); opacity: 0; filter: blur(20px); }
         }
 
-        .card-container { 
-            position: relative; width: 360px; height: 720px; 
-            background-size: 100% 100%; box-shadow: 0 0 50px rgba(0,0,0,0.8);
-        }
+        /* --- 2. 彩票主容器 --- */
+        #app-wrapper { display: none; opacity: 0; transition: opacity 0.8s ease; }
+        .card-container { position: relative; width: 360px; height: 720px; background-size: 100% 100%; margin: 0 auto; }
 
-        #win-box { position: absolute; z-index: 1; display: flex; justify-content: center; align-items: center; font-weight: 900; pointer-events: none; }
-        #my-grid { position: absolute; z-index: 1; display: grid; grid-template-columns: repeat(6, 1fr); pointer-events: none; }
-        .num-item { display: flex; flex-direction: column; justify-content: center; align-items: center; font-weight: 900; }
-        .scratch-layer { position: absolute; z-index: 10; transition: opacity 0.3s; }
-
-        /* --- 右侧控制台 --- */
-        #debug-panel {
-            width: 340px; height: 100vh; background: #000; color: #fff;
-            padding: 20px; overflow-y: auto; border-left: 2px solid var(--neon);
-            box-sizing: border-box;
+        /* 应用你提供的精准参数 */
+        #win-box { 
+            position: absolute; z-index: 1; display: flex; justify-content: center; align-items: center; font-weight: 900;
+            top: 273px; left: 175px; font-size: 22px; color: #000000;
         }
-        h3 { color: var(--neon); border-bottom: 2px solid var(--neon); padding-bottom: 10px; margin-top: 0; }
+        #my-grid { 
+            position: absolute; z-index: 1; display: grid; grid-template-columns: repeat(6, 1fr);
+            top: 343px; left: 42px; row-gap: 29px; column-gap: 34px;
+        }
+        .num-item { display: flex; flex-direction: column; justify-content: center; align-items: center; font-weight: 900; font-size: 16px; color: #000; }
+        .prize-item { font-size: 9px; color: #9d0000; font-weight: bold; margin-top: -2px; }
+
+        /* 涂层层级 */
+        .scratch-layer { position: absolute; z-index: 10; touch-action: none; }
+        #canv-win { top: 260px; left: 157px; width: 61px; height: 49px; }
+        #canv-mine { top: 322px; left: 21px; width: 318px; height: 299px; }
+
+        /* --- 3. 黄金比例时尚弹窗 (0.618) --- */
+        #modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); z-index: 2000;
+            display: none; justify-content: center; align-items: center; backdrop-filter: blur(8px);
+        }
+        #result-modal {
+            width: 300px; height: 185px; /* 300 * 0.618 ≈ 185 黄金比例 */
+            background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(240,240,240,0.98) 100%);
+            border-radius: 24px; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            transform: scale(0.7); opacity: 0; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            padding: 20px; box-sizing: border-box; position: relative;
+        }
+        #result-modal.show { transform: scale(1); opacity: 1; }
         
-        /* 核心开关按钮 */
-        .master-switches { display: flex; gap: 10px; margin-bottom: 20px; }
-        .sw-btn { flex: 1; padding: 10px; border: 1px solid var(--neon); background: transparent; color: var(--neon); cursor: pointer; border-radius: 5px; font-size: 12px; }
-        .sw-btn.active { background: var(--neon); color: #000; font-weight: bold; }
-
-        .ctrl-grp { background: #1a1a1a; padding: 12px; margin-bottom: 15px; border-radius: 8px; border-left: 3px solid var(--gold); }
-        .ctrl-grp h4 { margin: 0 0 10px 0; font-size: 13px; color: var(--gold); }
-        label { display: flex; justify-content: space-between; margin-bottom: 8px; color: #ccc; font-size: 12px; }
-        label span { color: var(--neon); font-family: monospace; font-size: 14px; }
-        input[type=range] { width: 100%; accent-color: var(--neon); cursor: pointer; }
+        #res-title { font-size: 18px; font-weight: 600; color: #111; margin: 0; }
+        #res-desc { font-size: 13px; color: #666; margin: 8px 0; font-style: italic; line-height: 1.4; }
+        #res-amt { font-size: 36px; font-weight: 900; margin: 5px 0; background: linear-gradient(45deg, #ff416c, #ff4b2b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
-        .action-btn { width: 100%; padding: 15px; margin-bottom: 10px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 14px; }
-        .btn-save { background: linear-gradient(45deg, #00f2fe, #4facfe); color: #000; }
+        .btn-retry {
+            width: 120px; height: 40px; background: #000; color: #fff; border: none;
+            border-radius: 20px; font-size: 12px; font-weight: bold; letter-spacing: 1px;
+            cursor: pointer; margin-top: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
     </style>
 </head>
 <body>
 
-    <div id="preview-area">
+    <div id="loader"><div id="countdown-num"></div></div>
+
+    <div id="app-wrapper">
         <div class="card-container" id="main-card">
-            <div id="win-box">88</div>
+            <div id="win-box"></div>
             <div id="my-grid"></div>
             <canvas id="canv-win" class="scratch-layer"></canvas>
             <canvas id="canv-mine" class="scratch-layer"></canvas>
         </div>
     </div>
 
-    <div id="debug-panel">
-        <h3>🛠 像素级对齐工作台</h3>
-        
-        <div class="master-switches">
-            <button id="sw-layer" class="sw-btn active" onclick="toggleLayer()">涂层: 可见</button>
-            <button id="sw-modal" class="sw-btn active" onclick="toggleModalLogic()">弹窗: 已屏蔽</button>
+    <div id="modal-overlay">
+        <div id="result-modal">
+            <h2 id="res-title"></h2>
+            <p id="res-desc"></p>
+            <h1 id="res-amt"></h1>
+            <button class="btn-retry" onclick="location.reload()">NEXT ROUND</button>
         </div>
-
-        <div class="ctrl-grp">
-            <h4>1. 中奖号码数字</h4>
-            <label>垂直 Y: <span id="v_wt">266</span></label>
-            <input type="range" min="100" max="500" value="266" oninput="upd('wt',this.value,'v_wt')">
-            <label>水平 X: <span id="v_wl">169</span></label>
-            <input type="range" min="0" max="360" value="169" oninput="upd('wl',this.value,'v_wl')">
-            <label>字号: <span id="v_ws">22</span></label>
-            <input type="range" min="10" max="60" value="22" oninput="upd('ws',this.value,'v_ws')">
-            <input type="color" value="#000000" oninput="upd('wc',this.value)" style="width:100%; height:30px; border:none; background:transparent;">
-        </div>
-
-        <div class="ctrl-grp">
-            <h4>2. 中奖区涂层 (Canvas)</h4>
-            <label>垂直 Y: <span id="v_ct">260</span></label>
-            <input type="range" min="100" max="500" value="260" oninput="upd('ct',this.value,'v_ct')">
-            <label>水平 X: <span id="v_cl">160</span></label>
-            <input type="range" min="0" max="360" value="160" oninput="upd('cl',this.value,'v_cl')">
-            <label>宽度: <span id="v_cw">55</span></label>
-            <input type="range" min="10" max="150" value="55" oninput="upd('cw',this.value,'v_cw')">
-            <label>高度: <span id="v_ch">45</span></label>
-            <input type="range" min="10" max="100" value="45" oninput="upd('ch',this.value,'v_ch')">
-        </div>
-
-        <div class="ctrl-grp">
-            <h4>3. 玩法网格数字</h4>
-            <label>区域垂直 Y: <span id="v_gt">326</span></label>
-            <input type="range" min="200" max="600" value="326" oninput="upd('gt',this.value,'v_gt')">
-            <label>区域水平 X: <span id="v_gl">25</span></label>
-            <input type="range" min="0" max="100" value="25" oninput="upd('gl',this.value,'v_gl')">
-            <label>行间距: <span id="v_gr">2</span></label>
-            <input type="range" min="0" max="40" value="2" oninput="upd('gr',this.value,'v_gr')">
-            <label>列间距: <span id="v_gc">9</span></label>
-            <input type="range" min="0" max="40" value="9" oninput="upd('gc',this.value,'v_gc')">
-            <label>字号: <span id="v_gs">14</span></label>
-            <input type="range" min="8" max="25" value="14" oninput="upd('gs',this.value,'v_gs')">
-        </div>
-
-        <div class="ctrl-grp">
-            <h4>4. 玩法区大涂层</h4>
-            <label>垂直 Y: <span id="v_mt">322</span></label>
-            <input type="range" min="200" max="600" value="322" oninput="upd('mt',this.value,'v_mt')">
-            <label>水平 X: <span id="v_ml">21</span></label>
-            <input type="range" min="0" max="100" value="21" oninput="upd('ml',this.value,'v_ml')">
-            <label>宽度: <span id="v_mw">318</span></label>
-            <input type="range" min="100" max="360" value="318" oninput="upd('mw',this.value,'v_mw')">
-            <label>高度: <span id="v_mh">299</span></label>
-            <input type="range" min="50" max="500" value="299" oninput="upd('mh',this.value,'v_mh')">
-        </div>
-
-        <button class="action-btn btn-save" onclick="exportConfig()">💾 导出参数并发送</button>
     </div>
 
     <script>
-        let isLayerVisible = true;
-        let isModalBlocked = true;
+        const WIN_QUOTES = [
+            { t: "极光之吻", d: "运气这种东西，藏在你的指尖里。" },
+            { t: "财运觉醒", d: "这不仅仅是奖金，更是命运的偏爱。" },
+            { t: "爆裂惊喜", d: "看吧，属于你的光芒谁也挡不住。" },
+            { t: "指尖奇迹", d: "这一秒，全世界都为你心跳。" }
+        ];
 
-        let p = { 
-            wt:266, wl:169, ws:22, wc:'#000000', 
-            ct:260, cl:160, cw:55, ch:45,
-            gt:326, gl:25, gs:14, gr:2, gc:9,
-            mt:322, ml:21, mw:318, mh:299
-        };
+        const LOSE_QUOTES = [
+            { t: "优雅错过", d: "完美的曲线总是带点遗憾，下一张更精彩。" },
+            { t: "蓄势待发", d: "财神正在整理领带，马上就来敲你的门。" },
+            { t: "未完待续", d: "比起枯燥的成功，我更爱这心跳的一瞬。" },
+            { t: "灵感缺位", d: "换个手指，重新定义你的好运。" }
+        ];
 
-        function toggleLayer() {
-            isLayerVisible = !isLayerVisible;
-            const btn = document.getElementById('sw-layer');
-            const layers = document.querySelectorAll('.scratch-layer');
-            layers.forEach(l => l.style.opacity = isLayerVisible ? "1" : "0.1"); // 设置为0.1可以看到淡淡的轮廓
-            btn.innerText = isLayerVisible ? "涂层: 可见" : "涂层: 已透视";
-            btn.classList.toggle('active');
-        }
+        const tg = window.Telegram.WebApp;
+        tg.ready(); tg.expand();
 
-        function toggleModalLogic() {
-            isModalBlocked = !isModalBlocked;
-            const btn = document.getElementById('sw-modal');
-            btn.innerText = isModalBlocked ? "弹窗: 已屏蔽" : "弹窗: 正常运行";
-            btn.classList.toggle('active');
-        }
-
-        function upd(key, val, vid) {
-            p[key] = isNaN(val) ? val : parseInt(val);
-            if(vid) document.getElementById(vid).innerText = val;
-            apply();
-        }
-
-        function apply() {
-            const wb = document.getElementById('win-box');
-            wb.style.top = p.wt+'px'; wb.style.left = p.wl+'px'; 
-            wb.style.fontSize = p.ws+'px'; wb.style.color = p.wc;
-
-            const cw = document.getElementById('canv-win');
-            cw.style.top = p.ct+'px'; cw.style.left = p.cl+'px'; 
-            cw.width = p.cw; cw.height = p.ch;
-            draw(cw);
-
-            const gd = document.getElementById('my-grid');
-            gd.style.top = p.gt+'px'; gd.style.left = p.gl+'px';
-            gd.style.rowGap = p.gr+'px'; gd.style.columnGap = p.gc+'px';
-            gd.querySelectorAll('.num-item').forEach(i => i.style.fontSize = p.gs+'px');
-
-            const cm = document.getElementById('canv-mine');
-            cm.style.top = p.mt+'px'; cm.style.left = p.ml+'px'; 
-            cm.width = p.mw; cm.height = p.mh;
-            draw(cm);
-        }
-
-        function draw(c) {
-            const ctx = c.getContext('2d');
-            ctx.fillStyle = '#C0C0C0';
-            ctx.fillRect(0,0,c.width, c.height);
-            for(let i=0; i<100; i++) {
-                ctx.fillStyle = Math.random()>0.5 ? '#E0E0E0' : '#A0A0A0';
-                ctx.fillRect(Math.random()*c.width, Math.random()*c.height, 1, 1);
+        function getGameData() {
+            const ln = Math.floor(Math.random() * 89) + 10;
+            const dice = Math.random();
+            let tw = dice < 0.45 ? 0 : (dice < 0.9 ? Math.floor(Math.random()*11)+5 : Math.floor(Math.random()*30)+20);
+            const sp = []; let acc = 0;
+            for (let i = 0; i < 30; i++) {
+                let n = Math.floor(Math.random()*89)+10; if(n===ln) n++;
+                let pz = [5, 10, 20][Math.floor(Math.random()*3)];
+                if (acc < tw && Math.random() < 0.15) { n = ln; pz = Math.max(5, tw - acc); acc += pz; }
+                sp.push({ n, p: pz });
             }
+            return { ln, sp, tw };
         }
 
-        function exportConfig() {
-            console.log("CONFIG_START", JSON.stringify(p), "CONFIG_END");
-            alert("对齐完成！请复制下方代码发给AI：\n\n" + JSON.stringify(p));
-        }
+        const game = getGameData();
 
         window.onload = () => {
             const img = new Image();
             img.src = '64005.jpg';
             img.onload = () => {
                 document.getElementById('main-card').style.backgroundImage = `url(64005.jpg)`;
+                document.getElementById('win-box').innerText = game.ln;
                 const grid = document.getElementById('my-grid');
-                for(let i=0; i<30; i++) {
-                    grid.innerHTML += `<div class="num-item">88<div class="prize-item" style="font-size:8px; color:darkred">¥10</div></div>`;
-                }
-                apply();
+                game.sp.forEach(s => {
+                    grid.innerHTML += `<div class="num-item">${s.n}<div class="prize-item">¥${s.p}</div></div>`;
+                });
+                initScratch('canv-win', 61, 49);
+                initScratch('canv-mine', 318, 299, true);
+                startUI();
             };
         };
+
+        function startUI() {
+            const el = document.getElementById('countdown-num');
+            const nums = ['3', '2', '1'];
+            let i = 0;
+            const run = () => {
+                if (i < 3) {
+                    el.innerText = nums[i]; el.className = 'zoom-anim';
+                    setTimeout(() => { el.className = ''; }, 950);
+                    i++; setTimeout(run, 1000);
+                } else {
+                    document.getElementById('loader').style.display = 'none';
+                    const wrap = document.getElementById('app-wrapper');
+                    wrap.style.display = 'block';
+                    setTimeout(() => { wrap.style.opacity = '1'; }, 50);
+                }
+            };
+            run();
+        }
+
+        function initScratch(id, w, h, isMain = false) {
+            const c = document.getElementById(id);
+            const ctx = c.getContext('2d');
+            c.width = w; c.height = h;
+            
+            // 涂层艺术感填充
+            ctx.fillStyle = '#BBB';
+            ctx.fillRect(0,0,w,h);
+            ctx.globalAlpha = 0.5;
+            for(let i=0; i<400; i++) {
+                ctx.fillStyle = Math.random() > 0.5 ? '#FFF' : '#888';
+                ctx.fillRect(Math.random()*w, Math.random()*h, 1, 1);
+            }
+            ctx.globalAlpha = 1.0;
+
+            let drawing = false;
+            let pixels = 0;
+            const scrub = (e) => {
+                if (!drawing) return;
+                const r = c.getBoundingClientRect();
+                const x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+                const y = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath(); ctx.arc(x, y, 22, 0, Math.PI*2); ctx.fill();
+                if(isMain && ++pixels > 120) showResult();
+            };
+            c.addEventListener('mousedown', () => drawing = true);
+            window.addEventListener('mouseup', () => drawing = false);
+            c.addEventListener('mousemove', scrub);
+            c.addEventListener('touchstart', (e) => { e.preventDefault(); drawing = true; scrub(e); });
+            c.addEventListener('touchmove', (e) => { e.preventDefault(); scrub(e); });
+            c.addEventListener('touchend', () => drawing = false);
+        }
+
+        let shown = false;
+        function showResult() {
+            if(shown) return; shown = true;
+            const overlay = document.getElementById('modal-overlay');
+            const modal = document.getElementById('result-modal');
+            const t = document.getElementById('res-title');
+            const d = document.getElementById('res-desc');
+            const a = document.getElementById('res-amt');
+
+            const pool = game.tw > 0 ? WIN_QUOTES : LOSE_QUOTES;
+            const q = pool[Math.floor(Math.random() * pool.length)];
+            
+            t.innerText = q.t;
+            d.innerText = q.d;
+            a.innerText = "¥" + game.tw;
+
+            overlay.style.display = 'flex';
+            setTimeout(() => modal.classList.add('show'), 100);
+        }
     </script>
 </body>
 </html>
