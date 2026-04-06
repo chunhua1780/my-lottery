@@ -3,214 +3,243 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=360, user-scalable=no">
-    <title>SCRATCH PRO - ULTIMATE FIX</title>
+    <title>SCRATCH GOLD - V4.0 FINAL</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&family=Oswald:wght@700&family=Dancing+Script:wght@700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;900&family=Oswald:wght@700&family=Dancing+Script:wght@700&display=swap');
 
-        :root { --gold: #fcc201; --glass: rgba(20, 20, 30, 0.9); }
-        body { margin: 0; background: #000; color: #fff; font-family: 'Montserrat', sans-serif; overflow: hidden; touch-action: none; }
+        :root { 
+            --gold: #fcc201; 
+            --glass: rgba(15, 15, 20, 0.9);
+            --border: rgba(252, 194, 1, 0.4);
+        }
 
-        /* --- 1. 高端通知对话框 (iOS Widget Style) --- */
-        #result-popup {
-            position: fixed; top: -160px; left: 50%; transform: translateX(-50%);
-            width: 320px; height: 110px;
+        body { margin: 0; background: #000; color: #fff; font-family: 'Outfit', sans-serif; overflow: hidden; touch-action: none; }
+
+        /* --- 1. 流行风倒计时 (Modern Minimalist) --- */
+        #loader {
+            position: fixed; inset: 0; background: #000; z-index: 99999;
+            display: flex; justify-content: center; align-items: center;
+            transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .cd-circle {
+            position: relative; width: 160px; height: 160px;
+            display: flex; justify-content: center; align-items: center;
+            border: 2px solid rgba(255,255,255,0.1); border-radius: 50%;
+        }
+        .cd-num {
+            font-size: 80px; font-weight: 900; color: var(--gold);
+            text-shadow: 0 0 30px rgba(252, 194, 1, 0.5);
+            animation: pulse 0.8s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(0.9); opacity: 0.5; }
+        }
+
+        /* --- 2. 流行风悬浮对话框 (iOS Dynamic Style) --- */
+        #top-dialog {
+            position: fixed; top: -150px; left: 50%; transform: translateX(-50%);
+            width: 310px; height: 100px;
             background: var(--glass); 
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border: 1.5px solid rgba(252, 194, 1, 0.5); border-radius: 24px;
-            z-index: 9999; transition: all 0.8s cubic-bezier(0.19, 1, 0.22, 1);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6); pointer-events: none;
+            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--border); border-radius: 24px;
+            z-index: 10000; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+            transition: top 0.8s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            pointer-events: none;
         }
-        #result-popup.active { top: 30px; box-shadow: 0 0 30px rgba(252, 194, 1, 0.3); }
-
-        .res-title { font-size: 20px; font-weight: 900; color: var(--gold); margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-        .res-sub { font-family: 'Dancing Script'; font-size: 16px; color: #eee; margin: 4px 0; }
-        .res-bal-pill { 
-            background: rgba(0, 255, 136, 0.15); padding: 4px 16px; border-radius: 12px; 
-            border: 1px solid rgba(0, 255, 136, 0.4); margin-top: 5px;
+        #top-dialog.show { top: 25px; pointer-events: auto; }
+        
+        .dialog-title { font-size: 18px; font-weight: 900; letter-spacing: 2px; color: var(--gold); margin: 0; }
+        .dialog-msg { font-family: 'Dancing Script'; font-size: 15px; color: #eee; margin: 4px 0; }
+        .balance-pill { 
+            background: rgba(0, 255, 135, 0.1); padding: 3px 12px; border-radius: 12px;
+            border: 1px solid rgba(0, 255, 135, 0.3); font-family: 'Oswald';
+            color: #00ff87; font-size: 13px; margin-top: 5px;
         }
-        .res-bal-pill span { font-family: 'Oswald'; color: #00ff88; font-size: 14px; letter-spacing: 1px; }
 
-        /* --- 2. 核心容器 --- */
-        #stage {
+        /* --- 3. 游戏舞台 --- */
+        #game-stage {
             position: relative; width: 360px; height: 720px; margin: 0 auto;
             background: #111 url('64005.jpg') center/100% 100% no-repeat;
-            opacity: 0; transition: opacity 1.5s;
+            opacity: 0; transition: opacity 1.2s;
         }
 
-        /* 奖项区数值 */
         #win-val { position: absolute; left: 151px; top: 263px; width: 72px; height: 66px; display: flex; align-items: center; justify-content: center; color: #09140d; font-size: 26px; font-weight: 900; }
-        #grid-val { position: absolute; left: 27px; top: 335px; width: 310px; height: 284px; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(5, 1fr); gap: 10px; padding: 5px; box-sizing: border-box; }
-        .cell { display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .cell b { font-size: 18px; color: #09140d; }
-        .cell i { font-family: 'Oswald'; font-style: normal; font-size: 10px; color: #d00; }
+        #grid-area { position: absolute; left: 27px; top: 335px; width: 310px; height: 284px; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(5, 1fr); gap: 10px; padding: 5px; box-sizing: border-box; }
+        .cell-v { font-size: 18px; font-weight: 900; color: #09140d; text-align: center; }
+        .cell-p { font-family: 'Oswald'; font-size: 10px; color: #d00; text-align: center; }
 
-        /* 涂层画布 - 提高层级 */
         canvas { position: absolute; z-index: 100; touch-action: none; cursor: crosshair; }
-
-        /* 倒计时层 */
-        #loader { position: fixed; inset: 0; background: #000; z-index: 10000; display: flex; justify-content: center; align-items: center; flex-direction: column; }
-        .count-text { font-size: 100px; font-weight: 900; color: var(--gold); text-shadow: 0 0 20px var(--gold); }
     </style>
 </head>
 <body>
 
-    <div id="result-popup">
-        <div class="res-title" id="rt">LUCKY STATUS</div>
-        <div class="res-sub" id="rs">Checking your fortune...</div>
-        <div class="res-bal-pill">
-            <span>BALANCE: <span id="rb">$100.00</span></span>
+    <div id="loader">
+        <div class="cd-circle">
+            <div id="num" class="cd-num">3</div>
         </div>
     </div>
 
-    <div id="loader"><div id="cd" class="count-text">3</div></div>
+    <div id="top-dialog">
+        <div class="dialog-title" id="d-title">LUCKY REVEAL</div>
+        <div class="dialog-msg" id="d-msg">Fortune is in your hands...</div>
+        <div class="balance-pill">WALLET: <span id="d-bal">$100.00</span></div>
+    </div>
 
-    <div id="stage">
+    <div id="game-stage">
         <div id="win-val">88</div>
-        <div id="grid-val"></div>
+        <div id="grid-area"></div>
 
-        <canvas id="cvs_win" data-type="win" style="left:153px; top:258px; width:71px; height:52px;"></canvas>
-        <canvas id="cvs_grid" data-type="grid" style="left:22px; top:322px; width:317px; height:300px;"></canvas>
+        <canvas id="c_win" style="left:153px; top:258px; width:71px; height:52px;"></canvas>
+        <canvas id="c_grid" style="left:22px; top:322px; width:317px; height:300px;"></canvas>
     </div>
 
     <script>
         let balance = 100.00;
+        let isActive = false;
         let isEnded = false;
-        let totalWin = 0;
-        let scratchCount = 0;
-        const THRESHOLD = 0.70; // 70% 触发
+        let jackpot = 0;
+        let scratchPath = 0; // 划动位移追踪
 
-        // 1. 启动
-        async function initSequence() {
-            const cd = document.getElementById('cd');
-            for(let s of ['2','1','GO!']) {
-                await new Promise(r => setTimeout(r, 1000));
-                cd.innerText = s;
+        // 1. 倒计时迭代
+        async function runCountdown() {
+            const num = document.getElementById('num');
+            const seq = ['2', '1', 'GO'];
+            for (let s of seq) {
+                await new Promise(r => setTimeout(r, 900));
+                num.innerText = s;
             }
             document.getElementById('loader').style.opacity = '0';
             setTimeout(() => {
                 document.getElementById('loader').style.display = 'none';
-                document.getElementById('stage').style.opacity = '1';
-                startApp();
-            }, 500);
+                document.getElementById('game-stage').style.opacity = '1';
+                initGame();
+            }, 600);
         }
 
-        // 2. 初始化核心逻辑
-        function startApp() {
-            const g = document.getElementById('grid-val');
-            let h = "";
+        // 2. 初始化
+        function initGame() {
+            const grid = document.getElementById('grid-area');
+            let content = "";
             for(let i=0; i<30; i++) {
                 const n = Math.random() > 0.88 ? "88" : Math.floor(Math.random()*89+10);
-                const p = (Math.random()*60 + 10).toFixed(2);
-                if(n === "88") totalWin += parseFloat(p);
-                h += `<div class="cell"><b>${n}</b><i>$${p}</i></div>`;
+                const p = (Math.random()*40 + 10).toFixed(2);
+                if(n === "88") jackpot += parseFloat(p);
+                content += `<div><div class="cell-v">${n}</div><div class="cell-p">$${p}</div></div>`;
             }
-            g.innerHTML = h;
+            grid.innerHTML = content;
 
-            setupCanvas("cvs_win");
-            setupCanvas("cvs_grid");
+            createCanvas("c_win");
+            createCanvas("c_grid");
+            
+            // 关键修复：开启后台定时检查循环
+            isActive = true;
+            setInterval(autoCheck, 1000); 
         }
 
-        function setupCanvas(id) {
-            const c = document.getElementById(id);
-            const ctx = c.getContext('2d', { willReadFrequently: true });
-            c.width = c.offsetWidth;
-            c.height = c.offsetHeight;
+        function createCanvas(id) {
+            const cvs = document.getElementById(id);
+            const ctx = cvs.getContext('2d', { willReadFrequently: true });
+            cvs.width = cvs.offsetWidth;
+            cvs.height = cvs.offsetHeight;
 
-            // 绘制漂亮涂层
-            ctx.fillStyle = '#b5b5b5';
-            ctx.fillRect(0,0,c.width, c.height);
-            ctx.fillStyle = "rgba(0,0,0,0.12)";
+            // 涂层美化
+            ctx.fillStyle = '#b0b0b0';
+            ctx.fillRect(0,0,cvs.width, cvs.height);
+            ctx.fillStyle = "rgba(0,0,0,0.15)";
             ctx.font = "bold 15px Arial";
-            for(let x=5; x<c.width; x+=25) 
-                for(let y=18; y<c.height; y+=28) ctx.fillText((x+y)%2===0 ? "$":"€", x, y);
+            for(let x=5; x<cvs.width; x+=25) 
+                for(let y=18; y<cvs.height; y+=25) ctx.fillText((x+y)%2===0 ? "$":"€", x, y);
 
-            let active = false;
+            let painting = false;
 
-            const handleScratch = (e) => {
-                if(isEnded) return;
-                const rect = c.getBoundingClientRect();
-                const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
-                const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
+            const doScratch = (e) => {
+                if(!isActive || isEnded) return;
+                const rect = cvs.getBoundingClientRect();
+                const x = (e.clientX || e.touches[0].clientX) - rect.left;
+                const y = (e.clientY || e.touches[0].clientY) - rect.top;
 
-                // 极致干脆清空效果
                 ctx.globalCompositeOperation = 'destination-out';
                 ctx.beginPath();
-                ctx.arc(x, y, 32, 0, Math.PI*2);
+                ctx.arc(x, y, 35, 0, Math.PI*2);
                 ctx.fill();
+                
+                // 增加位移计数（第二判定轨迹）
+                if(id === "c_grid") scratchPath++; 
+                if(scratchPath > 250) autoCheck(); // 位移足够多时强制检查
             };
 
-            // 绑定事件：确保在 Canvas 上能正常触发
-            c.addEventListener('mousedown', () => active = true);
-            window.addEventListener('mouseup', () => { 
-                active = false; 
-                if(!isEnded) checkGlobalProgress(); // 停止划动时检查进度
-            });
-            c.addEventListener('mousemove', (e) => { if(active) handleScratch(e); });
-            
-            c.addEventListener('touchstart', (e) => { active = true; handleScratch(e); e.preventDefault(); });
-            c.addEventListener('touchmove', (e) => { handleScratch(e); e.preventDefault(); });
-            c.addEventListener('touchend', () => { active = false; checkGlobalProgress(); });
+            cvs.addEventListener('mousedown', () => painting = true);
+            window.addEventListener('mouseup', () => { painting = false; autoCheck(); });
+            cvs.addEventListener('mousemove', (e) => { if(painting) doScratch(e); });
+            cvs.addEventListener('touchstart', (e) => { painting = true; doScratch(e); e.preventDefault(); });
+            cvs.addEventListener('touchmove', (e) => { doScratch(e); e.preventDefault(); });
+            cvs.addEventListener('touchend', () => { painting = false; autoCheck(); });
         }
 
-        // 3. 稳健的进度检查 (像素级兜底)
-        function checkGlobalProgress() {
-            if(isEnded) return;
-            const cMain = document.getElementById('cvs_grid');
-            const ctx = cMain.getContext('2d', { willReadFrequently: true });
-            const data = ctx.getImageData(0, 0, cMain.width, cMain.height).data;
+        // 3. 核心修复：多维判定引擎
+        function autoCheck() {
+            if(!isActive || isEnded) return;
+
+            const cvs = document.getElementById('c_grid');
+            const ctx = cvs.getContext('2d', { willReadFrequently: true });
+            const pix = ctx.getImageData(0, 0, cvs.width, cvs.height).data;
             
             let transparent = 0;
-            // 快速采样
-            for (let i = 3; i < data.length; i += 64) {
-                if (data[i] === 0) transparent++;
+            for (let i = 3; i < pix.length; i += 64) {
+                if (pix[i] === 0) transparent++;
             }
             
-            const ratio = transparent / (data.length / 64);
-            console.log("Current Scratch Ratio:", ratio.toFixed(2));
-
-            if (ratio >= THRESHOLD) {
-                showFinalPopup();
+            const ratio = transparent / (pix.length / 64);
+            
+            // 只要达到 70% 或者是划动次数极多（兜底逻辑）
+            if (ratio > 0.70 || scratchPath > 600) {
+                triggerPopup();
             }
         }
 
-        function showFinalPopup() {
+        function triggerPopup() {
             if(isEnded) return;
             isEnded = true;
 
-            // 1. 让剩余涂层消失，露出中奖数字
-            document.querySelectorAll('canvas').forEach(cvs => {
-                cvs.style.transition = 'opacity 1s cubic-bezier(0.4, 0, 0.2, 1)';
-                cvs.style.opacity = '0';
-                setTimeout(() => cvs.style.display = 'none', 1000);
+            // 渐隐所有涂层
+            document.querySelectorAll('canvas').forEach(c => {
+                c.style.transition = 'opacity 1s';
+                c.style.opacity = '0';
+                setTimeout(() => c.style.display = 'none', 1000);
             });
 
-            // 2. 设置弹窗内容
-            const pop = document.getElementById('result-popup');
-            const rt = document.getElementById('rt');
-            const rs = document.getElementById('rs');
-            const rb = document.getElementById('rb');
+            const dialog = document.getElementById('top-dialog');
+            const title = document.getElementById('d-title');
+            const msg = document.getElementById('d-msg');
+            const bal = document.getElementById('d-bal');
 
-            if(totalWin > 0) {
-                rt.innerText = "BIG WIN!";
-                rt.style.color = "var(--gold)";
-                rs.innerText = `You discovered $${totalWin.toFixed(2)} in rewards!`;
-                balance += totalWin;
+            if(jackpot > 0) {
+                title.innerText = "BIG WINNER!";
+                title.style.color = "var(--gold)";
+                msg.innerText = `You have discovered $${jackpot.toFixed(2)}`;
+                balance += jackpot;
             } else {
-                rt.innerText = "TRY AGAIN";
-                rt.style.color = "#aaa";
-                rs.innerText = "Don't give up, fortune is near!";
+                title.innerText = "ALMOST THERE";
+                title.style.color = "#aaa";
+                msg.innerText = "The next one is your lucky star!";
             }
 
-            rb.innerText = `$${balance.toFixed(2)}`;
+            bal.innerText = `$${balance.toFixed(2)}`;
             
-            // 3. 弹出对话框
-            setTimeout(() => {
-                pop.classList.add('active');
-            }, 300);
+            // 强制渲染弹窗
+            requestAnimationFrame(() => {
+                dialog.classList.add('show');
+            });
+
+            // 震动
+            if(navigator.vibrate) navigator.vibrate(150);
         }
 
-        window.onload = initSequence;
+        window.onload = runCountdown;
     </script>
 </body>
 </html>
