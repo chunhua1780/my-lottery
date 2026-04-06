@@ -3,193 +3,178 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>拾光·极客调优 V3.0</title>
+    <title>拾光·PTS GLOBAL</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --accent: #00f2fe; --bg: #0a0a0a; }
-        body { background: var(--bg); margin: 0; font-family: "Segoe UI", sans-serif; display: flex; color: #fff; height: 100vh; overflow: hidden; }
+        :root { --neon: #00f2fe; --gold: #f9d423; }
+        body { background: #000; margin: 0; font-family: "Arial", sans-serif; overflow: hidden; color: white; }
 
-        /* --- 预览区 --- */
-        #preview-area { flex: 1; position: relative; display: flex; justify-content: center; align-items: center; background: #151515; }
-        .card-container { position: relative; width: 360px; height: 720px; background-size: 100% 100%; box-shadow: 0 0 40px #000; }
-        
-        #win-box { position: absolute; z-index: 2; font-weight: 900; }
-        #my-grid { position: absolute; z-index: 2; display: grid; grid-template-columns: repeat(6, 1fr); }
-        .num-item { display: flex; flex-direction: column; justify-content: center; align-items: center; font-weight: 900; }
-        .pts-text { font-weight: bold; }
-        
-        .scratch-layer { position: absolute; z-index: 10; transition: opacity 0.3s; pointer-events: auto; }
-        .ghost-mode { opacity: 0.05 !important; pointer-events: none !important; }
+        /* --- 极简加载逻辑 --- */
+        #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1000; display: flex; justify-content: center; align-items: center; }
+        #cd { font-size: 120px; font-weight: 200; opacity: 0; }
+        .zoom { animation: z 1s ease-in-out forwards; }
+        @keyframes z { 0% { transform: scale(0.8); opacity: 0; filter: blur(10px); } 50% { opacity: 1; filter: blur(0); } 100% { transform: scale(1.2); opacity: 0; } }
 
-        /* --- 控制中心 --- */
-        #panel { width: 400px; background: #000; border-left: 1px solid #333; padding: 20px; overflow-y: auto; box-sizing: border-box; }
-        h3 { color: var(--accent); border-bottom: 1px solid #222; padding-bottom: 10px; margin: 0 0 15px 0; display: flex; justify-content: space-between; }
-        
-        .card { background: #111; padding: 12px; margin-bottom: 12px; border-radius: 6px; border: 1px solid #222; }
-        .card h4 { margin: 0 0 10px 0; font-size: 12px; color: #666; text-transform: uppercase; }
-        
-        .row { display: flex; align-items: center; margin-bottom: 8px; font-size: 11px; }
-        .row label { width: 90px; color: #aaa; }
-        .row input[type=range] { flex: 1; margin: 0 10px; accent-color: var(--accent); }
-        .row span { width: 30px; color: var(--accent); font-family: monospace; }
-        .row input[type=color] { border: none; width: 30px; height: 20px; background: none; cursor: pointer; }
-        
-        select { background: #222; color: #fff; border: 1px solid #444; padding: 3px; font-size: 11px; flex: 1; }
+        /* --- 核心容器 (应用你的参数) --- */
+        #app { display: none; opacity: 0; transition: opacity 0.8s; }
+        .card { position: relative; width: 360px; height: 720px; background-size: 100% 100%; margin: 0 auto; }
 
-        .master-btn { width: 100%; padding: 12px; margin-top: 5px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        .ghost-btn { background: #333; color: #fff; margin-bottom: 15px; }
-        .ghost-btn.active { background: var(--accent); color: #000; }
-        .save-btn { background: var(--accent); color: #000; }
+        /* 中奖号码区 */
+        #w-num { 
+            position: absolute; z-index: 1; display: flex; justify-content: center; align-items: center; font-weight: 900;
+            top: 273px; left: 175px; font-size: 22px; color: #000000;
+        }
+        /* 玩法网格区 */
+        #grid { 
+            position: absolute; z-index: 1; display: grid; grid-template-columns: repeat(6, 1fr);
+            top: 343px; left: 32px; row-gap: 29px; column-gap: 22px;
+        }
+        .item { display: flex; flex-direction: column; justify-content: center; align-items: center; font-weight: 900; font-size: 16px; color: #000000; }
+        .pts { font-size: 8px; color: #d00000; font-weight: bold; margin-top: -2px; }
+
+        /* 涂层参数 */
+        .layer { position: absolute; z-index: 10; touch-action: none; }
+        #c-win { top: 260px; left: 157px; width: 61px; height: 49px; }
+        #c-main { top: 322px; left: 21px; width: 318px; height: 299px; }
+
+        /* --- 黄金比例弹窗 (0.618) --- */
+        #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(10px); }
+        #modal { 
+            width: 300px; height: 185px; background: linear-gradient(135deg, #fff 0%, #eee 100%);
+            border-radius: 24px; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5); transform: scale(0.7); opacity: 0; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #modal.show { transform: scale(1); opacity: 1; }
+        #m-title { color: #111; font-size: 18px; margin: 0; letter-spacing: 1px; }
+        #m-amt { font-size: 38px; font-weight: 900; margin: 10px 0; background: linear-gradient(45deg, #ff416c, #ff4b2b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .retry { padding: 10px 30px; background: #000; color: #fff; border: none; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 12px; }
     </style>
 </head>
 <body>
 
-<div id="preview-area">
-    <div class="card-container" id="main-card">
-        <div id="win-box">88</div>
-        <div id="my-grid"></div>
-        <canvas id="canv-win" class="scratch-layer"></canvas>
-        <canvas id="canv-mine" class="scratch-layer"></canvas>
+<div id="loader"><div id="cd"></div></div>
+
+<div id="app">
+    <div class="card" id="b-card">
+        <div id="w-num"></div>
+        <div id="grid"></div>
+        <canvas id="c-win" class="layer"></canvas>
+        <canvas id="c-main" class="layer"></canvas>
     </div>
 </div>
 
-<div id="panel">
-    <h3>调试台 <span id="ver">V3.0</span></h3>
-    
-    <button id="ghost-toggle" class="master-btn ghost-btn" onclick="toggleGhost()">👻 开启幽灵透视 (隐藏涂层)</button>
-
-    <div class="card">
-        <h4>1. 中奖号码 (Win Area)</h4>
-        <div class="row"><label>位置 Y/X</label>
-            <input type="range" min="100" max="500" value="273" oninput="upd('wt',this.value)">
-            <input type="range" min="0" max="360" value="175" oninput="upd('wl',this.value)">
-        </div>
-        <div class="row"><label>字号/颜色</label>
-            <input type="range" min="10" max="60" value="22" oninput="upd('ws',this.value)">
-            <input type="color" value="#000000" oninput="upd('wc',this.value)">
-        </div>
-        <div class="row"><label>涂层 Y/X</label>
-            <input type="range" min="100" max="500" value="260" oninput="upd('ct',this.value)">
-            <input type="range" min="0" max="360" value="157" oninput="upd('cl',this.value)">
-        </div>
-        <div class="row"><label>涂层 W/H</label>
-            <input type="range" min="10" max="150" value="61" oninput="upd('cw',this.value)">
-            <input type="range" min="10" max="100" value="49" oninput="upd('ch',this.value)">
-        </div>
+<div id="overlay">
+    <div id="modal">
+        <h2 id="m-title">POINTS EARNED</h2>
+        <h1 id="m-amt">0 PTS</h1>
+        <button class="retry" onclick="location.reload()">NEXT CHALLENGE</button>
     </div>
-
-    <div class="card">
-        <h4>2. 玩法网格 (Grid Area)</h4>
-        <div class="row"><label>区域 Y/X</label>
-            <input type="range" min="200" max="600" value="343" oninput="upd('gt',this.value)">
-            <input type="range" min="0" max="100" value="42" oninput="upd('gl',this.value)">
-        </div>
-        <div class="row"><label>行距/列距</label>
-            <input type="range" min="0" max="60" value="29" oninput="upd('gr',this.value)">
-            <input type="range" min="0" max="60" value="34" oninput="upd('gc',this.value)">
-        </div>
-        <div class="row"><label>字号/颜色</label>
-            <input type="range" min="8" max="30" value="16" oninput="upd('gs',this.value)">
-            <input type="color" value="#000000" oninput="upd('gnc',this.value)">
-        </div>
-        <div class="row"><label>PTS颜色</label>
-            <input type="color" value="#d00000" oninput="upd('pc',this.value)">
-            <select onchange="upd('font',this.value)">
-                <option value="Arial">系统默认</option>
-                <option value="'Courier New', monospace">极客等宽</option>
-                <option value="Georgia">优雅衬线</option>
-                <option value="'Impact'">硬核加粗</option>
-            </select>
-        </div>
-    </div>
-
-    <div class="card">
-        <h4>3. 玩法大涂层 (Main Canvas)</h4>
-        <div class="row"><label>垂直 Y/X</label>
-            <input type="range" min="200" max="600" value="322" oninput="upd('mt',this.value)">
-            <input type="range" min="0" max="100" value="21" oninput="upd('ml',this.value)">
-        </div>
-        <div class="row"><label>宽度/高度</label>
-            <input type="range" min="100" max="360" value="318" oninput="upd('mw',this.value)">
-            <input type="range" min="50" max="500" value="299" oninput="upd('mh',this.value)">
-        </div>
-    </div>
-
-    <button class="master-btn save-btn" onclick="exportJSON()">💾 生成最终对齐参数</button>
 </div>
 
 <script>
-    let p = { 
-        wt:273, wl:175, ws:22, wc:'#000000', 
-        ct:260, cl:157, cw:61, ch:49, 
-        gt:343, gl:42, gs:16, gnc:'#000000', pc:'#d00000', gr:29, gc:34, 
-        mt:322, ml:21, mw:318, mh:299, font: 'Arial'
-    };
+    const tg = window.Telegram.WebApp;
+    tg.ready(); tg.expand();
 
-    let isGhost = false;
-
-    function toggleGhost() {
-        isGhost = !isGhost;
-        const btn = document.getElementById('ghost-toggle');
-        const layers = document.querySelectorAll('.scratch-layer');
-        layers.forEach(l => l.classList.toggle('ghost-mode', isGhost));
-        btn.classList.toggle('active', isGhost);
-        btn.innerText = isGhost ? "👁️ 已进入透视模式" : "👻 开启幽灵透视 (隐藏涂层)";
-    }
-
-    function upd(key, val) {
-        p[key] = isNaN(val) ? val : parseInt(val);
-        apply();
-    }
-
-    function apply() {
-        const wb = document.getElementById('win-box');
-        wb.style.top = p.wt+'px'; wb.style.left = p.wl+'px'; 
-        wb.style.fontSize = p.ws+'px'; wb.style.color = p.wc;
-        wb.style.fontFamily = p.font;
-
-        const gd = document.getElementById('my-grid');
-        gd.style.top = p.gt+'px'; gd.style.left = p.gl+'px';
-        gd.style.rowGap = p.gr+'px'; gd.style.columnGap = p.gc+'px';
-        gd.style.fontFamily = p.font;
+    // 25% 盈利率逻辑 + 时尚文案
+    function generatePoints() {
+        const winNum = Math.floor(Math.random()*89)+10;
+        const dice = Math.random();
+        // 1000 PTS 面值，中奖分布
+        let totalWin = dice < 0.5 ? 200 : (dice < 0.85 ? 500 : 2500); 
+        const slots = []; let currentSum = 0;
         
-        gd.querySelectorAll('.num-item').forEach(i => {
-            i.style.fontSize = p.gs+'px';
-            i.style.color = p.gnc;
-            i.querySelector('.pts-text').style.color = p.pc;
-        });
-
-        const cw = document.getElementById('canv-win');
-        cw.style.top = p.ct+'px'; cw.style.left = p.cl+'px'; 
-        cw.width = p.cw; cw.height = p.ch;
-        draw(cw);
-
-        const cm = document.getElementById('canv-mine');
-        cm.style.top = p.mt+'px'; cm.style.left = p.ml+'px'; 
-        cm.width = p.mw; cm.height = p.mh;
-        draw(cm);
+        for(let i=0; i<30; i++) {
+            let n = Math.floor(Math.random()*89)+10; if(n===winNum) n++;
+            let p = [50, 100, 150][Math.floor(Math.random()*3)];
+            if(currentSum < totalWin && Math.random() < 0.2) { n = winNum; p = Math.max(50, totalWin - currentSum); currentSum += p; }
+            slots.push({n, p});
+        }
+        return {winNum, slots, totalWin: currentSum};
     }
 
-    function draw(c) {
-        const ctx = c.getContext('2d');
-        ctx.fillStyle = '#BBB'; ctx.fillRect(0,0,c.width,c.height);
-    }
-
-    function exportJSON() {
-        console.log("ALIGN_DATA:", JSON.stringify(p));
-        alert("对齐参数已记录，请复制发送给AI：\n\n" + JSON.stringify(p));
-    }
+    const game = generatePoints();
 
     window.onload = () => {
         const img = new Image(); img.src = '64005.jpg';
         img.onload = () => {
-            document.getElementById('main-card').style.backgroundImage = `url(64005.jpg)`;
-            const gd = document.getElementById('my-grid');
-            for(let i=0; i<30; i++) {
-                gd.innerHTML += `<div class="num-item">88<div class="pts-text" style="font-size:8px">PTS 500</div></div>`;
-            }
-            apply();
+            document.getElementById('b-card').style.backgroundImage = `url(64005.jpg)`;
+            document.getElementById('w-num').innerText = game.winNum;
+            const grid = document.getElementById('grid');
+            game.slots.forEach(s => {
+                grid.innerHTML += `<div class="item">${s.n}<div class="pts">PTS ${s.p}</div></div>`;
+            });
+            initScratch('c-win', 61, 49);
+            initScratch('c-main', 318, 299, true);
+            startLoader();
         };
     };
+
+    function startLoader() {
+        const el = document.getElementById('cd');
+        const steps = ['3', '2', '1']; let i = 0;
+        const tick = () => {
+            if(i < 3) {
+                el.innerText = steps[i]; el.className = 'zoom';
+                setTimeout(()=>el.className='', 950);
+                i++; setTimeout(tick, 1000);
+            } else {
+                document.getElementById('loader').style.display='none';
+                const a = document.getElementById('app');
+                a.style.display='block'; setTimeout(()=>a.style.opacity='1', 50);
+            }
+        };
+        tick();
+    }
+
+    function initScratch(id, w, h, isCheck = false) {
+        const c = document.getElementById(id);
+        const ctx = c.getContext('2d');
+        c.width = w; c.height = h;
+        
+        // 涂层填充
+        ctx.fillStyle = '#BBB'; ctx.fillRect(0,0,w,h);
+        ctx.globalAlpha = 0.6;
+        for(let i=0; i<300; i++) {
+            ctx.fillStyle = Math.random()>0.5?'#EEE':'#888';
+            ctx.fillRect(Math.random()*w, Math.random()*h, 1, 1);
+        }
+        ctx.globalAlpha = 1.0;
+
+        let active = false;
+        const scratch = (e) => {
+            if(!active) return;
+            const r = c.getBoundingClientRect();
+            const x = (e.touches?e.touches[0].clientX:e.clientX) - r.left;
+            const y = (e.touches?e.touches[0].clientY:e.clientY) - r.top;
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.beginPath(); ctx.arc(x, y, 24, 0, Math.PI*2); ctx.fill();
+            if(isCheck) check(c);
+        };
+
+        c.onmousedown = () => active = true;
+        window.onmouseup = () => active = false;
+        c.onmousemove = scratch;
+        c.ontouchstart = (e) => { e.preventDefault(); active = true; scratch(e); };
+        c.ontouchmove = (e) => { e.preventDefault(); scratch(e); };
+    }
+
+    let done = false;
+    function check(c) {
+        if(done) return;
+        const data = c.getContext('2d').getImageData(0,0,c.width,c.height).data;
+        let hits = 0;
+        for(let i=3; i<data.length; i+=4) if(data[i] === 0) hits++;
+        if(hits / (data.length/4) > 0.95) {
+            done = true;
+            setTimeout(reveal, 800); // 彻底看清后再弹窗
+        }
+    }
+
+    function reveal() {
+        document.getElementById('m-amt').innerText = game.totalWin + " PTS";
+        document.getElementById('overlay').style.display = 'flex';
+        setTimeout(()=>document.getElementById('modal').classList.add('show'), 100);
+    }
 </script>
 </body>
 </html>
