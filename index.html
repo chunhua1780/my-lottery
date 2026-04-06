@@ -3,74 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>拾光·$$ GLOBAL $$</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>拾光·PREMIUM $$</title>
     <style>
-        :root { --gold-grad: linear-gradient(135deg, #f9d423 0%, #ff4e50 100%); --glass: rgba(255, 255, 255, 0.15); }
-        body { background: #000; margin: 0; font-family: "Helvetica Neue", sans-serif; overflow: hidden; color: white; }
+        :root { --gold: #f9d423; --neon-purple: #7000ff; }
+        body { background: #000; margin: 0; font-family: "Impact", "Arial Black", sans-serif; overflow: hidden; color: white; }
 
-        /* --- 1. 流光溢彩倒计时 --- */
-        #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1000; display: flex; justify-content: center; align-items: center; }
-        #cd-canvas { width: 300px; height: 300px; }
+        /* --- 1. 赛博粒子倒计时 --- */
+        #loader { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; justify-content: center; align-items: center; }
+        .cd-text { 
+            font-size: 180px; font-weight: 900; 
+            background: linear-gradient(to bottom, #fff 20%, var(--neon-purple) 50%, #00f2fe 80%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 30px var(--neon-purple));
+            animation: pulse 1s infinite cubic-bezier(0.17, 0.67, 0.83, 0.67);
+        }
+        @keyframes pulse { 0% { transform: scale(0.5); opacity: 0; filter: blur(20px); } 50% { transform: scale(1.1); opacity: 1; filter: blur(0); } 100% { transform: scale(1.5); opacity: 0; filter: blur(10px); } }
 
-        /* --- 2. 核心容器 (锁定你的精准参数) --- */
-        #app { display: none; opacity: 0; transition: opacity 0.8s; }
+        /* --- 2. 核心游戏架构 --- */
+        #app { display: none; opacity: 0; transition: opacity 1s; }
         .card { position: relative; width: 360px; height: 720px; background-size: 100% 100%; margin: 0 auto; }
 
-        /* 中奖号码 */
+        /* 绝对坐标锁定 */
         #w-num { 
-            position: absolute; z-index: 1; display: flex; justify-content: center; align-items: center; font-weight: 900;
-            top: 273px; left: 175px; font-size: 22px; color: #000000;
+            position: absolute; z-index: 1; display: flex; justify-content: center; align-items: center;
+            top: 273px; left: 175px; width: 30px; height: 30px; 
+            font-size: 22px; color: #000; font-weight: 900;
         }
-        /* 玩法网格 (双$符号) */
         #grid { 
             position: absolute; z-index: 1; display: grid; grid-template-columns: repeat(6, 1fr);
-            top: 343px; left: 32px; row-gap: 29px; column-gap: 22px;
+            top: 343px; left: 32px; row-gap: 29px; column-gap: 22px; width: 295px; /* 强制锁定宽度防止偏移 */
         }
-        .item { display: flex; flex-direction: column; justify-content: center; align-items: center; font-weight: 900; font-size: 16px; color: #000000; }
-        .usd-box { font-size: 8px; color: #d00000; font-weight: bold; margin-top: -2px; letter-spacing: 0px; }
+        .item { display: flex; flex-direction: column; justify-content: center; align-items: center; width: 32px; height: 40px; }
+        .num { font-size: 16px; color: #000; line-height: 1; }
+        .usd { font-size: 8px; color: #d00000; font-weight: bold; margin-top: 1px; }
 
-        /* 涂层 */
+        /* 涂层层级 */
         .layer { position: absolute; z-index: 10; touch-action: none; }
         #c-win { top: 260px; left: 157px; width: 61px; height: 49px; }
         #c-main { top: 322px; left: 21px; width: 318px; height: 299px; }
 
-        /* --- 3. 玩法区上方浮动气泡 (不压人版) --- */
-        #bubble-float {
+        /* --- 3. 悬浮美学气泡 (更高、更大、更炫) --- */
+        #bubble {
             position: absolute; 
-            top: 140px; /* 悬浮在玩法区与中奖区中间的空白地带 */
-            left: 50%; transform: translateX(-50%) translateY(20px);
-            width: 320px; height: 100px;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 20px; z-index: 100;
+            top: 100px; /* 往上提了40px */
+            left: 50%; transform: translateX(-50%) scale(0.8);
+            width: 330px; height: 130px; /* 变大一点点 */
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 30px; z-index: 100;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
-            opacity: 0; pointer-events: none; transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            opacity: 0; pointer-events: none; transition: all 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        #bubble-float.active { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
-        #bubble-float::after { /* 装饰性小尾巴 */
-            content: ''; position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%);
-            border-left: 10px solid transparent; border-right: 10px solid transparent;
-            border-top: 10px solid rgba(255,255,255,0.1);
-        }
-
-        .m-title { font-size: 14px; font-weight: bold; color: var(--gold-grad); background: var(--gold-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .m-amt { font-size: 32px; font-weight: 900; margin: 2px 0; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
-        .m-btn { font-size: 11px; background: #fff; color: #000; border: none; padding: 4px 15px; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        #bubble.active { opacity: 1; transform: translateX(-50%) scale(1); pointer-events: auto; }
+        
+        .b-t { font-size: 16px; color: var(--gold); letter-spacing: 2px; text-shadow: 0 0 10px rgba(249, 212, 35, 0.5); }
+        .b-v { font-size: 42px; font-weight: 900; color: #fff; margin: 5px 0; font-family: 'Arial Black'; }
+        .b-btn { background: var(--gold); color: #000; border: none; padding: 6px 25px; border-radius: 50px; font-size: 12px; font-weight: 900; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
     </style>
 </head>
 <body>
 
-<div id="loader"><canvas id="cd-canvas"></canvas></div>
+<div id="loader"><div class="cd-text" id="cd-val">3</div></div>
 
 <div id="app">
-    <div class="card" id="b-card">
-        <div id="bubble-float">
-            <div class="m-title">CONGRATS! TARGET HIT</div>
-            <div class="m-amt" id="m-amt">$ 0 $</div>
-            <button class="m-btn" onclick="location.reload()">ONE MORE TIME</button>
+    <div class="card" id="card-bg">
+        <div id="bubble">
+            <div class="b-t">★ MISSION ACCOMPLISHED ★</div>
+            <div class="b-v" id="res-val">$ 0 $</div>
+            <button class="b-btn" onclick="location.reload()">PLAY AGAIN</button>
         </div>
 
         <div id="w-num"></div>
@@ -81,109 +82,107 @@
 </div>
 
 <script>
-    // --- 1. 科幻倒计时引擎 ---
-    const cvs = document.getElementById('cd-canvas');
-    const ctx = cvs.getContext('2d');
-    cvs.width = 600; cvs.height = 600;
-    let count = 3;
-
-    function drawCD() {
-        ctx.clearRect(0, 0, 600, 600);
-        const grad = ctx.createLinearGradient(0, 0, 600, 600);
-        grad.addColorStop(0, '#00f2fe'); grad.addColorStop(0.5, '#7000ff'); grad.addColorStop(1, '#ff0055');
-        
-        ctx.font = "bold 300px Impact";
-        ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.shadowBlur = 30; ctx.shadowColor = "rgba(112, 0, 255, 0.5)";
-        
-        // 绘制彩色液态字
-        ctx.fillStyle = grad;
-        ctx.fillText(count, 300, 300);
-        
-        // 绘制外圈进度
-        ctx.beginPath();
-        ctx.strokeStyle = grad; ctx.lineWidth = 10;
-        ctx.arc(300, 300, 220, 0, Math.PI * 2 * (count/3));
-        ctx.stroke();
-
-        if (count > 0) {
-            setTimeout(() => { count--; drawCD(); }, 1000);
+    // --- 1. 潮流倒计时控制 ---
+    let time = 3;
+    const cdVal = document.getElementById('cd-val');
+    const timer = setInterval(() => {
+        time--;
+        if(time > 0) {
+            cdVal.innerText = time;
         } else {
+            clearInterval(timer);
             document.getElementById('loader').style.display = 'none';
             const a = document.getElementById('app');
             a.style.display = 'block'; setTimeout(()=>a.style.opacity='1', 50);
         }
-    }
-    drawCD();
+    }, 1000);
 
-    // --- 2. 逻辑引擎 ---
-    function generateGame() {
-        const winNum = 88;
+    // --- 2. 逻辑内核 ---
+    const WIN_NUM = 88;
+    function buildGame() {
         const dice = Math.random();
-        let total = dice < 0.5 ? 200 : (dice < 0.8 ? 800 : 3000);
-        const slots = []; let current = 0;
+        let target = dice < 0.4 ? 300 : (dice < 0.8 ? 1000 : 5000);
+        const data = []; let sum = 0;
         for(let i=0; i<30; i++) {
-            let n = Math.floor(Math.random()*89)+10; if(n===winNum) n++;
-            let p = [20, 50, 100][Math.floor(Math.random()*3)];
-            if(current < total && Math.random() < 0.25) { n = winNum; p = Math.max(50, total-current); current += p; }
-            slots.push({n, p});
+            let n = Math.floor(Math.random()*80)+10; if(n===WIN_NUM) n++;
+            let p = [10, 50, 100][Math.floor(Math.random()*3)];
+            if(sum < target && Math.random() < 0.2) { n = WIN_NUM; p = Math.max(50, target-sum); sum += p; }
+            data.push({n, p});
         }
-        return {winNum, slots, total: current};
+        return {data, sum};
     }
 
-    const game = generateGame();
+    const state = buildGame();
 
     window.onload = () => {
         const img = new Image(); img.src = '64005.jpg';
         img.onload = () => {
-            document.getElementById('b-card').style.backgroundImage = `url(64005.jpg)`;
-            document.getElementById('w-num').innerText = game.winNum;
+            document.getElementById('card-bg').style.backgroundImage = `url(64005.jpg)`;
+            document.getElementById('w-num').innerText = WIN_NUM;
             const grid = document.getElementById('grid');
-            game.slots.forEach(s => {
-                // 使用双美金符号前后包裹
-                grid.innerHTML += `<div class="item">${s.n}<div class="usd-box">$ ${s.p} $</div></div>`;
+            state.data.forEach(d => {
+                grid.innerHTML += `<div class="item"><span class="num">${d.n}</span><span class="usd">$ ${d.p} $</span></div>`;
             });
-            initScratch('c-win', 61, 49);
-            initScratch('c-main', 318, 299, true);
+            initScratch('c-win', 61, 49, 'win');
+            initScratch('c-main', 318, 299, 'main');
         };
     };
 
-    function initScratch(id, w, h, isCheck = false) {
+    // --- 3. 刮奖与检测引擎 ---
+    let winClean = false;
+    let mainClean = false;
+
+    function initScratch(id, w, h, type) {
         const c = document.getElementById(id);
         const ctx = c.getContext('2d');
         c.width = w; c.height = h;
-        ctx.fillStyle = '#BBB'; ctx.fillRect(0,0,w,h);
         
-        let active = false;
-        const scratch = (e) => {
-            if(!active) return;
+        // 更有质感的图层填充
+        const g = ctx.createLinearGradient(0,0,w,h);
+        g.addColorStop(0, '#ccc'); g.addColorStop(0.5, '#999'); g.addColorStop(1, '#bbb');
+        ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
+        
+        let drawing = false;
+        const scrub = (e) => {
+            if(!drawing) return;
             const r = c.getBoundingClientRect();
             const x = (e.touches?e.touches[0].clientX:e.clientX) - r.left;
             const y = (e.touches?e.touches[0].clientY:e.clientY) - r.top;
             ctx.globalCompositeOperation = 'destination-out';
-            ctx.beginPath(); ctx.arc(x, y, 25, 0, Math.PI*2); ctx.fill();
-            if(isCheck) check(c);
+            ctx.beginPath(); ctx.arc(x, y, 22, 0, Math.PI*2); ctx.fill();
+            detect(c, type);
         };
-        c.onmousedown = () => active = true;
-        window.onmouseup = () => active = false;
-        c.onmousemove = scratch;
-        c.ontouchstart = (e) => { e.preventDefault(); active = true; scratch(e); };
-        c.ontouchmove = (e) => { e.preventDefault(); scratch(e); };
+
+        c.onmousedown = () => drawing = true;
+        window.onmouseup = () => drawing = false;
+        c.onmousemove = scrub;
+        c.ontouchstart = (e) => { e.preventDefault(); drawing = true; scrub(e); };
+        c.ontouchmove = (e) => { e.preventDefault(); scrub(e); };
     }
 
-    let isDone = false;
-    function check(c) {
-        if(isDone) return;
+    function detect(c, type) {
+        if((type==='win' && winClean) || (type==='main' && mainClean)) return;
         const data = c.getContext('2d').getImageData(0,0,c.width,c.height).data;
         let hits = 0;
         for(let i=3; i<data.length; i+=4) if(data[i] === 0) hits++;
-        if(hits / (data.length/4) > 0.95) {
-            isDone = true;
-            setTimeout(() => {
-                document.getElementById('m-amt').innerText = `$ ${game.total} $`;
-                document.getElementById('bubble-float').classList.add('active');
-            }, 600);
+        const ratio = hits / (data.length/4);
+        
+        if(ratio > 0.95) {
+            if(type === 'win') winClean = true;
+            if(type === 'main') mainClean = true;
         }
+
+        // 双重校验：必须两个区域都刮干净
+        if(winClean && mainClean) {
+            setTimeout(showWinner, 600);
+        }
+    }
+
+    function showWinner() {
+        const b = document.getElementById('bubble');
+        if(b.classList.contains('active')) return;
+        document.getElementById('res-val').innerText = `$ ${state.sum} $`;
+        b.classList.add('active');
     }
 </script>
 </body>
