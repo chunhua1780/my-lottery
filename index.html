@@ -3,49 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>拾光·装修调试模式</title>
+    <title>拾光·透视对齐工作台</title>
     <style>
-        :root { --neon: #00f2fe; }
-        body { background: #111; margin: 0; font-family: "sans-serif"; display: flex; }
+        :root { --neon: #00f2fe; --gold: #ffeb3b; }
+        body { background: #111; margin: 0; font-family: "sans-serif"; display: flex; overflow: hidden; }
 
-        /* --- 左侧彩票预览区 --- */
+        /* --- 左侧预览区 --- */
         #preview-area {
             flex: 1; height: 100vh; position: relative; 
             display: flex; justify-content: center; align-items: center;
-            overflow: hidden; background: #222;
+            background: #222;
         }
 
         .card-container { 
             position: relative; width: 360px; height: 720px; 
-            background-size: 100% 100%; box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            background-size: 100% 100%; box-shadow: 0 0 50px rgba(0,0,0,0.8);
         }
 
-        /* 元素定位 */
         #win-box { position: absolute; z-index: 1; display: flex; justify-content: center; align-items: center; font-weight: 900; pointer-events: none; }
         #my-grid { position: absolute; z-index: 1; display: grid; grid-template-columns: repeat(6, 1fr); pointer-events: none; }
         .num-item { display: flex; flex-direction: column; justify-content: center; align-items: center; font-weight: 900; }
-        .prize-item { font-weight: bold; }
-        .scratch-layer { position: absolute; z-index: 10; border: 1px solid rgba(0, 242, 254, 0.3); }
+        .scratch-layer { position: absolute; z-index: 10; transition: opacity 0.3s; }
 
-        /* --- 右侧全功能控制台 --- */
+        /* --- 右侧控制台 --- */
         #debug-panel {
-            width: 320px; height: 100vh; background: #000; color: #fff;
-            padding: 15px; overflow-y: auto; border-left: 2px solid var(--neon);
-            font-size: 13px; box-sizing: border-box;
+            width: 340px; height: 100vh; background: #000; color: #fff;
+            padding: 20px; overflow-y: auto; border-left: 2px solid var(--neon);
+            box-sizing: border-box;
         }
-        h3 { color: var(--neon); border-bottom: 1px solid var(--neon); padding-bottom: 5px; margin-top: 0; }
-        .ctrl-grp { background: #1a1a1a; padding: 10px; margin-bottom: 15px; border-radius: 8px; }
-        .ctrl-grp h4 { margin: 0 0 10px 0; font-size: 12px; color: #ffeb3b; }
-        label { display: flex; justify-content: space-between; margin-bottom: 5px; color: #ccc; }
-        label span { color: var(--neon); font-family: monospace; }
-        input[type=range] { width: 100%; margin-bottom: 10px; accent-color: var(--neon); }
+        h3 { color: var(--neon); border-bottom: 2px solid var(--neon); padding-bottom: 10px; margin-top: 0; }
         
-        .action-btn {
-            width: 100%; padding: 12px; margin-bottom: 10px; border: none; border-radius: 5px;
-            font-weight: bold; cursor: pointer;
-        }
-        .btn-save { background: var(--neon); color: #000; }
-        .btn-reset { background: #555; color: #fff; }
+        /* 核心开关按钮 */
+        .master-switches { display: flex; gap: 10px; margin-bottom: 20px; }
+        .sw-btn { flex: 1; padding: 10px; border: 1px solid var(--neon); background: transparent; color: var(--neon); cursor: pointer; border-radius: 5px; font-size: 12px; }
+        .sw-btn.active { background: var(--neon); color: #000; font-weight: bold; }
+
+        .ctrl-grp { background: #1a1a1a; padding: 12px; margin-bottom: 15px; border-radius: 8px; border-left: 3px solid var(--gold); }
+        .ctrl-grp h4 { margin: 0 0 10px 0; font-size: 13px; color: var(--gold); }
+        label { display: flex; justify-content: space-between; margin-bottom: 8px; color: #ccc; font-size: 12px; }
+        label span { color: var(--neon); font-family: monospace; font-size: 14px; }
+        input[type=range] { width: 100%; accent-color: var(--neon); cursor: pointer; }
+        
+        .action-btn { width: 100%; padding: 15px; margin-bottom: 10px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 14px; }
+        .btn-save { background: linear-gradient(45deg, #00f2fe, #4facfe); color: #000; }
     </style>
 </head>
 <body>
@@ -60,71 +60,91 @@
     </div>
 
     <div id="debug-panel">
-        <h3>🎨 拾光·像素对齐工作台</h3>
-        <p style="font-size: 11px; color: #888;">调整完成后，点击下方保存按钮获取代码。</p>
+        <h3>🛠 像素级对齐工作台</h3>
+        
+        <div class="master-switches">
+            <button id="sw-layer" class="sw-btn active" onclick="toggleLayer()">涂层: 可见</button>
+            <button id="sw-modal" class="sw-btn active" onclick="toggleModalLogic()">弹窗: 已屏蔽</button>
+        </div>
 
         <div class="ctrl-grp">
-            <h4>1. 中奖号码 (数字)</h4>
-            <label>垂直位置 Y: <span id="v_wt">266</span></label>
+            <h4>1. 中奖号码数字</h4>
+            <label>垂直 Y: <span id="v_wt">266</span></label>
             <input type="range" min="100" max="500" value="266" oninput="upd('wt',this.value,'v_wt')">
-            <label>水平位置 X: <span id="v_wl">169</span></label>
+            <label>水平 X: <span id="v_wl">169</span></label>
             <input type="range" min="0" max="360" value="169" oninput="upd('wl',this.value,'v_wl')">
-            <label>字体大小: <span id="v_ws">22</span></label>
+            <label>字号: <span id="v_ws">22</span></label>
             <input type="range" min="10" max="60" value="22" oninput="upd('ws',this.value,'v_ws')">
-            <label>数字颜色</label>
-            <input type="color" value="#000000" oninput="upd('wc',this.value)">
+            <input type="color" value="#000000" oninput="upd('wc',this.value)" style="width:100%; height:30px; border:none; background:transparent;">
         </div>
 
         <div class="ctrl-grp">
             <h4>2. 中奖区涂层 (Canvas)</h4>
-            <label>垂直位置 Y: <span id="v_ct">260</span></label>
+            <label>垂直 Y: <span id="v_ct">260</span></label>
             <input type="range" min="100" max="500" value="260" oninput="upd('ct',this.value,'v_ct')">
-            <label>水平位置 X: <span id="v_cl">160</span></label>
+            <label>水平 X: <span id="v_cl">160</span></label>
             <input type="range" min="0" max="360" value="160" oninput="upd('cl',this.value,'v_cl')">
-            <label>涂层宽度: <span id="v_cw">55</span></label>
+            <label>宽度: <span id="v_cw">55</span></label>
             <input type="range" min="10" max="150" value="55" oninput="upd('cw',this.value,'v_cw')">
-            <label>涂层高度: <span id="v_ch">45</span></label>
+            <label>高度: <span id="v_ch">45</span></label>
             <input type="range" min="10" max="100" value="45" oninput="upd('ch',this.value,'v_ch')">
         </div>
 
         <div class="ctrl-grp">
-            <h4>3. 玩法区 (30个数字网格)</h4>
+            <h4>3. 玩法网格数字</h4>
             <label>区域垂直 Y: <span id="v_gt">326</span></label>
             <input type="range" min="200" max="600" value="326" oninput="upd('gt',this.value,'v_gt')">
             <label>区域水平 X: <span id="v_gl">25</span></label>
             <input type="range" min="0" max="100" value="25" oninput="upd('gl',this.value,'v_gl')">
-            <label>数字字号: <span id="v_gs">14</span></label>
+            <label>行间距: <span id="v_gr">2</span></label>
+            <input type="range" min="0" max="40" value="2" oninput="upd('gr',this.value,'v_gr')">
+            <label>列间距: <span id="v_gc">9</span></label>
+            <input type="range" min="0" max="40" value="9" oninput="upd('gc',this.value,'v_gc')">
+            <label>字号: <span id="v_gs">14</span></label>
             <input type="range" min="8" max="25" value="14" oninput="upd('gs',this.value,'v_gs')">
-            <label>行间距 (Row): <span id="v_gr">2</span></label>
-            <input type="range" min="0" max="30" value="2" oninput="upd('gr',this.value,'v_gr')">
-            <label>列间距 (Col): <span id="v_gc">9</span></label>
-            <input type="range" min="0" max="30" value="9" oninput="upd('gc',this.value,'v_gc')">
         </div>
 
         <div class="ctrl-grp">
             <h4>4. 玩法区大涂层</h4>
-            <label>垂直位置 Y: <span id="v_mt">322</span></label>
+            <label>垂直 Y: <span id="v_mt">322</span></label>
             <input type="range" min="200" max="600" value="322" oninput="upd('mt',this.value,'v_mt')">
-            <label>水平位置 X: <span id="v_ml">21</span></label>
+            <label>水平 X: <span id="v_ml">21</span></label>
             <input type="range" min="0" max="100" value="21" oninput="upd('ml',this.value,'v_ml')">
-            <label>涂层宽度: <span id="v_mw">318</span></label>
+            <label>宽度: <span id="v_mw">318</span></label>
             <input type="range" min="100" max="360" value="318" oninput="upd('mw',this.value,'v_mw')">
-            <label>涂层高度: <span id="v_mh">299</span></label>
+            <label>高度: <span id="v_mh">299</span></label>
             <input type="range" min="50" max="500" value="299" oninput="upd('mh',this.value,'v_mh')">
         </div>
 
-        <button class="action-btn btn-save" onclick="exportConfig()">💾 保存并复制参数</button>
-        <button class="action-btn btn-reset" onclick="location.reload()">🔄 重置画布</button>
+        <button class="action-btn btn-save" onclick="exportConfig()">💾 导出参数并发送</button>
     </div>
 
     <script>
-        // 初始参数池
+        let isLayerVisible = true;
+        let isModalBlocked = true;
+
         let p = { 
             wt:266, wl:169, ws:22, wc:'#000000', 
             ct:260, cl:160, cw:55, ch:45,
             gt:326, gl:25, gs:14, gr:2, gc:9,
             mt:322, ml:21, mw:318, mh:299
         };
+
+        function toggleLayer() {
+            isLayerVisible = !isLayerVisible;
+            const btn = document.getElementById('sw-layer');
+            const layers = document.querySelectorAll('.scratch-layer');
+            layers.forEach(l => l.style.opacity = isLayerVisible ? "1" : "0.1"); // 设置为0.1可以看到淡淡的轮廓
+            btn.innerText = isLayerVisible ? "涂层: 可见" : "涂层: 已透视";
+            btn.classList.toggle('active');
+        }
+
+        function toggleModalLogic() {
+            isModalBlocked = !isModalBlocked;
+            const btn = document.getElementById('sw-modal');
+            btn.innerText = isModalBlocked ? "弹窗: 已屏蔽" : "弹窗: 正常运行";
+            btn.classList.toggle('active');
+        }
 
         function upd(key, val, vid) {
             p[key] = isNaN(val) ? val : parseInt(val);
@@ -133,55 +153,49 @@
         }
 
         function apply() {
-            // 中奖数字
             const wb = document.getElementById('win-box');
             wb.style.top = p.wt+'px'; wb.style.left = p.wl+'px'; 
             wb.style.fontSize = p.ws+'px'; wb.style.color = p.wc;
 
-            // 中奖涂层
             const cw = document.getElementById('canv-win');
             cw.style.top = p.ct+'px'; cw.style.left = p.cl+'px'; 
             cw.width = p.cw; cw.height = p.ch;
-            drawLayer(cw);
+            draw(cw);
 
-            // 玩法网格
             const gd = document.getElementById('my-grid');
             gd.style.top = p.gt+'px'; gd.style.left = p.gl+'px';
             gd.style.rowGap = p.gr+'px'; gd.style.columnGap = p.gc+'px';
             gd.querySelectorAll('.num-item').forEach(i => i.style.fontSize = p.gs+'px');
 
-            // 玩法涂层
             const cm = document.getElementById('canv-mine');
             cm.style.top = p.mt+'px'; cm.style.left = p.ml+'px'; 
             cm.width = p.mw; cm.height = p.mh;
-            drawLayer(cm);
+            draw(cm);
         }
 
-        function drawLayer(canvas) {
-            const ctx = canvas.getContext('2d');
+        function draw(c) {
+            const ctx = c.getContext('2d');
             ctx.fillStyle = '#C0C0C0';
-            ctx.fillRect(0,0,canvas.width, canvas.height);
-            for(let i=0; i<150; i++) {
-                ctx.fillStyle = Math.random()>0.5 ? '#D0D0D0' : '#A0A0A0';
-                ctx.fillRect(Math.random()*canvas.width, Math.random()*canvas.height, 2, 2);
+            ctx.fillRect(0,0,c.width, c.height);
+            for(let i=0; i<100; i++) {
+                ctx.fillStyle = Math.random()>0.5 ? '#E0E0E0' : '#A0A0A0';
+                ctx.fillRect(Math.random()*c.width, Math.random()*c.height, 1, 1);
             }
         }
 
         function exportConfig() {
-            const result = JSON.stringify(p, null, 4);
-            console.log("最终参数：", result);
-            alert("配置已记录！请复制以下内容发送给AI：\n\n" + result);
+            console.log("CONFIG_START", JSON.stringify(p), "CONFIG_END");
+            alert("对齐完成！请复制下方代码发给AI：\n\n" + JSON.stringify(p));
         }
 
         window.onload = () => {
             const img = new Image();
-            img.src = '64005.jpg'; // 确保你的背景图文件名正确
+            img.src = '64005.jpg';
             img.onload = () => {
                 document.getElementById('main-card').style.backgroundImage = `url(64005.jpg)`;
-                // 生成模拟数据
                 const grid = document.getElementById('my-grid');
                 for(let i=0; i<30; i++) {
-                    grid.innerHTML += `<div class="num-item">88<div class="prize-item" style="font-size:10px">¥10</div></div>`;
+                    grid.innerHTML += `<div class="num-item">88<div class="prize-item" style="font-size:8px; color:darkred">¥10</div></div>`;
                 }
                 apply();
             };
