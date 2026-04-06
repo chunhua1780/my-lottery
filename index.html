@@ -3,69 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>中国龙-刮刮乐</title>
+    <title>拾光·中国龙</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { 
-            background: #000; margin: 0; padding: 0;
-            display: flex; justify-content: center; align-items: flex-start;
-            min-height: 100vh; overflow: hidden;
-            font-family: "Microsoft YaHei", sans-serif;
-            -webkit-user-select: none; user-select: none;
+        body { background: #000; margin: 0; font-family: "Microsoft YaHei", sans-serif; overflow: hidden; }
+        
+        /* --- 倒计时加载层 --- */
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #1a1a1a; z-index: 100;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: #d4af37;
         }
+        .spinner {
+            width: 50px; height: 50px; border: 3px solid rgba(212,175,55,0.3);
+            border-top: 3px solid #d4af37; border-radius: 50%;
+            animation: spin 1s linear infinite; margin-bottom: 15px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+        /* --- 主容器（初始隐藏） --- */
         .card-container { 
             position: relative; width: 360px; height: 720px;
             background: url('64005.jpg') no-repeat; background-size: cover;
-            flex-shrink: 0;
+            visibility: hidden; margin: 0 auto;
         }
 
-        /* 1. 中奖号码 (修正后: T=266, L=169) */
-        #win-box { 
-            position: absolute; 
-            top: 266px; /* 原274 - 8 */
-            left: 169px; /* 原177 - 8 */
-            width: 40px; height: 35px; z-index: 1;
-            display: flex; justify-content: center; align-items: center; 
-            font-size: 22px; color: #000; font-weight: 900;
-            text-shadow: 1px 1px 0 #fff;
-        }
-        
-        /* 2. 我的号码网格 (维持之前校准好的参数) */
-        #my-grid { 
-            position: absolute; top: 326px; left: 25px; 
-            width: 310px; z-index: 1;
-            display: grid; grid-template-columns: repeat(6, 1fr);
-            row-gap: 2px; column-gap: 9px;
-        }
-
-        .num-item { 
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            color: #000; font-weight: 900; line-height: 1.1;
-            height: 55px; font-size: 14px;
-            text-shadow: 1px 1px 0 #fff;
-        }
-        .prize-item { font-size: 10px; color: #8B0000; font-weight: 900; }
-
-        /* 3. 刮奖涂层 */
+        /* 中奖号码及网格样式 (保持之前的校准) */
+        #win-box { position: absolute; top: 266px; left: 169px; width: 40px; height: 35px; z-index: 1; display: flex; justify-content: center; align-items: center; font-size: 22px; color: #000; font-weight: 900; }
+        #my-grid { position: absolute; top: 326px; left: 25px; width: 310px; z-index: 1; display: grid; grid-template-columns: repeat(6, 1fr); row-gap: 2px; column-gap: 9px; }
+        .num-item { display: flex; flex-direction: column; justify-content: center; align-items: center; color: #000; font-weight: 900; height: 55px; font-size: 14px; }
+        .prize-item { font-size: 10px; color: #8B0000; }
         .scratch-layer { position: absolute; z-index: 10; touch-action: none; }
-        
-        /* 中奖号涂层同步修正 (修正后: T=260, L=160) */
-        #canv-win { 
-            top: 260px; /* 原268 - 8 */
-            left: 160px; /* 原168 - 8 */
-            width: 55px; height: 45px; 
-        }
-        /* 我的号码涂层保持不变 */
+        #canv-win { top: 260px; left: 160px; width: 55px; height: 45px; }
         #canv-mine { top: 322px; left: 21px; width: 318px; height: 299px; }
     </style>
 </head>
 <body>
 
-    <div class="card-container">
+    <div id="loader">
+        <div class="spinner"></div>
+        <div id="loader-text">正在开启拾光之旅... 3s</div>
+    </div>
+
+    <div class="card-container" id="main-card">
         <div id="win-box"></div>
         <div id="my-grid"></div>
-        
         <canvas id="canv-win" class="scratch-layer"></canvas>
         <canvas id="canv-mine" class="scratch-layer"></canvas>
     </div>
@@ -74,35 +57,82 @@
         const tg = window.Telegram.WebApp;
         tg.ready();
         tg.expand();
-        tg.setHeaderColor('#000000');
 
-        // 随机生成逻辑
-        const luckyNum = Math.floor(Math.random() * 89) + 10;
-        document.getElementById('win-box').innerText = luckyNum;
+        // --- 核心盈利控制算法 (40% 利润) ---
+        function generateGameData() {
+            const luckyNum = Math.floor(Math.random() * 89) + 10;
+            const cardDice = Math.random(); 
+            let maxPrize = 0;
 
-        let pool = Array.from({length: 90}, (_, i) => i + 10).sort(() => Math.random() - 0.5);
-        const myBox = document.getElementById('my-grid');
-        const prizeList = [10, 20, 50, 100, 500, 1000, 5000];
+            // 策略：70%全空，25%小额回扣，5%惊喜
+            if (cardDice < 0.70) {
+                maxPrize = 0;
+            } else if (cardDice < 0.95) {
+                maxPrize = Math.random() * 50 + 10; // 10-60积分
+            } else {
+                maxPrize = Math.random() * 500 + 100; // 100-600积分
+            }
 
-        for (let i = 0; i < 30; i++) {
-            let isWin = Math.random() > 0.9; 
-            let num = isWin ? luckyNum : (pool[i] === luckyNum ? pool[35] : pool[i]);
-            let prize = isWin ? prizeList[Math.floor(Math.random() * prizeList.length)] : [2, 5, 10][Math.floor(Math.random()*3)];
-            let prizeStr = prize >= 10000 ? (prize/10000) + "W" : prize;
-            myBox.innerHTML += `<div class="num-item">${num}<div class="prize-item">¥${prizeStr}</div></div>`;
-            if (isWin && prize >= 500) tg.HapticFeedback.notificationOccurred('success');
+            let currentAwarded = 0;
+            const spots = [];
+            for (let i = 0; i < 30; i++) {
+                let isWin = false;
+                let prize = 0;
+                let num = Math.floor(Math.random() * 89) + 10;
+                if (num === luckyNum) num += 1;
+
+                // 如果有配额且触发概率
+                if (currentAwarded < maxPrize && Math.random() < 0.15) {
+                    isWin = true;
+                    num = luckyNum;
+                    prize = Math.floor((maxPrize - currentAwarded) * (Math.random() * 0.5 + 0.3));
+                    if (prize < 2) prize = Math.floor(maxPrize - currentAwarded);
+                    currentAwarded += prize;
+                }
+                
+                // 如果没中奖，显示一个干扰奖金
+                if (!isWin) prize = [10, 50, 100, 500][Math.floor(Math.random()*4)];
+                spots.push({ num, prize, isWin });
+            }
+            return { luckyNum, spots };
         }
 
-        // 初始化涂层
+        // --- 渲染与加载控制 ---
+        window.onload = function() {
+            const data = generateGameData();
+            document.getElementById('win-box').innerText = data.luckyNum;
+            const grid = document.getElementById('my-grid');
+            
+            data.spots.forEach(s => {
+                grid.innerHTML += `<div class="num-item">${s.num}<div class="prize-item">¥${s.prize}</div></div>`;
+            });
+
+            initScratch('canv-win', 55, 45);
+            initScratch('canv-mine', 318, 299);
+
+            // 模拟 3 秒优雅倒计时
+            let count = 3;
+            const timer = setInterval(() => {
+                count--;
+                document.getElementById('loader-text').innerText = `正在开启拾光之旅... ${count}s`;
+                if (count <= 0) {
+                    clearInterval(timer);
+                    document.getElementById('loader').style.display = 'none';
+                    document.getElementById('main-card').style.visibility = 'visible';
+                }
+            }, 800);
+        };
+
         function initScratch(id, w, h) {
             const c = document.getElementById(id);
             const ctx = c.getContext('2d');
             c.width = w; c.height = h;
             ctx.fillStyle = '#C0C0C0';
             ctx.fillRect(0, 0, w, h);
-            for(let i=0; i<400; i++) {
-                ctx.fillStyle = Math.random() > 0.5 ? '#DCDCDC' : '#999';
-                ctx.fillRect(Math.random()*w, Math.random()*h, 1.2, 1.2);
+            // 绘制金属质感干扰线
+            for(let i=0; i<300; i++) {
+                ctx.fillStyle = Math.random() > 0.5 ? '#DCDCDC' : '#aaa';
+                ctx.fillRect(Math.random()*w, Math.random()*h, 1, 1);
             }
 
             let active = false;
@@ -116,17 +146,10 @@
                 ctx.arc(x, y, 18, 0, Math.PI * 2);
                 ctx.fill();
             };
-
-            c.addEventListener('mousedown', () => active = true);
-            c.addEventListener('touchstart', (e) => { active = true; scratch(e); });
-            window.addEventListener('mouseup', () => active = false);
-            window.addEventListener('touchend', () => active = false);
-            c.addEventListener('mousemove', scratch);
+            c.addEventListener('touchstart', (e) => { active = true; scratch(e); }, {passive: false});
             c.addEventListener('touchmove', (e) => { e.preventDefault(); scratch(e); }, {passive: false});
+            window.addEventListener('touchend', () => active = false);
         }
-
-        initScratch('canv-win', 55, 45);
-        initScratch('canv-mine', 318, 299);
     </script>
 </body>
 </html>
