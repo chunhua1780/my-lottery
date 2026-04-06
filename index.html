@@ -3,156 +3,179 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>拾光·PREMIUM $$</title>
+    <title>工程调试站 V4.0 - 像素级对齐</title>
     <style>
-        :root { --gold: #f9d423; --neon-purple: #7000ff; }
-        body { background: #000; margin: 0; font-family: "Impact", "Arial Black", sans-serif; overflow: hidden; color: white; }
+        :root { --neon: #00f2fe; --gold: #f9d423; --panel-bg: rgba(0,0,0,0.9); }
+        body { background: #1a1a1a; margin: 0; font-family: "Arial", sans-serif; display: flex; color: #fff; height: 100vh; overflow: hidden; }
 
-        /* --- 1. 赛博粒子倒计时 --- */
-        #loader { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; justify-content: center; align-items: center; }
-        .cd-text { 
-            font-size: 180px; font-weight: 900; 
-            background: linear-gradient(to bottom, #fff 20%, var(--neon-purple) 50%, #00f2fe 80%);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 30px var(--neon-purple));
-            animation: pulse 1s infinite cubic-bezier(0.17, 0.67, 0.83, 0.67);
-        }
-        @keyframes pulse { 0% { transform: scale(0.5); opacity: 0; filter: blur(20px); } 50% { transform: scale(1.1); opacity: 1; filter: blur(0); } 100% { transform: scale(1.5); opacity: 0; filter: blur(10px); } }
-
-        /* --- 2. 核心游戏架构 --- */
-        #app { display: none; opacity: 0; transition: opacity 1s; }
-        .card { position: relative; width: 360px; height: 720px; background-size: 100% 100%; margin: 0 auto; }
-
-        /* 绝对坐标锁定 */
-        #w-num { 
-            position: absolute; z-index: 1; display: flex; justify-content: center; align-items: center;
-            top: 273px; left: 175px; width: 30px; height: 30px; 
-            font-size: 22px; color: #000; font-weight: 900;
-        }
-        #grid { 
-            position: absolute; z-index: 1; display: grid; grid-template-columns: repeat(6, 1fr);
-            top: 343px; left: 32px; row-gap: 29px; column-gap: 22px; width: 295px; /* 强制锁定宽度防止偏移 */
-        }
-        .item { display: flex; flex-direction: column; justify-content: center; align-items: center; width: 32px; height: 40px; }
-        .num { font-size: 16px; color: #000; line-height: 1; }
-        .usd { font-size: 8px; color: #d00000; font-weight: bold; margin-top: 1px; }
-
-        /* 涂层层级 */
-        .layer { position: absolute; z-index: 10; touch-action: none; }
-        #c-win { top: 260px; left: 157px; width: 61px; height: 49px; }
-        #c-main { top: 322px; left: 21px; width: 318px; height: 299px; }
-
-        /* --- 3. 悬浮美学气泡 (更高、更大、更炫) --- */
-        #bubble {
-            position: absolute; 
-            top: 100px; /* 往上提了40px */
-            left: 50%; transform: translateX(-50%) scale(0.8);
-            width: 330px; height: 130px; /* 变大一点点 */
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            border-radius: 30px; z-index: 100;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            opacity: 0; pointer-events: none; transition: all 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        #bubble.active { opacity: 1; transform: translateX(-50%) scale(1); pointer-events: auto; }
+        /* --- 预览容器 --- */
+        #stage { flex: 1; position: relative; display: flex; justify-content: center; align-items: center; background: #333; overflow: hidden; }
+        .canvas-card { position: relative; width: 360px; height: 720px; background-size: 100% 100%; box-shadow: 0 0 50px #000; scale: 0.9; }
         
-        .b-t { font-size: 16px; color: var(--gold); letter-spacing: 2px; text-shadow: 0 0 10px rgba(249, 212, 35, 0.5); }
-        .b-v { font-size: 42px; font-weight: 900; color: #fff; margin: 5px 0; font-family: 'Arial Black'; }
-        .b-btn { background: var(--gold); color: #000; border: none; padding: 6px 25px; border-radius: 50px; font-size: 12px; font-weight: 900; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #w-num { position: absolute; z-index: 2; display: flex; justify-content: center; align-items: center; font-weight: 900; pointer-events: none; }
+        #grid { position: absolute; z-index: 2; display: grid; grid-template-columns: repeat(6, 1fr); pointer-events: none; }
+        .item { display: flex; flex-direction: column; justify-content: center; align-items: center; font-weight: 900; }
+        
+        .layer { position: absolute; z-index: 10; transition: opacity 0.3s; }
+        .hide-layer { opacity: 0 !important; pointer-events: none !important; }
+
+        /* --- 调试面板 --- */
+        #controls { width: 380px; background: var(--panel-bg); border-left: 1px solid #444; padding: 15px; overflow-y: auto; box-sizing: border-box; font-size: 12px; }
+        h2 { color: var(--neon); font-size: 16px; margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .group { background: #222; padding: 10px; margin-bottom: 10px; border-radius: 5px; border-left: 3px solid var(--neon); }
+        .group h3 { margin: 0 0 10px 0; font-size: 11px; color: #888; text-transform: uppercase; }
+        
+        .ctrl-row { display: flex; align-items: center; margin-bottom: 6px; }
+        .ctrl-row label { width: 100px; color: #bbb; }
+        .ctrl-row input[type=range] { flex: 1; accent-color: var(--neon); }
+        .ctrl-row span { width: 35px; text-align: right; color: var(--neon); font-family: monospace; }
+        
+        .btn { width: 100%; padding: 10px; margin-top: 5px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-toggle { background: #444; color: #fff; margin-bottom: 15px; }
+        .btn-toggle.active { background: #ff4757; }
+        .btn-export { background: var(--neon); color: #000; }
+
+        /* --- 欧美风格浮动弹窗 (Vegas Style) --- */
+        #bubble {
+            position: absolute; top: 120px; left: 50%; transform: translateX(-50%) scale(0.5);
+            width: 320px; height: 140px; background: rgba(0,0,0,0.85);
+            border: 2px solid var(--gold); border-radius: 25px; z-index: 100;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 30px rgba(249, 212, 35, 0.4);
+        }
+        #bubble.show { opacity: 1; transform: translateX(-50%) scale(1); }
+        .v-title { color: var(--gold); font-weight: 900; font-size: 18px; font-style: italic; letter-spacing: 1px; }
+        .v-amt { font-size: 45px; font-weight: 900; color: #fff; text-shadow: 0 0 15px rgba(255,255,255,0.5); margin: 5px 0; }
+        .v-btn { background: var(--gold); color: #000; border: none; padding: 5px 20px; border-radius: 50px; font-weight: 900; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div id="loader"><div class="cd-text" id="cd-val">3</div></div>
-
-<div id="app">
-    <div class="card" id="card-bg">
+<div id="stage">
+    <div class="canvas-card" id="card">
         <div id="bubble">
-            <div class="b-t">★ MISSION ACCOMPLISHED ★</div>
-            <div class="b-v" id="res-val">$ 0 $</div>
-            <button class="b-btn" onclick="location.reload()">PLAY AGAIN</button>
+            <div class="v-title">JACKPOT HIT!</div>
+            <div class="v-amt" id="res-val">$ 0 $</div>
+            <button class="v-btn" onclick="location.reload()">COLLECT NOW</button>
         </div>
-
-        <div id="w-num"></div>
+        <div id="w-num">88</div>
         <div id="grid"></div>
         <canvas id="c-win" class="layer"></canvas>
         <canvas id="c-main" class="layer"></canvas>
     </div>
 </div>
 
+<div id="controls">
+    <h2>ENGINEER STUDIO V4.0</h2>
+    <button id="ghost-btn" class="btn btn-toggle" onclick="toggleGhost()">👻 屏蔽涂层 (对齐模式)</button>
+
+    <div class="group">
+        <h3>1. 中奖号码 (Win Number)</h3>
+        <div class="ctrl-row"><label>垂直位置 Y</label><input type="range" min="100" max="500" value="273" oninput="upd('wt',this.value)"> <span id="v_wt">273</span></div>
+        <div class="ctrl-row"><label>水平位置 X</label><input type="range" min="0" max="360" value="175" oninput="upd('wl',this.value)"> <span id="v_wl">175</span></div>
+        <div class="ctrl-row"><label>数字字号</label><input type="range" min="10" max="60" value="22" oninput="upd('ws',this.value)"> <span id="v_ws">22</span></div>
+    </div>
+
+    <div class="group">
+        <h3>2. 玩法网格 (Grid Alignment)</h3>
+        <div class="ctrl-row"><label>起始垂直 Y</label><input type="range" min="200" max="600" value="343" oninput="upd('gt',this.value)"> <span id="v_gt">343</span></div>
+        <div class="ctrl-row"><label>起始水平 X</label><input type="range" min="0" max="100" value="32" oninput="upd('gl',this.value)"> <span id="v_gl">32</span></div>
+        <div class="ctrl-row"><label>行间距 (Row)</label><input type="range" min="10" max="60" value="29" oninput="upd('gr',this.value)"> <span id="v_gr">29</span></div>
+        <div class="ctrl-row"><label>列间距 (Col)</label><input type="range" min="10" max="60" value="22" oninput="upd('gc',this.value)"> <span id="v_gc">22</span></div>
+        <div class="ctrl-row"><label>网格总宽</label><input type="range" min="200" max="350" value="295" oninput="upd('gw',this.value)"> <span id="v_gw">295</span></div>
+    </div>
+
+    <div class="group">
+        <h3>3. 文字样式 (Typography)</h3>
+        <div class="ctrl-row"><label>数字字号</label><input type="range" min="8" max="30" value="16" oninput="upd('gs',this.value)"> <span id="v_gs">16</span></div>
+        <div class="ctrl-row"><label>$$ 字号</label><input type="range" min="6" max="20" value="8" oninput="upd('ps',this.value)"> <span id="v_ps">8</span></div>
+        <div class="ctrl-row"><label>数字颜色</label><input type="color" value="#000000" oninput="upd('nc',this.value)"></div>
+        <div class="ctrl-row"><label>$$ 颜色</label><input type="color" value="#d00000" oninput="upd('pc',this.value)"></div>
+    </div>
+
+    <div class="group">
+        <h3>4. 弹窗高度 (Bubble Y)</h3>
+        <div class="ctrl-row"><label>垂直位置 Y</label><input type="range" min="50" max="300" value="120" oninput="upd('bt',this.value)"> <span id="v_bt">120</span></div>
+    </div>
+
+    <button class="btn btn-export" onclick="exportData()">💾 导出最终工程参数</button>
+</div>
+
 <script>
-    // --- 1. 潮流倒计时控制 ---
-    let time = 3;
-    const cdVal = document.getElementById('cd-val');
-    const timer = setInterval(() => {
-        time--;
-        if(time > 0) {
-            cdVal.innerText = time;
-        } else {
-            clearInterval(timer);
-            document.getElementById('loader').style.display = 'none';
-            const a = document.getElementById('app');
-            a.style.display = 'block'; setTimeout(()=>a.style.opacity='1', 50);
-        }
-    }, 1000);
-
-    // --- 2. 逻辑内核 ---
-    const WIN_NUM = 88;
-    function buildGame() {
-        const dice = Math.random();
-        let target = dice < 0.4 ? 300 : (dice < 0.8 ? 1000 : 5000);
-        const data = []; let sum = 0;
-        for(let i=0; i<30; i++) {
-            let n = Math.floor(Math.random()*80)+10; if(n===WIN_NUM) n++;
-            let p = [10, 50, 100][Math.floor(Math.random()*3)];
-            if(sum < target && Math.random() < 0.2) { n = WIN_NUM; p = Math.max(50, target-sum); sum += p; }
-            data.push({n, p});
-        }
-        return {data, sum};
-    }
-
-    const state = buildGame();
-
-    window.onload = () => {
-        const img = new Image(); img.src = '64005.jpg';
-        img.onload = () => {
-            document.getElementById('card-bg').style.backgroundImage = `url(64005.jpg)`;
-            document.getElementById('w-num').innerText = WIN_NUM;
-            const grid = document.getElementById('grid');
-            state.data.forEach(d => {
-                grid.innerHTML += `<div class="item"><span class="num">${d.n}</span><span class="usd">$ ${d.p} $</span></div>`;
-            });
-            initScratch('c-win', 61, 49, 'win');
-            initScratch('c-main', 318, 299, 'main');
-        };
+    // 初始状态 (包含你之前的精准参数)
+    let p = { 
+        wt:273, wl:175, ws:22, 
+        gt:343, gl:32, gr:29, gc:22, gw:295, 
+        gs:16, ps:8, nc:'#000000', pc:'#d00000',
+        bt:120 
     };
 
-    // --- 3. 刮奖与检测引擎 ---
-    let winClean = false;
-    let mainClean = false;
+    let isGhost = false;
+    let winClean = false, mainClean = false;
 
-    function initScratch(id, w, h, type) {
-        const c = document.getElementById(id);
-        const ctx = c.getContext('2d');
-        c.width = w; c.height = h;
+    function toggleGhost() {
+        isGhost = !isGhost;
+        document.getElementById('ghost-btn').classList.toggle('active', isGhost);
+        document.querySelectorAll('.layer').forEach(l => l.classList.toggle('hide-layer', isGhost));
+    }
+
+    function upd(key, val) {
+        p[key] = isNaN(val) ? val : parseInt(val);
+        if(document.getElementById('v_'+key)) document.getElementById('v_'+key).innerText = val;
+        render();
+    }
+
+    function render() {
+        const wn = document.getElementById('w-num');
+        wn.style.top = p.wt+'px'; wn.style.left = p.wl+'px'; wn.style.fontSize = p.ws+'px';
         
-        // 更有质感的图层填充
-        const g = ctx.createLinearGradient(0,0,w,h);
-        g.addColorStop(0, '#ccc'); g.addColorStop(0.5, '#999'); g.addColorStop(1, '#bbb');
-        ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
+        const gr = document.getElementById('grid');
+        gr.style.top = p.gt+'px'; gr.style.left = p.gl+'px';
+        gr.style.rowGap = p.gr+'px'; gr.style.columnGap = p.gc+'px';
+        gr.style.width = p.gw+'px';
+        
+        const bub = document.getElementById('bubble');
+        bub.style.top = p.bt+'px';
+
+        const items = gr.querySelectorAll('.item');
+        items.forEach(it => {
+            it.style.fontSize = p.gs+'px';
+            it.style.color = p.nc;
+            const usd = it.querySelector('.usd');
+            if(usd) { usd.style.fontSize = p.ps+'px'; usd.style.color = p.pc; }
+        });
+    }
+
+    function initGame() {
+        const grid = document.getElementById('grid');
+        grid.innerHTML = '';
+        for(let i=0; i<30; i++) {
+            grid.innerHTML += `<div class="item">88<div class="usd">$ 500 $</div></div>`;
+        }
+        render();
+        // 涂层坐标锁定 (固定不再调，只调文字)
+        setupLayer('c-win', 157, 260, 61, 49, 'win');
+        setupLayer('c-main', 21, 322, 318, 299, 'main');
+    }
+
+    function setupLayer(id, x, y, w, h, type) {
+        const c = document.getElementById(id);
+        c.style.left = x+'px'; c.style.top = y+'px';
+        c.width = w; c.height = h;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#BBB'; ctx.fillRect(0,0,w,h);
         
         let drawing = false;
         const scrub = (e) => {
             if(!drawing) return;
-            const r = c.getBoundingClientRect();
-            const x = (e.touches?e.touches[0].clientX:e.clientX) - r.left;
-            const y = (e.touches?e.touches[0].clientY:e.clientY) - r.top;
+            const rect = c.getBoundingClientRect();
+            const tx = (e.touches?e.touches[0].clientX:e.clientX) - rect.left;
+            const ty = (e.touches?e.touches[0].clientY:e.clientY) - rect.top;
             ctx.globalCompositeOperation = 'destination-out';
-            ctx.beginPath(); ctx.arc(x, y, 22, 0, Math.PI*2); ctx.fill();
-            detect(c, type);
+            ctx.beginPath(); ctx.arc(tx, ty, 22, 0, Math.PI*2); ctx.fill();
+            checkProgress(c, type);
         };
-
         c.onmousedown = () => drawing = true;
         window.onmouseup = () => drawing = false;
         c.onmousemove = scrub;
@@ -160,30 +183,34 @@
         c.ontouchmove = (e) => { e.preventDefault(); scrub(e); };
     }
 
-    function detect(c, type) {
-        if((type==='win' && winClean) || (type==='main' && mainClean)) return;
+    function checkProgress(c, type) {
         const data = c.getContext('2d').getImageData(0,0,c.width,c.height).data;
         let hits = 0;
         for(let i=3; i<data.length; i+=4) if(data[i] === 0) hits++;
-        const ratio = hits / (data.length/4);
-        
-        if(ratio > 0.95) {
+        if(hits / (data.length/4) > 0.95) {
             if(type === 'win') winClean = true;
             if(type === 'main') mainClean = true;
         }
-
-        // 双重校验：必须两个区域都刮干净
         if(winClean && mainClean) {
-            setTimeout(showWinner, 600);
+            setTimeout(() => {
+                document.getElementById('res-val').innerText = "$ 1,500 $";
+                document.getElementById('bubble').classList.add('show');
+            }, 500);
         }
     }
 
-    function showWinner() {
-        const b = document.getElementById('bubble');
-        if(b.classList.contains('active')) return;
-        document.getElementById('res-val').innerText = `$ ${state.sum} $`;
-        b.classList.add('active');
+    function exportData() {
+        console.log("FINAL_ENGINEER_DATA:", JSON.stringify(p));
+        alert("参数已导出！请复制控制台的数据发给我：\n\n" + JSON.stringify(p));
     }
+
+    window.onload = () => {
+        const img = new Image(); img.src = '64005.jpg';
+        img.onload = () => {
+            document.getElementById('card').style.backgroundImage = `url(64005.jpg)`;
+            initGame();
+        };
+    };
 </script>
 </body>
 </html>
