@@ -1,380 +1,248 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>中国福彩刮刮乐 - 模拟</title>
+    <title>VEGAS SLOTS - INDUSTRIAL EDITION</title>
     <style>
-        @import url('https://fonts.font.im/css2?family=Noto+Sans+SC:wght@700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&family=Oswald:wght@700&display=swap');
+        
         :root {
-            --lottery-red: #D81F26;
-            --lottery-gold: #FFB81C;
-            --silver-coat: #A0A0A0;
-            --bg-white: #FFFFFF;
-            --text-black: #000000;
-        }
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body {
-            background: #111;
-            font-family: 'Noto Sans SC', sans-serif;
-            overflow: hidden;
-            user-select: none;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            --gold: #D4AF37;
+            --dark-gold: #996515;
+            --casino-black: #1a1a1a;
+            --win-red: #ff4757;
+            --silver-matte: #b0b0b0;
         }
 
-        /* 加载倒计时 */
+        body { 
+            background: #000; margin: 0; padding: 0; 
+            font-family: 'Montserrat', sans-serif; 
+            display: flex; justify-content: center; align-items: center; 
+            height: 100vh; overflow: hidden;
+        }
+
+        /* --- 1. 复古霓虹加载层 --- */
         #loader {
-            position: fixed; inset:0; background:#000; z-index:9999;
-            display: flex; justify-content: center; align-items: center;
+            position: fixed; inset: 0; background: radial-gradient(circle, #222, #000);
+            z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
-        .cd-num {
-            font-size: 120px; font-weight:900;
-            background: linear-gradient(180deg, #fff, var(--lottery-gold));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: pulse 1s infinite;
+        .neon-text {
+            font-size: 24px; color: #fff; font-weight: 900;
+            text-shadow: 0 0 10px var(--gold), 0 0 20px var(--gold);
+            animation: flicker 1.5s infinite;
         }
-        @keyframes pulse {
-            0% { transform:scale(0.6); opacity:0; }
-            50% { opacity:1; }
-            100% { transform:scale(1.2); opacity:0; }
+        @keyframes flicker { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        /* --- 2. 欧美轻奢卡片容器 --- */
+        .card-frame {
+            position: relative; width: 360px; height: 680px;
+            background: var(--casino-black);
+            border: 4px solid var(--gold);
+            border-radius: 15px;
+            box-shadow: 0 0 40px rgba(212, 175, 55, 0.3), inset 0 0 20px #000;
+            overflow: hidden; visibility: hidden;
         }
 
-        /* 彩票主体 */
-        #app { display:none; opacity:0; transition:opacity 1s; }
-        .card {
-            position: relative;
-            width: 360px;
-            height: 720px;
-            background: #D81F26;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 0 30px rgba(0,0,0,0.7);
-        }
-        /* 顶部福彩标题 */
+        /* 顶部装饰 UI */
         .card-header {
-            height: 80px;
-            background: var(--lottery-red);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 28px;
-            font-weight:900;
-            color: var(--lottery-gold);
-            border-bottom: 3px solid var(--lottery-gold);
+            height: 120px; background: linear-gradient(135deg, #222, #000);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border-bottom: 2px solid var(--dark-gold);
+        }
+        .logo { font-family: 'Oswald', sans-serif; font-size: 32px; color: var(--gold); letter-spacing: 4px; }
+        .sub-logo { font-size: 10px; color: #888; letter-spacing: 2px; }
+
+        /* --- 3. 精准对齐层 (像素级贴合) --- */
+        .game-area { position: relative; width: 100%; height: 560px; }
+        
+        /* 中奖号码格子 (精准对齐) */
+        #winning-grid {
+            position: absolute; top: 50px; left: 145px; width: 70px; height: 70px;
+            display: flex; justify-content: center; align-items: center;
+            background: #fff; border: 2px solid var(--gold); border-radius: 8px;
+            font-size: 36px; color: #000; font-weight: 900; z-index: 1;
         }
 
-        /* --------------------------
-           中奖号码区（精准对齐）
-        --------------------------- */
-        #win-area {
-            position: absolute;
-            top: 110px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 280px;
-            height: 100px;
-            background: var(--bg-white);
-            border-radius: 8px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            /* 防伪底纹 */
-            background-image:
-                linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px);
-            background-size: 12px 12px;
+        /* 玩法网格 (5x6) */
+        #main-grid {
+            position: absolute; top: 160px; left: 20px; width: 320px;
+            display: grid; grid-template-columns: repeat(6, 1fr);
+            row-gap: 25px; column-gap: 10px; z-index: 1;
         }
-        .win-number {
-            font-size: 36px;
-            font-weight:900;
-            color: var(--text-black);
-            letter-spacing: 4px;
-            /* 数字严格居中 */
-            width: 100%;
-            text-align: center;
+        .slot {
+            width: 45px; height: 55px; background: #fff;
+            border: 1px solid #ddd; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; border-radius: 4px;
         }
+        .slot .num { font-size: 18px; color: #000; font-weight: 900; line-height: 1; }
+        .slot .amt { font-size: 9px; color: var(--win-red); font-weight: 700; margin-top: 3px; }
 
-        /* --------------------------
-           游戏数字网格（精准对齐）
-        --------------------------- */
-        #game-grid {
-            position: absolute;
-            top: 230px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 300px;
-            height: 360px;
-            background: var(--bg-white);
-            border-radius: 8px;
-            padding: 15px;
-            /* 防伪网格底纹 */
-            background-image:
-                linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px);
-            background-size: 10px 10px;
-            /* 6×6 网格 */
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            grid-template-rows: repeat(6, 1fr);
-            gap: 10px;
-        }
-        .grid-cell {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: rgba(255,255,255,0.6);
-            border-radius: 4px;
-            font-size: 20px;
-            font-weight:900;
-            color: var(--text-black);
-            /* 单元格内绝对居中 */
-            width: 100%;
-            height: 100%;
-        }
+        /* --- 4. 涂层画布 --- */
+        canvas { position: absolute; z-index: 10; touch-action: none; cursor: crosshair; }
+        #canvas-win { top: 45px; left: 140px; width: 80px; height: 80px; }
+        #canvas-main { top: 150px; left: 10px; width: 340px; height: 380px; }
 
-        /* --------------------------
-           刮奖涂层（真实银灰色）
-        --------------------------- */
-        .scratch-layer {
-            position: absolute;
-            z-index: 10;
-            touch-action: none;
-            cursor: crosshair;
-            border-radius: 8px;
-            overflow: hidden;
+        /* --- 5. 霓虹中奖弹窗 --- */
+        #popup {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.5);
+            width: 300px; padding: 30px; background: #000; border: 4px solid #0ff;
+            box-shadow: 0 0 50px #0ff; border-radius: 20px; z-index: 100;
+            display: none; flex-direction: column; align-items: center; opacity: 0;
+            transition: all 0.5s cubic-bezier(0.17, 0.89, 0.32, 1.49);
         }
-        /* 中奖区涂层 */
-        #scratch-win {
-            top: 110px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 280px;
-            height: 100px;
-        }
-        /* 游戏区涂层 */
-        #scratch-game {
-            top: 230px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 300px;
-            height: 360px;
-        }
-
-        /* 中奖弹窗 */
-        #win-popup {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0);
-            width: 280px;
-            background: #fff;
-            color: #D81F26;
-            border-radius: 16px;
-            text-align: center;
-            padding: 30px 20px;
-            font-size: 24px;
-            font-weight:900;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-            z-index: 999;
-            transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
-        }
-        #win-popup.active {
-            transform: translate(-50%, -50%) scale(1);
-        }
-        .popup-amount {
-            font-size: 36px;
-            color: #D81F26;
-            margin: 10px 0;
-        }
+        #popup.active { display: flex; opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        .pop-title { color: #0ff; font-size: 24px; font-weight: 900; text-shadow: 0 0 10px #0ff; }
+        .pop-amt { color: #fff; font-size: 50px; font-weight: 900; margin: 20px 0; font-family: 'Oswald'; }
+        .pop-btn { background: #0ff; border: none; padding: 10px 30px; border-radius: 50px; font-weight: 900; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<!-- 加载 -->
-<div id="loader">
-    <div class="cd-num">3</div>
-</div>
+<div id="loader"><div class="neon-text">LOADING CASINO... <span id="cd">3</span>S</div></div>
 
-<!-- 彩票 -->
-<div id="app">
-    <div class="card">
-        <div class="card-header">中国福彩 刮刮乐</div>
-
-        <!-- 中奖号码区 -->
-        <div id="win-area">
-            <div class="win-number" id="win-num">8</div>
-        </div>
-        <!-- 游戏网格 -->
-        <div id="game-grid">
-            <!-- 自动生成36个数字 -->
-        </div>
-
-        <!-- 刮奖涂层 -->
-        <canvas class="scratch-layer" id="scratch-win"></canvas>
-        <canvas class="scratch-layer" id="scratch-game"></canvas>
+<div class="card-frame" id="main-card">
+    <div class="card-header">
+        <div class="logo">GOLDEN DRAGON</div>
+        <div class="sub-logo">PREMIUM LAS VEGAS EDITION</div>
+    </div>
+    <div class="game-area">
+        <div id="winning-grid">88</div>
+        <div id="main-grid"></div>
+        <canvas id="canvas-win"></canvas>
+        <canvas id="canvas-main"></canvas>
     </div>
 
-    <!-- 中奖弹窗 -->
-    <div id="win-popup">
-        <div>恭喜中奖！</div>
-        <div class="popup-amount" id="final-amount">￥0</div>
+    <div id="popup">
+        <div class="pop-title">BIG WIN!</div>
+        <div class="pop-amt" id="res-amt">$0</div>
+        <button class="pop-btn" onclick="location.reload()">REPLAY</button>
     </div>
 </div>
 
 <script>
-    // ---------- 全局参数 ----------
-    const winNum = Math.floor(Math.random()*9)+1; // 1-9
-    const gridCount = 36;
-    const winCount = 5; // 中奖个数
-    let winScratched = false;
-    let gameScratched = false;
-    let totalWin = 0;
+    let winCount = 0, mainCount = 0;
+    const targetNum = Math.floor(Math.random()*89)+10;
 
-    // ---------- 倒计时 ----------
-    let cd = 3;
-    const loaderNum = document.querySelector('.cd-num');
-    const cdInterval = setInterval(()=>{
-        cd--;
-        if(cd<=0) {
-            clearInterval(cdInterval);
-            document.getElementById('loader').style.display = 'none';
-            document.getElementById('app').style.display = 'block';
-            setTimeout(()=>{
-                document.getElementById('app').style.opacity = '1';
-                init();
-            }, 200);
-        } else {
-            loaderNum.textContent = cd;
+    // --- 1. 初始化数据 ---
+    function initData() {
+        const grid = document.getElementById('main-grid');
+        document.getElementById('winning-grid').innerText = targetNum;
+        let totalWin = 0;
+        
+        for(let i=0; i<30; i++) {
+            let isWin = Math.random() > 0.9;
+            let num = isWin ? targetNum : Math.floor(Math.random()*89)+10;
+            if(!isWin && num === targetNum) num += 7;
+            let amt = isWin ? [100, 500, 1000][Math.floor(Math.random()*3)] : [5, 10, 20][Math.floor(Math.random()*3)];
+            if(isWin) totalWin += amt;
+            
+            grid.innerHTML += `
+                <div class="slot">
+                    <div class="num">${num}</div>
+                    <div class="amt">$${amt}</div>
+                </div>`;
         }
-    }, 800);
-
-    // ---------- 初始化彩票 ----------
-    function init() {
-        // 1. 中奖号码
-        document.getElementById('win-num').textContent = winNum;
-
-        // 2. 生成游戏网格（精准居中）
-        const grid = document.getElementById('game-grid');
-        grid.innerHTML = '';
-        // 随机位置中奖
-        const winPositions = new Set();
-        while(winPositions.size < winCount) {
-            winPositions.add(Math.floor(Math.random()*gridCount));
-        }
-        // 生成单元格
-        for(let i=0; i<gridCount; i++) {
-            const cell = document.createElement('div');
-            cell.className = 'grid-cell';
-            const num = winPositions.has(i) ? winNum : Math.floor(Math.random()*9)+1;
-            cell.textContent = num;
-            if(num === winNum) totalWin += 50;
-            grid.appendChild(cell);
-        }
-
-        // 3. 初始化刮奖涂层
-        initScratch('scratch-win', 'win');
-        initScratch('scratch-game', 'game');
+        return totalWin;
     }
+    const totalPrize = initData();
 
-    // ---------- 刮奖涂层核心（真实银灰+硬边刮开） ----------
-    function initScratch(id, type) {
+    // --- 2. 工业级银色铝粉涂层引擎 ---
+    function setupScratch(id, w, h, isMain) {
         const c = document.getElementById(id);
         const ctx = c.getContext('2d');
-        const rect = c.getBoundingClientRect();
-        c.width = rect.width;
-        c.height = rect.height;
-        const w = c.width;
-        const h = c.height;
+        c.width = w; c.height = h;
 
-        // ---------- 1. 真实银灰色涂层（铝粉质感） ----------
-        const silverGrd = ctx.createLinearGradient(0,0,w,h);
-        silverGrd.addColorStop(0, '#A0A0A0'); // 亮银
-        silverGrd.addColorStop(0.5, '#C0C0C0'); // 中银
-        silverGrd.addColorStop(1, '#888888');   // 暗银
-        ctx.fillStyle = silverGrd;
-        ctx.fillRect(0,0,w,h);
-
-        // 金属颗粒噪点
-        for(let i=0; i<400; i++) {
-            ctx.fillStyle = `rgba(255,255,255,${Math.random()*0.2})`;
+        // A. 模拟铝粉磨砂质感 (哑光银灰)
+        ctx.fillStyle = '#b0b0b0'; 
+        ctx.fillRect(0, 0, w, h);
+        
+        // B. 注入细闪铝粉颗粒
+        for(let i=0; i<1500; i++) {
+            ctx.fillStyle = `rgba(255,255,255,${Math.random()*0.3})`;
             ctx.fillRect(Math.random()*w, Math.random()*h, 1, 1);
         }
 
-        // ---------- 2. 防伪底纹（ZGFLCP微缩文字） ----------
-        ctx.fillStyle = 'rgba(0,0,0,0.07)';
-        ctx.font = 'bold 10px SimHei';
-        const antiFake = 'ZGFLCP';
-        for(let x=5; x<w; x+=40) {
-            for(let y=12; y<h; y+=20) {
-                ctx.fillText(antiFake, x, y);
+        // C. 欧美微缩暗纹 (赌场元素)
+        ctx.fillStyle = 'rgba(0,0,0,0.08)';
+        ctx.font = 'bold 12px Arial';
+        const icons = ['$', '★', '♦', '♣', '♠'];
+        for(let x=0; x<w; x+=40) {
+            for(let y=0; y<h; y+=40) {
+                ctx.fillText(icons[Math.floor(Math.random()*5)], x + Math.random()*10, y + Math.random()*10);
             }
         }
 
-        // ---------- 3. 刮开交互（真实剥落效果） ----------
-        let active = false;
-        const scrub = (e) => {
-            if(!active) return;
-            const r = c.getBoundingClientRect();
-            const x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
-            const y = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
+        // --- 核心：物理剥落算法 ---
+        let isDown = false;
+        function scratch(e) {
+            if(!isDown) return;
+            const rect = c.getBoundingClientRect();
+            const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+            const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
 
             ctx.globalCompositeOperation = 'destination-out';
-
-            // 不规则碎片（硬边、随机旋转、大小不一）
-            for(let i=0; i<12; i++) {
-                const ox = (Math.random()-0.5)*24;
-                const oy = (Math.random()-0.5)*24;
-                const size = 12 + Math.random()*18;
+            
+            // 模拟“掉漆”：不是画圆，而是绘制一组随机分布的硬边缘多边形
+            for(let i=0; i<8; i++) {
+                const size = 12 + Math.random()*15;
+                const offsetX = (Math.random()-0.5)*25;
+                const offsetY = (Math.random()-0.5)*25;
+                
                 ctx.save();
-                ctx.translate(x+ox, y+oy);
-                ctx.rotate(Math.random()*Math.PI);
-                // 不规则四边形
+                ctx.translate(x + offsetX, y + offsetY);
+                ctx.rotate(Math.random() * Math.PI);
+                
+                // 绘制不规则锯齿状碎片
                 ctx.beginPath();
                 ctx.moveTo(-size/2, -size/2);
                 ctx.lineTo(size/2, -size/3);
                 ctx.lineTo(size/3, size/2);
-                ctx.lineTo(-size/2, size/3);
+                ctx.lineTo(-size/3, size/2);
                 ctx.closePath();
                 ctx.fill();
                 ctx.restore();
             }
-            checkComplete(c, type);
-        };
+            checkProgress(c, isMain);
+        }
 
-        // 事件
-        c.onmousedown = ()=> active=true;
-        window.onmouseup = ()=> active=false;
-        c.onmousemove = scrub;
-        c.ontouchstart = (e)=>{ e.preventDefault(); active=true; scrub(e); };
-        c.ontouchmove = (e)=>{ e.preventDefault(); scrub(e); };
+        c.addEventListener('mousedown', () => isDown = true);
+        window.addEventListener('mouseup', () => isDown = false);
+        c.addEventListener('mousemove', scratch);
+        c.addEventListener('touchstart', (e) => { isDown = true; scratch(e); });
+        c.addEventListener('touchmove', (e) => { e.preventDefault(); scratch(e); });
     }
 
-    // ---------- 检测是否刮完 ----------
-    function checkComplete(c, type) {
-        const ctx = c.getContext('2d');
-        const data = ctx.getImageData(0,0,c.width,c.height).data;
-        let transparent = 0;
-        for(let i=3; i<data.length; i+=4) {
-            if(data[i] < 10) transparent++;
-        }
-        const ratio = transparent / (data.length/4);
-        // 刮开90%算完成
-        if(ratio > 0.9) {
-            if(type==='win') winScratched=true;
-            if(type==='game') gameScratched=true;
-        }
-        // 全部刮开 → 中奖弹窗
-        if(winScratched && gameScratched) {
-            setTimeout(()=>{
-                document.getElementById('final-amount').textContent = `￥${totalWin}`;
-                document.getElementById('win-popup').classList.add('active');
-            }, 500);
+    function checkProgress(c, isMain) {
+        const data = c.getContext('2d').getImageData(0,0,c.width,c.height).data;
+        let cleared = 0;
+        for(let i=3; i<data.length; i+=4) if(data[i] === 0) cleared++;
+        const percent = cleared / (data.length/4);
+        
+        if(percent > 0.9) {
+            if(isMain) mainCount = 1; else winCount = 1;
+            if(mainCount && winCount) {
+                document.getElementById('res-amt').innerText = `$${totalPrize}`;
+                document.getElementById('popup').classList.add('active');
+            }
         }
     }
+
+    // --- 启动流程 ---
+    window.onload = () => {
+        setupScratch('canvas-win', 80, 80, false);
+        setupScratch('canvas-main', 340, 380, true);
+        
+        let s = 3;
+        const timer = setInterval(() => {
+            s--; document.getElementById('cd').innerText = s;
+            if(s<=0) {
+                clearInterval(timer);
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('main-card').style.visibility = 'visible';
+            }
+        }, 1000);
+    };
 </script>
 </body>
 </html>
