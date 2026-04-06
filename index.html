@@ -3,134 +3,122 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>拾光·全权调试器</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>拾光·装修调试模式</title>
     <style>
         :root { --neon: #00f2fe; }
-        body { background: #000; margin: 0; font-family: "sans-serif"; overflow: hidden; color: white; }
+        body { background: #111; margin: 0; font-family: "sans-serif"; display: flex; }
 
-        /* --- 1. 炫酷倒计时 --- */
-        #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 1000; display: flex; justify-content: center; align-items: center;
+        /* --- 左侧彩票预览区 --- */
+        #preview-area {
+            flex: 1; height: 100vh; position: relative; 
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden; background: #222;
         }
-        #countdown-num {
-            font-size: 150px; font-weight: 900;
-            background: linear-gradient(45deg, #00f2fe, #f5576c);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            transform: scale(0); opacity: 0;
+
+        .card-container { 
+            position: relative; width: 360px; height: 720px; 
+            background-size: 100% 100%; box-shadow: 0 0 50px rgba(0,0,0,0.5);
         }
-        .zoom-anim { animation: zoom 1s ease-out forwards; }
-        @keyframes zoom { 0%{transform:scale(0.5);opacity:0;} 50%{transform:scale(1.2);opacity:1;} 100%{transform:scale(2.5);opacity:0;} }
 
-        /* --- 2. 超强调试面板 --- */
-        #debug-panel {
-            position: fixed; top: 0; right: 0; width: 200px; height: 100%;
-            background: rgba(0,0,0,0.9); border-left: 1px solid var(--neon);
-            z-index: 2000; padding: 10px; font-size: 10px; overflow-y: auto;
-            display: none; /* 默认隐藏，点击按钮开启 */
-        }
-        .ctrl-box { margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; }
-        .ctrl-box label { display: block; color: #aaa; margin-bottom: 3px; }
-        input[type=range] { width: 100%; }
-        #toggle-debug { position: fixed; top: 10px; right: 10px; z-index: 2001; background: var(--neon); border:none; padding: 5px; border-radius: 5px; font-size: 10px; }
-
-        /* --- 3. 彩票容器 --- */
-        #app-wrapper { display: none; }
-        .card-container { position: relative; width: 360px; height: 720px; background-size: 100% 100%; margin: 0 auto; }
-
-        /* 元素定位 - 全部通过JS动态控制 */
-        #win-box { position: absolute; z-index: 1; display: flex; justify-content: center; align-items: center; font-weight: 900; }
-        #my-grid { position: absolute; z-index: 1; display: grid; grid-template-columns: repeat(6, 1fr); }
+        /* 元素定位 */
+        #win-box { position: absolute; z-index: 1; display: flex; justify-content: center; align-items: center; font-weight: 900; pointer-events: none; }
+        #my-grid { position: absolute; z-index: 1; display: grid; grid-template-columns: repeat(6, 1fr); pointer-events: none; }
         .num-item { display: flex; flex-direction: column; justify-content: center; align-items: center; font-weight: 900; }
         .prize-item { font-weight: bold; }
-        .scratch-layer { position: absolute; z-index: 10; touch-action: none; border: 1px dashed rgba(255,255,255,0.2); }
+        .scratch-layer { position: absolute; z-index: 10; border: 1px solid rgba(0, 242, 254, 0.3); }
 
-        /* --- 4. 弹窗 --- */
-        #result-modal {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
-            width: 260px; height: 260px; z-index: 3000;
-            background: #fff; border-radius: 50%; display: flex; flex-direction: column;
-            justify-content: center; align-items: center; text-align: center; color: #333;
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+        /* --- 右侧全功能控制台 --- */
+        #debug-panel {
+            width: 320px; height: 100vh; background: #000; color: #fff;
+            padding: 15px; overflow-y: auto; border-left: 2px solid var(--neon);
+            font-size: 13px; box-sizing: border-box;
         }
-        #result-modal.show { transform: translate(-50%, -50%) scale(1); }
+        h3 { color: var(--neon); border-bottom: 1px solid var(--neon); padding-bottom: 5px; margin-top: 0; }
+        .ctrl-grp { background: #1a1a1a; padding: 10px; margin-bottom: 15px; border-radius: 8px; }
+        .ctrl-grp h4 { margin: 0 0 10px 0; font-size: 12px; color: #ffeb3b; }
+        label { display: flex; justify-content: space-between; margin-bottom: 5px; color: #ccc; }
+        label span { color: var(--neon); font-family: monospace; }
+        input[type=range] { width: 100%; margin-bottom: 10px; accent-color: var(--neon); }
+        
+        .action-btn {
+            width: 100%; padding: 12px; margin-bottom: 10px; border: none; border-radius: 5px;
+            font-weight: bold; cursor: pointer;
+        }
+        .btn-save { background: var(--neon); color: #000; }
+        .btn-reset { background: #555; color: #fff; }
     </style>
 </head>
 <body>
 
-    <button id="toggle-debug" onclick="document.getElementById('debug-panel').style.display='block'">⚙️ 调试面板</button>
-    
-    <div id="loader"><div id="countdown-num"></div></div>
-
-    <div id="debug-panel">
-        <h3 style="color:var(--neon)">拾光·像素调优</h3>
-        
-        <div class="ctrl-box">
-            <label>中奖数字 Y: <span id="val_wt">266</span></label>
-            <input type="range" min="150" max="400" value="266" oninput="upd('wt',this.value,'val_wt')">
-            <label>中奖数字 X: <span id="val_wl">169</span></label>
-            <input type="range" min="50" max="300" value="169" oninput="upd('wl',this.value,'val_wl')">
-            <label>中奖号字号: <span id="val_ws">22</span></label>
-            <input type="range" min="10" max="50" value="22" oninput="upd('ws',this.value,'val_ws')">
-            <label>中奖号颜色</label>
-            <input type="color" value="#000000" oninput="upd('wc',this.value)">
-        </div>
-
-        <div class="ctrl-box">
-            <label>中奖涂层 Y: <span id="val_ct">260</span></label>
-            <input type="range" min="150" max="400" value="260" oninput="upd('ct',this.value,'val_ct')">
-            <label>中奖涂层 X: <span id="val_cl">160</span></label>
-            <input type="range" min="50" max="300" value="160" oninput="upd('cl',this.value,'val_cl')">
-            <label>中奖涂层 宽: <span id="val_cw">55</span></label>
-            <input type="range" min="20" max="150" value="55" oninput="upd('cw',this.value,'val_cw')">
-        </div>
-
-        <div class="ctrl-box">
-            <label>网格区域 Y: <span id="val_gt">326</span></label>
-            <input type="range" min="250" max="550" value="326" oninput="upd('gt',this.value,'val_gt')">
-            <label>网格区域 X: <span id="val_gl">25</span></label>
-            <input type="range" min="0" max="100" value="25" oninput="upd('gl',this.value,'val_gl')">
-            <label>网格字号: <span id="val_gs">14</span></label>
-            <input type="range" min="8" max="25" value="14" oninput="upd('gs',this.value,'val_gs')">
-            <label>网格间距(Row): <span id="val_gr">2</span></label>
-            <input type="range" min="0" max="20" value="2" oninput="upd('gr',this.value,'val_gr')">
-            <label>网格间距(Col): <span id="val_gc">9</span></label>
-            <input type="range" min="0" max="20" value="9" oninput="upd('gc',this.value,'val_gc')">
-        </div>
-
-        <div class="ctrl-box">
-            <label>大涂层 Y: <span id="val_mt">322</span></label>
-            <input type="range" min="250" max="550" value="322" oninput="upd('mt',this.value,'val_mt')">
-            <label>大涂层 宽: <span id="val_mw">318</span></label>
-            <input type="range" min="200" max="360" value="318" oninput="upd('mw',this.value,'val_mw')">
-            <label>大涂层 高: <span id="val_mh">299</span></label>
-            <input type="range" min="100" max="500" value="299" oninput="upd('mh',this.value,'val_mh')">
-        </div>
-
-        <button onclick="exportConfig()" style="width:100%; background:var(--neon); border:none; padding:10px; font-weight:bold;">保存并导出参数</button>
-        <button onclick="document.getElementById('debug-panel').style.display='none'" style="width:100%; margin-top:5px;">关闭</button>
-    </div>
-
-    <div id="app-wrapper">
+    <div id="preview-area">
         <div class="card-container" id="main-card">
-            <div id="win-box"></div>
+            <div id="win-box">88</div>
             <div id="my-grid"></div>
             <canvas id="canv-win" class="scratch-layer"></canvas>
             <canvas id="canv-mine" class="scratch-layer"></canvas>
         </div>
     </div>
 
-    <div id="result-modal">
-        <h2 id="res-t"></h2>
-        <p id="res-d"></p>
-        <h1 id="res-a" style="color:#f5576c"></h1>
-        <button onclick="location.reload()" style="background:var(--neon);border:none;padding:10px 20px;border-radius:20px;">再刮一张</button>
+    <div id="debug-panel">
+        <h3>🎨 拾光·像素对齐工作台</h3>
+        <p style="font-size: 11px; color: #888;">调整完成后，点击下方保存按钮获取代码。</p>
+
+        <div class="ctrl-grp">
+            <h4>1. 中奖号码 (数字)</h4>
+            <label>垂直位置 Y: <span id="v_wt">266</span></label>
+            <input type="range" min="100" max="500" value="266" oninput="upd('wt',this.value,'v_wt')">
+            <label>水平位置 X: <span id="v_wl">169</span></label>
+            <input type="range" min="0" max="360" value="169" oninput="upd('wl',this.value,'v_wl')">
+            <label>字体大小: <span id="v_ws">22</span></label>
+            <input type="range" min="10" max="60" value="22" oninput="upd('ws',this.value,'v_ws')">
+            <label>数字颜色</label>
+            <input type="color" value="#000000" oninput="upd('wc',this.value)">
+        </div>
+
+        <div class="ctrl-grp">
+            <h4>2. 中奖区涂层 (Canvas)</h4>
+            <label>垂直位置 Y: <span id="v_ct">260</span></label>
+            <input type="range" min="100" max="500" value="260" oninput="upd('ct',this.value,'v_ct')">
+            <label>水平位置 X: <span id="v_cl">160</span></label>
+            <input type="range" min="0" max="360" value="160" oninput="upd('cl',this.value,'v_cl')">
+            <label>涂层宽度: <span id="v_cw">55</span></label>
+            <input type="range" min="10" max="150" value="55" oninput="upd('cw',this.value,'v_cw')">
+            <label>涂层高度: <span id="v_ch">45</span></label>
+            <input type="range" min="10" max="100" value="45" oninput="upd('ch',this.value,'v_ch')">
+        </div>
+
+        <div class="ctrl-grp">
+            <h4>3. 玩法区 (30个数字网格)</h4>
+            <label>区域垂直 Y: <span id="v_gt">326</span></label>
+            <input type="range" min="200" max="600" value="326" oninput="upd('gt',this.value,'v_gt')">
+            <label>区域水平 X: <span id="v_gl">25</span></label>
+            <input type="range" min="0" max="100" value="25" oninput="upd('gl',this.value,'v_gl')">
+            <label>数字字号: <span id="v_gs">14</span></label>
+            <input type="range" min="8" max="25" value="14" oninput="upd('gs',this.value,'v_gs')">
+            <label>行间距 (Row): <span id="v_gr">2</span></label>
+            <input type="range" min="0" max="30" value="2" oninput="upd('gr',this.value,'v_gr')">
+            <label>列间距 (Col): <span id="v_gc">9</span></label>
+            <input type="range" min="0" max="30" value="9" oninput="upd('gc',this.value,'v_gc')">
+        </div>
+
+        <div class="ctrl-grp">
+            <h4>4. 玩法区大涂层</h4>
+            <label>垂直位置 Y: <span id="v_mt">322</span></label>
+            <input type="range" min="200" max="600" value="322" oninput="upd('mt',this.value,'v_mt')">
+            <label>水平位置 X: <span id="v_ml">21</span></label>
+            <input type="range" min="0" max="100" value="21" oninput="upd('ml',this.value,'v_ml')">
+            <label>涂层宽度: <span id="v_mw">318</span></label>
+            <input type="range" min="100" max="360" value="318" oninput="upd('mw',this.value,'v_mw')">
+            <label>涂层高度: <span id="v_mh">299</span></label>
+            <input type="range" min="50" max="500" value="299" oninput="upd('mh',this.value,'v_mh')">
+        </div>
+
+        <button class="action-btn btn-save" onclick="exportConfig()">💾 保存并复制参数</button>
+        <button class="action-btn btn-reset" onclick="location.reload()">🔄 重置画布</button>
     </div>
 
     <script>
-        // 初始参数对象
+        // 初始参数池
         let p = { 
             wt:266, wl:169, ws:22, wc:'#000000', 
             ct:260, cl:160, cw:55, ch:45,
@@ -145,122 +133,59 @@
         }
 
         function apply() {
+            // 中奖数字
             const wb = document.getElementById('win-box');
-            wb.style.top = p.wt+'px'; wb.style.left = p.wl+'px'; wb.style.fontSize = p.ws+'px'; wb.style.color = p.wc;
+            wb.style.top = p.wt+'px'; wb.style.left = p.wl+'px'; 
+            wb.style.fontSize = p.ws+'px'; wb.style.color = p.wc;
 
+            // 中奖涂层
             const cw = document.getElementById('canv-win');
-            cw.style.top = p.ct+'px'; cw.style.left = p.cl+'px'; cw.width = p.cw; cw.height = p.ch;
-            renderCanvas(cw);
+            cw.style.top = p.ct+'px'; cw.style.left = p.cl+'px'; 
+            cw.width = p.cw; cw.height = p.ch;
+            drawLayer(cw);
 
+            // 玩法网格
             const gd = document.getElementById('my-grid');
             gd.style.top = p.gt+'px'; gd.style.left = p.gl+'px';
             gd.style.rowGap = p.gr+'px'; gd.style.columnGap = p.gc+'px';
             gd.querySelectorAll('.num-item').forEach(i => i.style.fontSize = p.gs+'px');
 
+            // 玩法涂层
             const cm = document.getElementById('canv-mine');
-            cm.style.top = p.mt+'px'; cm.style.left = p.ml+'px'; cm.width = p.mw; cm.height = p.mh;
-            renderCanvas(cm);
+            cm.style.top = p.mt+'px'; cm.style.left = p.ml+'px'; 
+            cm.width = p.mw; cm.height = p.mh;
+            drawLayer(cm);
         }
 
-        function renderCanvas(canvas) {
+        function drawLayer(canvas) {
             const ctx = canvas.getContext('2d');
             ctx.fillStyle = '#C0C0C0';
             ctx.fillRect(0,0,canvas.width, canvas.height);
-            for(let i=0;i<200;i++){
-                ctx.fillStyle = Math.random()>0.5?'#E0E0E0':'#AAA';
-                ctx.fillRect(Math.random()*canvas.width, Math.random()*canvas.height, 1, 1);
+            for(let i=0; i<150; i++) {
+                ctx.fillStyle = Math.random()>0.5 ? '#D0D0D0' : '#A0A0A0';
+                ctx.fillRect(Math.random()*canvas.width, Math.random()*canvas.height, 2, 2);
             }
         }
 
         function exportConfig() {
-            console.log("当前调整好的参数：", JSON.stringify(p));
-            alert("参数已导出到控制台，请复制反馈给AI！\n" + JSON.stringify(p));
-        }
-
-        // --- 逻辑初始化 ---
-        const tg = window.Telegram.WebApp;
-        tg.ready(); tg.expand();
-
-        function start() {
-            const el = document.getElementById('countdown-num');
-            const nums = ['3','2','1'];
-            let i=0;
-            const run = () => {
-                if(i<3){
-                    el.innerText = nums[i]; el.className = 'zoom-anim';
-                    setTimeout(()=>{el.className='';}, 950);
-                    i++; setTimeout(run, 1000);
-                } else {
-                    document.getElementById('loader').style.display='none';
-                    document.getElementById('app-wrapper').style.display='block';
-                }
-            };
-            run();
+            const result = JSON.stringify(p, null, 4);
+            console.log("最终参数：", result);
+            alert("配置已记录！请复制以下内容发送给AI：\n\n" + result);
         }
 
         window.onload = () => {
-            const img = new Image(); img.src = '64005.jpg';
+            const img = new Image();
+            img.src = '64005.jpg'; // 确保你的背景图文件名正确
             img.onload = () => {
                 document.getElementById('main-card').style.backgroundImage = `url(64005.jpg)`;
-                const data = getLogic();
-                document.getElementById('win-box').innerText = data.ln;
-                const gd = document.getElementById('my-grid');
-                data.sp.forEach(s => {
-                    gd.innerHTML += `<div class="num-item">${s.n}<div class="prize-item">¥${s.p}</div></div>`;
-                });
-                apply(); start();
-                bindScratch('canv-win'); bindScratch('canv-mine', data.tw);
+                // 生成模拟数据
+                const grid = document.getElementById('my-grid');
+                for(let i=0; i<30; i++) {
+                    grid.innerHTML += `<div class="num-item">88<div class="prize-item" style="font-size:10px">¥10</div></div>`;
+                }
+                apply();
             };
         };
-
-        function getLogic() {
-            const ln = Math.floor(Math.random()*89)+10;
-            const dice = Math.random();
-            let tw = dice<0.45 ? 0 : (dice<0.9 ? Math.floor(Math.random()*11)+5 : Math.floor(Math.random()*30)+20);
-            const sp = []; let acc = 0;
-            for(let i=0; i<30; i++) {
-                let n = Math.floor(Math.random()*89)+10; if(n===ln) n++;
-                let pz = [5,10,20][Math.floor(Math.random()*3)];
-                if(acc < tw && Math.random()<0.1) { n=ln; pz=Math.max(5, tw-acc); acc+=pz; }
-                sp.push({n, p:pz});
-            }
-            return {ln, sp, tw};
-        }
-
-        function bindScratch(id, winAmt) {
-            const c = document.getElementById(id);
-            const ctx = c.getContext('2d');
-            let drawing = false;
-            let count = 0;
-            const move = (e) => {
-                if(!drawing) return;
-                const r = c.getBoundingClientRect();
-                const x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
-                const y = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
-                ctx.globalCompositeOperation = 'destination-out';
-                ctx.beginPath(); ctx.arc(x,y,22,0,Math.PI*2); ctx.fill();
-                if(id==='canv-mine' && ++count > 100) showRes(winAmt);
-            };
-            c.onmousedown = () => drawing=true;
-            window.onmouseup = () => drawing=false;
-            c.onmousemove = move;
-            c.ontouchstart = (e) => { e.preventDefault(); drawing=true; move(e); };
-            c.ontouchmove = (e) => { e.preventDefault(); move(e); };
-            c.ontouchend = () => drawing=false;
-        }
-
-        function showRes(amt) {
-            if(document.getElementById('result-modal').classList.contains('show')) return;
-            const t = document.getElementById('res-t');
-            const d = document.getElementById('res-d');
-            const a = document.getElementById('res-a');
-            if(amt > 0) {
-                t.innerText = "🎊 恭喜发财！"; d.innerText = "这运气，不去买彩票可惜了..."; a.innerText = "¥"+amt;
-            } else {
-                t.innerText = "☕ 差一点点"; d.innerText = "姿势不对，换个手指再来一张？"; a.innerText = "¥0";
-            }
-            document.getElementById('result-modal').classList.add('show');
-        }
     </script>
 </body>
 </html>
