@@ -1,327 +1,428 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VEGAS LUXURY SCRATCH - PRO EDITION</title>
+    <title>CHINA LOTTERY - PRO SCRATCH</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&family=Oswald:wght@700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&family=Oswald:wght@700&family=Bebas+Neue&display=swap');
 
-        /* =========================================
-           一、工程调试参数面板 (在此修改数值实现精准对位)
-           ========================================= */
         :root {
-            /* 1. 整体卡片尺寸 */
-            --card-w: 360px;
-            --card-h: 700px;
-
-            /* 2. 中奖区(顶部)定位 & 尺寸 */
-            --win-top: 140px;
-            --win-left: 140px;
-            --win-w: 80px;
-            --win-h: 80px;
-
-            /* 3. 主游戏区(下方)定位 & 尺寸 */
-            --main-top: 260px;
-            --main-left: 15px;
-            --main-w: 330px;
-            --main-h: 380px;
-
-            /* 4. 数字格子间距微调 */
-            --grid-cols: 5;          /* 每行显示几个 */
-            --grid-row-gap: 18px;    /* 垂直行距 */
-            --grid-col-gap: 10px;    /* 左右间距 */
-            --slot-w: 54px;          /* 单个格子宽度 */
-            --slot-h: 55px;          /* 单个格子高度 */
-
-            /* 5. 视觉主题色 */
-            --gold: #D4AF37;
-            --dark-gold: #996515;
-            --win-red: #e74c3c;
-            --neon-glow: 0 0 15px rgba(212, 175, 55, 0.8);
+            /* 默认工程参数 - 可通过面板实时修改 */
+            --win-num-size: 36px;
+            --win-num-color: #000000;
+            --slot-num-size: 22px;
+            --slot-amt-size: 14px;
+            
+            /* 网格布局调试参数 */
+            --grid-gap-x: 10px;
+            --grid-gap-y: 18px;
+            --grid-offset-x: 18px;
+            --grid-offset-y: 260px; /* 初始主区域顶距 */
+            
+            /* 金额样式 */
+            --amt-color: #d32f2f; /* 深红 */
+            --amt-spacing: 2px;
         }
 
-        /* 基础样式 */
-        body { 
-            background: #0a0a0a; margin: 0; padding: 0; 
-            display: flex; justify-content: center; align-items: center; 
-            height: 100vh; overflow: hidden; font-family: 'Montserrat', sans-serif;
-        }
-
-        /* ===== 二、高清炫彩倒计时层 ===== */
-        #loader {
-            position: fixed; inset: 0; background: #000; z-index: 1000;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-        }
-        .countdown-num {
-            font-size: 160px; font-weight: 900;
-            background: linear-gradient(135deg, #fff 20%, var(--gold) 40%, #fff 60%, var(--gold) 80%);
-            background-size: 200% auto;
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.5));
-            animation: pulse-zoom 1s infinite, shine 2s linear infinite;
-        }
-        .loader-text { color: var(--gold); letter-spacing: 5px; font-size: 14px; margin-top: -20px; }
-        
-        @keyframes pulse-zoom {
-            0% { transform: scale(0.8); opacity: 0.5; }
-            50% { transform: scale(1.1); opacity: 1; }
-            100% { transform: scale(1); opacity: 0.8; }
-        }
-        @keyframes shine { to { background-position: 200% center; } }
-
-        /* ===== 三、主体卡片 UI ===== */
-        .card-frame {
-            position: relative; width: var(--card-w); height: var(--card-h);
-            background: #1a1a1a; border: 3px solid var(--gold); border-radius: 12px;
-            box-shadow: 0 0 50px rgba(0,0,0,0.8), inset 0 0 30px #000;
-            visibility: hidden; /* 倒计时结束前隐藏 */
-        }
-        
-        .card-header {
-            text-align: center; padding-top: 25px;
-            background: linear-gradient(to bottom, #2c2c2c, transparent);
-        }
-        .logo-text { font-family: 'Oswald'; color: var(--gold); font-size: 32px; margin: 0; }
-        .sub-text { font-size: 9px; color: #888; letter-spacing: 3px; text-transform: uppercase; }
-
-        /* 中奖号码容器 */
-        #win-container {
-            position: absolute; top: var(--win-top); left: var(--win-left);
-            width: var(--win-w); height: var(--win-h);
-            background: #fff; border-radius: 50%; border: 4px solid var(--gold);
+        body {
+            margin: 0; padding: 0; background: #1a1a1a;
+            color: #fff; font-family: 'Montserrat', sans-serif;
             display: flex; justify-content: center; align-items: center;
-            font-size: 38px; font-weight: 900; color: #000; z-index: 1;
+            height: 100vh; overflow: hidden;
         }
 
-        /* 游戏网格容器 */
-        #main-grid {
-            position: absolute; top: var(--main-top); left: var(--main-left);
-            width: var(--main-w); height: var(--main-h);
-            display: grid; grid-template-columns: repeat(var(--grid-cols), 1fr);
-            row-gap: var(--grid-row-gap); column-gap: var(--grid-col-gap);
-            z-index: 1; justify-items: center;
+        /* --- 1. 高端启动动画 --- */
+        #loader {
+            position: fixed; inset: 0; background: #000; z-index: 999;
+            display: flex; justify-content: center; align-items: center;
+            transition: opacity 0.6s;
         }
-        .slot {
-            width: var(--slot-w); height: var(--slot-h);
-            background: #fff; border-radius: 6px; border: 1px solid #ccc;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        .count-wrap {
+            font-size: 200px; font-family: 'Bebas Neue';
+            background: linear-gradient(to bottom, #fff 30%, #ff4444 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 30px rgba(255, 68, 68, 0.6));
+            animation: countPulse 1s ease-in-out infinite;
         }
-        .slot .num { font-size: 18px; color: #000; font-weight: 900; line-height: 1; }
-        .slot .amt { font-size: 10px; color: var(--win-red); font-weight: 800; margin-top: 2px; }
+        @keyframes countPulse {
+            0% { transform: scale(0.6) rotate(-15deg); opacity: 0; filter: blur(10px); }
+            50% { transform: scale(1.3) rotate(8deg); opacity: 1; filter: blur(0); }
+            100% { transform: scale(1) rotate(0); opacity: 0; }
+        }
 
-        /* 画布层 (Canvas) */
-        canvas { position: absolute; z-index: 10; cursor: crosshair; touch-action: none; }
-        #canvas-win { top: var(--win-top); left: var(--win-left); width: var(--win-w); height: var(--win-h); border-radius: 50%; }
-        #canvas-main { top: var(--main-top); left: var(--main-left); width: var(--main-w); height: var(--main-h); }
-
-        /* ===== 四、高级弹窗提示 ===== */
-        #result-popup {
-            position: absolute; top: 30px; right: -10px; /* 侧边展示，不遮挡核心区 */
-            background: rgba(0, 0, 0, 0.9); border: 2px solid var(--gold);
-            padding: 15px 25px; border-radius: 30px 0 0 30px;
-            color: #fff; z-index: 100; display: none;
-            box-shadow: -5px 5px 20px rgba(0,0,0,0.5);
-            animation: slideIn 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+        /* --- 2. 刮刮乐卡片主体 --- */
+        #game-container {
+            position: relative; width: 360px; height: 720px;
+            /* 关键修改：使用用户提供的图片 */
+            background-image: url('64005.jpg');
+            background-size: 100% 100%; /* 拉伸填充 */
+            background-repeat: no-repeat;
+            background-position: center;
+            border-radius: 15px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            opacity: 0; transform: scale(0.85);
+            transition: all 0.9s cubic-bezier(0.17, 0.89, 0.32, 1.4);
+            overflow: hidden;
         }
-        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
-        .win-title { color: var(--gold); font-weight: 900; font-size: 18px; margin-bottom: 2px; }
-        .win-val { font-size: 24px; font-family: 'Oswald'; color: #fff; }
+        #game-container.ready { opacity: 1; transform: scale(1); }
+
+        /* 中奖号码区 */
+        #win-area {
+            position: absolute; top: 140px; left: 145px; /* 初始位置需微调以匹配图片 */
+            width: 70px; height: 70px; display: flex;
+            justify-content: center; align-items: center;
+            font-size: var(--win-num-size); font-weight: 900; 
+            color: var(--win-num-color);
+        }
+
+        /* 游戏网格区 */
+        #grid-container {
+            position: absolute; 
+            top: var(--grid-offset-y); 
+            left: var(--grid-offset-x);
+            width: 320px; /* 需根据图片主区域宽度微调 */
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            column-gap: var(--grid-gap-x); 
+            row-gap: var(--grid-gap-y);
+        }
+        .cell {
+            width: 56px; height: 62px; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; 
+            background: rgba(255,255,255,0.02); /* 极其轻微的底色帮助调试定位 */
+        }
+        .cell .n { font-size: var(--slot-num-size); font-weight: 900; color: #fff; line-height: 1; text-shadow: 1px 1px 1px #000; }
+        .cell .a { 
+            font-size: var(--slot-amt-size); 
+            color: var(--amt-color); 
+            font-weight: 700;
+            margin-top: var(--amt-spacing); 
+            font-family: 'Oswald';
+            text-shadow: 1px 1px 1px #000;
+        }
+
+        /* 画布层 */
+        canvas { position: absolute; z-index: 10; cursor: crosshair; touch-action: none; transition: opacity 0.3s; }
+        .canvas-hidden { opacity: 0 !important; pointer-events: none; }
+
+        /* --- 3. 调试面板 --- */
+        #debug-panel {
+            position: fixed; left: 10px; top: 10px; width: 230px;
+            background: rgba(0,0,0,0.9); padding: 15px; border-radius: 10px;
+            font-size: 11px; z-index: 1000; border: 1px solid #444;
+            max-height: 95vh; overflow-y: auto; color: #eee;
+            box-shadow: 5px 5px 20px rgba(0,0,0,0.5);
+        }
+        .debug-panel-header { font-weight: 900; color: #ff4444; margin-bottom: 12px; font-size: 14px; text-align: center;}
+        .debug-group { margin-bottom: 12px; border-bottom: 1px solid #333; padding-bottom: 8px; }
+        .debug-group label { display: block; margin: 4px 0; color: #bbb; }
+        .debug-row { display: flex; align-items: center; justify-content: space-between; gap: 5px;}
+        input[type="range"] { width: 100%; accent-color: #ff4444; margin: 3px 0;}
+        button.debug-btn { width: 100%; background: #333; color: #fff; border: 1px solid #555; padding: 5px; cursor: pointer; margin-bottom: 8px;}
+        button.debug-btn:hover { background: #444; }
+
+        /* --- 4. 结果弹窗 (时尚气泡) --- */
+        #result-pop {
+            position: absolute; 
+            top: 60px; /* 初始在顶部，动画上浮 */
+            left: 50%; 
+            transform: translate(-50%, -20px);
+            width: 300px; 
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px; 
+            padding: 25px;
+            text-align: center; 
+            z-index: 100; 
+            display: none; 
+            opacity: 0;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            border: 1px solid #eee;
+        }
+        #result-pop::after { /* 气泡小三角 */
+            content: ''; position: absolute; bottom: -15px; left: 50%; transform: translateX(-50%);
+            border-width: 15px 15px 0; border-style: solid; border-color: rgba(255,255,255,0.98) transparent transparent;
+        }
+        .pop-title { font-size: 24px; font-weight: 900; margin-bottom: 8px; color: #333;}
+        .pop-msg { font-size: 16px; color: #555; margin-bottom: 18px; line-height: 1.5; font-family: 'Montserrat'; }
+        .btn-retry {
+            background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%); 
+            border: none; padding: 10px 25px;
+            border-radius: 50px; color: #fff; font-weight: 900; cursor: pointer;
+            box-shadow: 0 4px 10px rgba(204,0,0,0.3);
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
 
-<div id="loader">
-    <div class="countdown-num" id="cd-num">3</div>
-    <div class="loader-text">GOOD LUCK</div>
-</div>
+    <div id="loader"><div class="count-wrap" id="cd">3</div></div>
 
-<div class="card-frame" id="game-card">
-    <div class="card-header">
-        <h1 class="logo-text">CASINO ROYALE</h1>
-        <div class="sub-text">Exclusive High Roller Edition</div>
+    <div id="debug-panel">
+        <div class="debug-panel-header">LOTTERY ALIGNMENT TOOL</div>
+        <button class="debug-btn" onclick="toggleCanvas()">Toggle Canvas (Debug View)</button>
+        
+        <div class="debug-group">
+            <div style="color:#fff; font-weight:bold;">1. Winning Area Canvas</div>
+            <div class="debug-row"><label>Y:</label><input type="range" min="100" max="200" value="130" oninput="updateCvs('win', 'y', this.value)"></div>
+            <div class="debug-row"><label>H:</label><input type="range" min="50" max="150" value="80" oninput="updateCvs('win', 'h', this.value)"></div>
+        </div>
+
+        <div class="debug-group">
+            <div style="color:#fff; font-weight:bold;">2. Main Grid Layout</div>
+            <div class="debug-row"><label>Grid Y:</label><input type="range" min="200" max="400" value="260" oninput="updateGrid('offsetY', this.value)"></div>
+            <div class="debug-row"><label>Gap X:</label><input type="range" min="0" max="30" value="10" oninput="updateGrid('gapX', this.value)"></div>
+            <div class="debug-row"><label>Gap Y:</label><input type="range" min="0" max="30" value="18" oninput="updateGrid('gapY', this.value)"></div>
+        </div>
+        
+        <div class="debug-group">
+            <div style="color:#fff; font-weight:bold;">3. Main Area Canvas</div>
+            <div class="debug-row"><label>Y:</label><input type="range" min="200" max="400" value="250" oninput="updateCvs('main', 'y', this.value)"></div>
+            <div class="debug-row"><label>H:</label><input type="range" min="300" max="500" value="420" oninput="updateCvs('main', 'h', this.value)"></div>
+        </div>
+        
+        <div style="font-size:9px; color:#888;">Adjust sliders to perfectly match '64005.jpg'. Use Toggle to check alignment.</div>
     </div>
 
-    <div id="win-container">--</div>
-    
-    <div id="main-grid"></div>
+    <div id="game-container">
+        <div id="win-area">88</div>
+        <div id="grid-container"></div>
+        
+        <canvas id="cvs-win"></canvas>
+        <canvas id="cvs-main"></canvas>
 
-    <canvas id="canvas-win"></canvas>
-    <canvas id="canvas-main"></canvas>
-
-    <div id="result-popup">
-        <div id="pop-content">
-            <div class="win-title" id="pop-title">WINNER!</div>
-            <div class="win-val" id="pop-amt">$$0.00$$</div>
+        <div id="result-pop">
+            <div class="pop-title" id="pop-status">WINNER!</div>
+            <div class="pop-msg" id="pop-text">Amazing luck!</div>
+            <button class="btn-retry" onclick="location.reload()">PLAY AGAIN</button>
         </div>
     </div>
-</div>
 
-<script>
-    /* =========================================
-       五、核心逻辑控制 (含风控 & 工业涂层)
-       ========================================= */
-    const CONFIG = {
-        cost: 20,           // 面值
-        minWin: 5,          // 保底中奖
-        winRate: 0.35,      // 整体胜率 35%
-        gridSize: 20,       // 20个格子 (4x5)
-        scratchThreshold: 0.95 // 刮开95%触发弹窗
-    };
+    <audio id="snd-scratch" src="https://actions.google.com/sounds/v1/scrapes/scratch.ogg"></audio>
 
-    let gameState = {
-        targetNum: 0,
-        totalPrize: 0,
-        winOpened: false,
-        mainOpened: false,
-        isWinner: false
-    };
+    <script>
+        // --- 实时工程配置 (与调试面板同步) ---
+        const engineering = {
+            win: { x: 140, y: 130, w: 80, h: 80 },
+            main: { x: 18, y: 250, w: 324, h: 420 },
+            grid: { offsetY: 260, gapX: 10, gapY: 18 }
+        };
 
-    // 1. 初始化数据
-    function initGame() {
-        gameState.targetNum = Math.floor(Math.random() * 80) + 10;
-        document.getElementById('win-container').innerText = gameState.targetNum;
+        const config = {
+            noise: 60, grain: 2,
+            color: '#c0c0c0', // 银色涂层
+            showCanvas: true
+        };
 
-        // 风控模型
-        gameState.isWinner = Math.random() < CONFIG.winRate;
-        let winSlots = gameState.isWinner ? [Math.floor(Math.random() * CONFIG.gridSize)] : [];
-        gameState.totalPrize = gameState.isWinner ? (Math.floor(Math.random() * 50) + CONFIG.minWin) : 0;
+        let isWinAreaDone = false;
+        let isMainAreaDone = false;
+        let totalPrize = 0;
+        const targetNum = Math.floor(Math.random() * 90) + 10;
 
-        const grid = document.getElementById('main-grid');
-        for (let i = 0; i < CONFIG.gridSize; i++) {
-            let isThisWin = winSlots.includes(i);
-            let num = isThisWin ? gameState.targetNum : (Math.floor(Math.random() * 80) + 10);
-            if (!isThisWin && num === gameState.targetNum) num++; // 避开重复
+        // --- 初始化网格数据 ---
+        function initGrid() {
+            const grid = document.getElementById('grid-container');
+            const winArea = document.getElementById('win-area');
+            winArea.innerText = targetNum;
             
-            let prizeAmt = isThisWin ? gameState.totalPrize : (Math.floor(Math.random() * 500) + 10);
-            
-            grid.innerHTML += `
-                <div class="slot">
-                    <div class="num">${num}</div>
-                    <div class="amt">$$${prizeAmt}$$</div>
-                </div>`;
-        }
-    }
+            let html = '';
+            let winCount = 0;
+            totalPrize = 0;
 
-    // 2. 工业级涂层渲染 (带暗纹)
-    function setupCanvas(id, w, h, isMain) {
-        const c = document.getElementById(id);
-        const ctx = c.getContext('2d');
-        // 像素级适配尺寸
-        c.width = w; c.height = h;
-
-        // A. 银粉磨砂底色
-        const grad = ctx.createLinearGradient(0,0,w,h);
-        grad.addColorStop(0, '#a0a0a0');
-        grad.addColorStop(0.5, '#d0d0d0');
-        grad.addColorStop(1, '#909090');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, w, h);
-
-        // B. 叠加随机铝粉颗粒
-        for(let i=0; i<800; i++){
-            ctx.fillStyle = `rgba(255,255,255,${Math.random()*0.4})`;
-            ctx.fillRect(Math.random()*w, Math.random()*h, 1, 1);
-        }
-
-        // C. 欧美暗纹点缀 (低调美元/幸运星)
-        ctx.save();
-        ctx.fillStyle = "rgba(0,0,0,0.06)";
-        ctx.font = "14px Arial";
-        const icons = ["$", "★", "♣", "777"];
-        for(let y=20; y<h; y+=40){
-            for(let x=10; x<w; x+=50){
-                ctx.fillText(icons[Math.floor(Math.random()*icons.length)], x, y);
+            // 5x5网格
+            for(let i=0; i<25; i++) {
+                let isMatch = Math.random() < 0.15 && winCount < 3;
+                let num = isMatch ? targetNum : Math.floor(Math.random()*90)+10;
+                if(!isMatch && num === targetNum) num += 1;
+                
+                let prize = [5, 10, 20, 50, 100][Math.floor(Math.random()*5)];
+                if(isMatch) {
+                    winCount++;
+                    totalPrize += prize;
+                }
+                // 强制要求的格式：$金额$
+                html += `<div class="cell"><div class="n">${num}</div><div class="a">$${prize}$</div></div>`;
             }
+            grid.innerHTML = html;
+            syncLayout();
         }
-        ctx.restore();
 
-        // 3. 刮奖逻辑 (锯齿状剥落)
-        let isDrawing = false;
-        const scratch = (e) => {
-            if(!isDrawing) return;
-            const rect = c.getBoundingClientRect();
-            const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-            const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+        // --- 同步布局参数 ---
+        function syncLayout() {
+            document.documentElement.style.setProperty('--grid-offset-y', engineering.grid.offsetY + 'px');
+            document.documentElement.style.setProperty('--grid-gap-x', engineering.grid.gapX + 'px');
+            document.documentElement.style.setProperty('--grid-gap-y', engineering.grid.gapY + 'px');
+        }
 
-            ctx.globalCompositeOperation = 'destination-out';
+        // --- 画布绘制引擎 (支持颗粒/暗纹) ---
+        function drawScratchLayer(cvsId, cfg) {
+            const cvs = document.getElementById(cvsId);
+            const ctx = cvs.getContext('2d');
+            cvs.style.left = cfg.x + 'px';
+            cvs.style.top = cfg.y + 'px';
+            cvs.width = cfg.w; cvs.height = cfg.h;
+
+            // 基础底色 (银粉质感)
+            ctx.fillStyle = config.color;
+            ctx.fillRect(0, 0, cfg.w, cfg.h);
+
+            // 增加随机颗粒感 (银粉磨砂)
+            for(let i=0; i < (cfg.w * cfg.h * (config.noise/1000)); i++) {
+                ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.4})`;
+                const s = Math.random() * config.grain;
+                ctx.fillRect(Math.random()*cfg.w, Math.random()*cfg.h, s, s);
+            }
+
+            // 增加暗纹点缀 (中国风暗纹/星星)
+            ctx.strokeStyle = 'rgba(0,0,0,0.06)';
+            ctx.lineWidth = 1;
+            ctx.font = '12px Arial';
+            for(let y=15; y<cfg.h; y+=30) {
+                for(let x=10; x<cfg.w; x+=40) {
+                    ctx.strokeText('★', x + Math.random()*10, y + Math.random()*5);
+                }
+            }
+
+            setupScratch(cvs, ctx);
+        }
+
+        // --- 刮奖核心交互 ---
+        function setupScratch(cvs, ctx) {
+            let isDown = false;
+            const snd = document.getElementById('snd-scratch');
             
-            // 物理剥落算法：绘制多个随机碎片
-            for(let i=0; i<6; i++) {
-                const size = 15 + Math.random()*10;
-                const ox = (Math.random()-0.5)*20;
-                const oy = (Math.random()-0.5)*20;
+            const handleStart = (e) => { isDown = true; handleMove(e); }; // 点击时立刻刮除一点
+            const handleEnd = () => {
+                isDown = false;
+                checkProgress(cvs, ctx);
+            };
+            const handleMove = (e) => {
+                if(!isDown) return;
+                const rect = cvs.getBoundingClientRect();
+                const pos = e.touches ? e.touches[0] : e;
+                const x = pos.clientX - rect.left;
+                const y = pos.clientY - rect.top;
+
+                ctx.globalCompositeOperation = 'destination-out';
                 ctx.beginPath();
-                ctx.moveTo(x+ox, y+oy);
-                ctx.lineTo(x+ox+size, y+oy+size/2);
-                ctx.lineTo(x+ox+size/2, y+oy+size);
+                // 模拟块状剥落：不规则锯齿圆
+                const radius = 16 + Math.random()*4;
+                for(let i=0; i<6; i++) {
+                    const angle = (i / 6) * Math.PI * 2;
+                    const offset = Math.random() * 5;
+                    const dx = x + Math.cos(angle) * (radius - offset);
+                    const dy = y + Math.sin(angle) * (radius - offset);
+                    if(i === 0) ctx.moveTo(dx, dy); else ctx.lineTo(dx, dy);
+                }
                 ctx.closePath();
                 ctx.fill();
-            }
-            checkProgress(c, isMain);
-        };
 
-        const checkProgress = (canvas, isMainField) => {
-            const pix = ctx.getImageData(0,0,w,h).data;
-            let count = 0;
-            for(let i=3; i<pix.length; i+=4) if(pix[i] === 0) count++;
-            if(count > (pix.length/4) * CONFIG.scratchThreshold) {
-                if(isMainField) gameState.mainOpened = true; else gameState.winOpened = true;
-                if(gameState.mainOpened && gameState.winOpened) showPopup();
-            }
-        };
+                // 节流播放音效
+                if(snd.paused) {
+                    snd.currentTime = 0;
+                    snd.play().catch(()=>{}); // 防止浏览器阻止自动播放
+                    setTimeout(() => snd.pause(), 100);
+                }
+            };
 
-        c.onmousedown = () => isDrawing = true;
-        window.onmouseup = () => isDrawing = false;
-        c.onmousemove = scratch;
-        c.ontouchstart = (e) => { isDrawing = true; scratch(e); e.preventDefault(); };
-        c.ontouchmove = (e) => { scratch(e); e.preventDefault(); };
-    }
-
-    function showPopup() {
-        const pop = document.getElementById('result-popup');
-        const title = document.getElementById('pop-title');
-        const amt = document.getElementById('pop-amt');
-        
-        if(gameState.isWinner) {
-            title.innerText = "CONGRATS!";
-            amt.innerText = `$$${gameState.totalPrize}.00$$`;
-            title.style.color = "#FFD700";
-        } else {
-            title.innerText = "NEXT TIME!";
-            amt.innerText = "GOOD LUCK";
-            title.style.color = "#bbb";
+            cvs.addEventListener('mousedown', handleStart);
+            cvs.addEventListener('touchstart', handleStart);
+            window.addEventListener('mouseup', handleEnd);
+            window.addEventListener('touchend', handleEnd);
+            cvs.addEventListener('mousemove', handleMove);
+            cvs.addEventListener('touchmove', (e) => { e.preventDefault(); handleMove(e); });
         }
-        pop.style.display = "block";
-    }
 
-    // 启动流程
-    window.onload = () => {
-        initGame();
-        
-        // 按照调试参数初始化画布
-        const rootStyle = getComputedStyle(document.documentElement);
-        const ww = parseInt(rootStyle.getPropertyValue('--win-w'));
-        const wh = parseInt(rootStyle.getPropertyValue('--win-h'));
-        const mw = parseInt(rootStyle.getPropertyValue('--main-w'));
-        const mh = parseInt(rootStyle.getPropertyValue('--main-h'));
-
-        setupCanvas('canvas-win', ww, wh, false);
-        setupCanvas('canvas-main', mw, mh, true);
-
-        // 3秒倒计时逻辑
-        let count = 3;
-        const cdTimer = setInterval(() => {
-            count--;
-            if(count > 0) {
-                document.getElementById('cd-num').innerText = count;
-            } else {
-                clearInterval(cdTimer);
-                document.getElementById('loader').style.display = 'none';
-                document.getElementById('game-card').style.visibility = 'visible';
+        // --- 进度判定 ---
+        function checkProgress(cvs, ctx) {
+            const imgData = ctx.getImageData(0,0,cvs.width,cvs.height);
+            let cleared = 0;
+            for(let i=3; i<imgData.data.length; i+=4) {
+                if(imgData.data[i] === 0) cleared++;
             }
-        }, 1000);
-    };
-</script>
+            const percent = cleared / (cvs.width * cvs.height);
+            
+            if(percent > 0.95) {
+                cvs.style.opacity = '0';
+                if(cvs.id === 'cvs-win') isWinAreaDone = true;
+                if(cvs.id === 'cvs-main') isMainAreaDone = true;
+                
+                if(isWinAreaDone && isMainAreaDone) triggerResult();
+            }
+        }
+
+        // --- 结果展示 (时尚美式英语) ---
+        function triggerResult() {
+            const pop = document.getElementById('result-pop');
+            const status = document.getElementById('pop-status');
+            const text = document.getElementById('pop-text');
+            
+            pop.style.display = 'block';
+            // GSAP-like 柔美动画
+            setTimeout(() => { 
+                pop.style.opacity = '1'; 
+                pop.style.transform = 'translate(-50%, 0)'; 
+            }, 50);
+
+            if(totalPrize > 0) {
+                status.innerText = totalPrize >= 100 ? "🎉 JACKPOT! " : "💰 WINNER!";
+                status.style.color = "#d32f2f";
+                text.innerHTML = totalPrize >= 100 ? 
+                    `That's huge! You grabbed <b>$${totalPrize}$</b>!<br>Keep this luck rolling!` :
+                    `Nice! You got <b>$${totalPrize}$</b> 🎉<br>Don't stop now, your big win is near!`;
+            } else {
+                status.innerText = "SO CLOSE!";
+                status.style.color = "#555";
+                text.innerText = "Don’t give up, your winning moment is coming! 🍀";
+            }
+        }
+
+        // --- 工程控制逻辑 ---
+        function updateGrid(key, val) {
+            engineering.grid[key] = parseInt(val);
+            document.documentElement.style.setProperty(`--grid-${key}`, engineering.grid[key] + 'px');
+            // 网格变了，画布也得变
+            engineering.main.y = engineering.grid.offsetY - 10;
+            drawScratchLayer('cvs-main', engineering.main);
+        }
+
+        function updateCvs(area, key, val) {
+            engineering[area][key] = parseInt(val);
+            drawScratchLayer(`cvs-${area}`, engineering[area]);
+        }
+
+        function toggleCanvas() {
+            config.showCanvas = !config.showCanvas;
+            document.getElementById('cvs-win').classList.toggle('canvas-hidden');
+            document.getElementById('cvs-main').classList.toggle('canvas-hidden');
+        }
+
+        function redrawCanvas() {
+            drawScratchLayer('cvs-win', engineering.win);
+            drawScratchLayer('cvs-main', engineering.main);
+        }
+
+        // --- 启动流程 ---
+        window.onload = () => {
+            initGrid();
+            redrawCanvas();
+
+            let count = 3;
+            const cdEl = document.getElementById('cd');
+            const timer = setInterval(() => {
+                count--;
+                if(count > 0) {
+                    cdEl.innerText = count;
+                } else {
+                    clearInterval(timer);
+                    document.getElementById('loader').style.opacity = '0';
+                    setTimeout(() => {
+                        document.getElementById('loader').remove();
+                        document.getElementById('game-container').classList.add('ready');
+                    }, 600);
+                }
+            }, 1000);
+        };
+    </script>
 </body>
 </html>
