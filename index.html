@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=360, user-scalable=no">
-    <title>GOLDEN LUCK SCRATCH</title>
+    <title>GOLDEN LUCK SCRATCH - HYBRID</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&family=Oswald:wght@700&family=Dancing+Script:wght@700&display=swap');
 
@@ -26,16 +26,16 @@
             100% { transform: scale(1.5); opacity: 0; }
         }
 
-        /* --- 2. 游戏容器 (严格执行 JSON 坐标) --- */
+        /* --- 2. 游戏容器 (根据优化要求微调) --- */
         #game-container {
             opacity: 0; transition: opacity 1.5s ease;
             position: relative; width: 360px; height: 720px; margin: 0 auto;
             background: url('64005.jpg') center/100% 100% no-repeat;
         }
 
-        /* 中奖区 (JSON: pos [151, 266], size [72, 66]) */
+        /* 中奖区 (优化: top 值上移 2px, 从 266px 改为 264px) */
         #winning-zone {
-            position: absolute; left: 151px; top: 266px; width: 72px; height: 66px;
+            position: absolute; left: 151px; top: 264px; width: 72px; height: 66px;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             color: #09140d; font-size: 24px; font-weight: 900;
         }
@@ -52,14 +52,14 @@
         .cell .v { font-size: 18px; font-weight: 900; color: #09140d; }
         .cell .a { font-family: 'Oswald'; font-size: 10px; color: #d32f2f; }
 
-        /* 画布层 (JSON: Layer_Win_Cover & Layer_Main_Cover) */
+        /* 画布层 (极致刮除效果，touch-action: none 防止滚动干扰) */
         canvas { position: absolute; z-index: 20; touch-action: none; cursor: crosshair; }
 
         /* --- 3. 顶部非遮挡弹窗 --- */
         #top-result-panel {
             position: absolute; top: -150px; left: 10px; right: 10px; height: 120px;
-            background: rgba(0, 0, 0, 0.85); border: 2px solid var(--gold); border-radius: 15px;
-            z-index: 100; transition: top 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            background: rgba(0, 0, 0, 0.88); border: 2px solid var(--gold); border-radius: 15px;
+            z-index: 100; transition: top 0.7s cubic-bezier(0.68, -0.55, 0.27, 1.55);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
@@ -93,7 +93,7 @@
         <canvas id="Layer_Win_Cover" style="left:153px; top:258px; width:71px; height:52px;"></canvas>
         <canvas id="Layer_Main_Cover" style="left:22px; top:322px; width:317px; height:300px;"></canvas>
         
-        <div id="hud">SYSTEM READY • 95% CLEARANCE DETECTOR ACTIVE</div>
+        <div id="hud">HYBRID CURRENCY EDITION • 90% CLEARANCE INSTANT DETECTION</div>
     </div>
 
     <script>
@@ -138,29 +138,48 @@
 
         function setupCanvas(id) {
             const canvas = document.getElementById(id);
+            // 开启 willReadFrequently 优化高清屏下的像素读取性能
             const ctx = canvas.getContext('2d', { willReadFrequently: true });
             canvas.width = canvas.offsetWidth;
             canvas.height = canvas.offsetHeight;
 
-            // 绘制银色欧美涂层
+            // 绘制银色涂层
             ctx.fillStyle = '#c0c0c0';
             ctx.fillRect(0,0,canvas.width, canvas.height);
-            ctx.fillStyle = 'rgba(0,0,0,0.1)';
-            ctx.font = '14px Arial';
-            for(let i=5; i<canvas.width; i+=25) 
-                for(let j=15; j<canvas.height; j+=25) ctx.fillText("€", i, j);
+            
+            // 优化：欧元与美元混合暗纹
+            ctx.fillStyle = "rgba(0,0,0,0.12)";
+            ctx.font = "bold 16px Arial";
+            for(let i=5; i<canvas.width; i+=28) {
+                for(let j=18; j<canvas.height; j+=28) {
+                    // 交错算法，实现既有欧元又有美元
+                    const char = (i + j) % 2 === 0 ? "€" : "$";
+                    ctx.fillText(char, i, j);
+                }
+            }
 
-            // 刮除逻辑
+            setupScratch(canvas, ctx);
+        }
+
+        function setupScratch(canvas, ctx) {
             let drawing = false;
+
+            const getPos = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+                return { x: clientX - rect.left, y: clientY - rect.top };
+            };
+
             const scratch = (e) => {
                 if(!drawing || !gameActive) return;
-                const rect = canvas.getBoundingClientRect();
-                const x = (e.clientX || e.touches[0].clientX) - rect.left;
-                const y = (e.clientY || e.touches[0].clientY) - rect.top;
+                const pos = getPos(e);
                 
+                // 优化：极致刮除效果，destination-out 会将刮除区域变成绝对透明，彻底不留阴影
                 ctx.globalCompositeOperation = 'destination-out';
                 ctx.beginPath();
-                ctx.arc(x, y, 20, 0, Math.PI*2);
+                // 适当增大的笔触，刮除更干脆
+                ctx.arc(pos.x, pos.y, 30, 0, Math.PI*2); 
                 ctx.fill();
                 
                 checkProgress(canvas, ctx);
@@ -173,44 +192,63 @@
             canvas.addEventListener('touchmove', (e) => { scratch(e); e.preventDefault(); });
         }
 
-        // --- 3. 95% 判定与结果展示 ---
+        // --- 3. 90% 阈值即时结算与弹窗 (优化核心) ---
         function checkProgress(canvas, ctx) {
-            const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-            let cleared = 0;
-            for (let i = 3; i < data.length; i += 4) {
-                if (data[i] === 0) cleared++;
+            if (isGameEnded || !gameActive) return;
+
+            const w = canvas.width;
+            const h = canvas.height;
+            // 获取 Canvas 的像素数据
+            const data = ctx.getImageData(0, 0, w, h).data;
+            let clearedPixels = 0;
+            let totalPixels = w * h;
+
+            // 优化算法：采样检查透明度 (Alpha 通道)。每 8 个像素采样一次，兼顾精度与性能
+            for (let i = 3; i < data.length; i += 4 * 8) {
+                // 如果 Alpha 通道为 0 (绝对透明)，则视为已刮除
+                if (data[i] === 0) clearedPixels++;
             }
+
+            // 重新计算采样的总像素数
+            const sampledTotal = totalPixels / 8;
+            const percent = clearedPixels / sampledTotal;
             
-            if (cleared / (data.length / 4) > 0.95) {
-                canvas.style.transition = 'opacity 0.5s';
-                canvas.style.opacity = '0';
-                setTimeout(() => canvas.style.pointerEvents = 'none', 500);
-                
-                if(canvas.id === "Layer_Main_Cover") showFinalResult();
+            // 如果主刮奖区域刮开 90% 以上 (百分比阈值上移)
+            if (canvas.id === 'Layer_Main_Cover' && percent > 0.90) {
+                endGame();
             }
         }
 
-        function showFinalResult() {
-            if(!gameActive) return;
+        let isGameEnded = false;
+        function endGame() {
+            if(isGameEnded) return;
+            // 立刻锁定游戏，防止重复触发
+            isGameEnded = true;
             gameActive = false;
 
-            const panel = document.getElementById('top-result-panel');
+            // 自动强制移除所有画布层，露出底部
+            document.querySelectorAll('canvas').forEach(c => c.style.display = 'none');
+
+            // 毫秒级即时判定结果并弹窗
+            const overlay = document.getElementById('top-result-panel');
             const title = document.getElementById('res-title');
             const warm = document.getElementById('res-warm');
             const balTxt = document.getElementById('balance-txt');
 
             if(winAmount > 0) {
                 title.innerText = `YOU WON $${winAmount.toFixed(2)}!`;
-                warm.innerText = "Keep that golden touch, the fortune favors the brave!";
+                title.style.color = "var(--gold)";
+                warm.innerText = "Fortune favors the bold. Keep that golden touch!";
                 balance += winAmount;
             } else {
                 title.innerText = "ALMOST THERE!";
-                warm.innerText = "Success is just one scratch away. Try again, winner!";
-                title.style.color = "#aaa";
+                warm.innerText = "No winning numbers this time, but the next scratch could be the one!";
+                title.style.color = "#aaaaaa";
             }
 
             balTxt.innerText = `$${balance.toFixed(2)}`;
-            panel.classList.add('show');
+            // 顶部弹窗滑下
+            overlay.classList.add('show');
         }
 
         window.onload = runCountdown;
