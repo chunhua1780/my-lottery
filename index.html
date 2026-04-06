@@ -1,190 +1,258 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>拾光·中国龙</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        body { background: #000; margin: 0; font-family: "Microsoft YaHei", sans-serif; overflow: hidden; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>刮刮乐</title>
 
-        /* --- 炫酷流光倒计时 --- */
-        #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle, #1a1a2e 0%, #000 100%);
-            z-index: 100; display: flex; justify-content: center; align-items: center;
-        }
-        #countdown-num {
-            font-size: 150px; font-weight: 900;
-            background: linear-gradient(to right, #00f2fe, #4facfe, #f093fb, #f5576c);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 20px rgba(79, 172, 254, 0.8));
-            animation: hueRotate 2s infinite linear;
-            transform: scale(0); opacity: 0;
-        }
-        @keyframes hueRotate {
-            from { filter: hue-rotate(0deg) drop-shadow(0 0 20px rgba(79, 172, 254, 0.8)); }
-            to { filter: hue-rotate(360deg) drop-shadow(0 0 20px rgba(79, 172, 254, 0.8)); }
-        }
-        .zoom-effect { animation: zoomInBlur 1s ease-out forwards; }
-        @keyframes zoomInBlur {
-            0% { transform: scale(0.5) blur(10px); opacity: 0; }
-            50% { transform: scale(1.2) blur(0); opacity: 1; }
-            100% { transform: scale(2.5) blur(20px); opacity: 0; }
-        }
+<style>
+body{
+    margin:0;
+    background:#000;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+    font-family:Arial;
+}
 
-        /* --- 彩票整体容器 (初始完全隐藏) --- */
-        #app-wrapper { display: none; opacity: 0; transition: opacity 0.5s ease; }
-        
-        .card-container { 
-            position: relative; width: 360px; height: 720px;
-            background-size: cover; margin: 0 auto;
-        }
+/* 倒计时 */
+#loader{
+    position:fixed;
+    width:100%;
+    height:100%;
+    background:#000;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    z-index:99;
+}
+#count{
+    font-size:120px;
+    font-weight:900;
+    background:linear-gradient(45deg,#00f2fe,#f5576c,#ffe259);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    animation:zoom 1s ease forwards;
+}
+@keyframes zoom{
+    0%{transform:scale(0.3);opacity:0;}
+    50%{transform:scale(1.2);}
+    100%{transform:scale(1);opacity:1;}
+}
 
-        #win-box { position: absolute; top: 266px; left: 169px; width: 40px; height: 35px; z-index: 1; display: flex; justify-content: center; align-items: center; font-size: 22px; color: #000; font-weight: 900; }
-        #my-grid { position: absolute; top: 326px; left: 25px; width: 310px; z-index: 1; display: grid; grid-template-columns: repeat(6, 1fr); row-gap: 2px; column-gap: 9px; }
-        .num-item { display: flex; flex-direction: column; justify-content: center; align-items: center; color: #000; font-weight: 900; height: 55px; font-size: 14px; }
-        .prize-item { font-size: 9px; color: #8B0000; font-weight: bold; }
+/* 卡片 */
+.card{
+    position:relative;
+    width:360px;
+    height:720px;
+    background:url('64005.jpg') no-repeat;
+    background-size:cover;
+    opacity:0;
+    transition:0.5s;
+}
 
-        .scratch-layer { position: absolute; z-index: 10; touch-action: none; }
-        #canv-win { top: 260px; left: 160px; width: 55px; height: 45px; }
-        #canv-mine { top: 322px; left: 21px; width: 318px; height: 299px; }
-    </style>
+/* 数据层 */
+.layer{
+    position:absolute;
+    left:20px;
+    top:150px;
+    width:320px;
+    height:500px;
+}
+
+/* 中奖号码 */
+#win{
+    position:absolute;
+    top:110px;
+    left:150px;
+    font-size:22px;
+    font-weight:900;
+}
+
+/* 网格 */
+.grid{
+    position:absolute;
+    top:170px;
+    left:10px;
+    width:300px;
+    display:grid;
+    grid-template-columns:repeat(6,1fr);
+    gap:8px;
+}
+.cell{
+    height:50px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+}
+.num{
+    font-size:16px;
+    font-weight:900;
+}
+.money{
+    font-size:11px;
+    color:#700000;
+}
+
+/* canvas */
+canvas{
+    position:absolute;
+    left:0;
+    top:0;
+    z-index:10;
+}
+#c1{ top:100px; left:140px; width:80px; height:60px;}
+#c2{ top:160px; left:20px; width:320px; height:320px;}
+</style>
 </head>
+
 <body>
 
-    <div id="loader">
-        <div id="countdown-num"></div>
+<div id="loader"><div id="count">3</div></div>
+
+<div class="card" id="card">
+    <div class="layer" id="layer">
+        <div id="win"></div>
+        <div class="grid" id="grid"></div>
     </div>
+    <canvas id="c1"></canvas>
+    <canvas id="c2"></canvas>
+</div>
 
-    <div id="app-wrapper">
-        <div class="card-container" id="main-card">
-            <div id="win-box"></div>
-            <div id="my-grid"></div>
-            <canvas id="canv-win" class="scratch-layer"></canvas>
-            <canvas id="canv-mine" class="scratch-layer"></canvas>
-        </div>
-    </div>
+<script>
 
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.ready(); tg.expand();
+/* ===== 数据模型（娱乐版） ===== */
+function getData(){
+    let lucky = Math.floor(Math.random()*90)+10;
 
-        const BG_IMAGE_URL = '64005.jpg';
-        let bgLoaded = false;
+    let r=Math.random();
+    let total=0;
 
-        // --- 核心算法：小确幸盈利模型 (面值20, 期待支出16) ---
-        function getSecureData() {
-            const luckyNum = Math.floor(Math.random() * 89) + 10;
-            const dice = Math.random();
-            let totalWin = 0;
+    if(r<0.5) total=0;
+    else if(r<0.85) total=[5,10][Math.floor(Math.random()*2)];
+    else if(r<0.97) total=[20,50][Math.floor(Math.random()*2)];
+    else total=100;
 
-            if (dice < 0.45) {
-                totalWin = 0; // 45% 全空
-            } else if (dice < 0.90) {
-                totalWin = Math.floor(Math.random() * 11) + 5; // 45% 奖 5-15元 (核心诱惑)
-            } else {
-                totalWin = Math.floor(Math.random() * 30) + 20; // 10% 奖 20-50元 (惊喜)
+    let spots=[];
+    let used=false;
+
+    for(let i=0;i<30;i++){
+        let num=Math.floor(Math.random()*90)+10;
+        let prize=0;
+
+        if(!used && total>0 && Math.random()<0.2){
+            num=lucky;
+            prize=total;
+            used=true;
+        }
+
+        spots.push({num,prize});
+    }
+
+    return {lucky,spots,total};
+}
+
+/* ===== 初始化 ===== */
+const data=getData();
+window.result=data.total;
+
+document.getElementById('win').innerText=data.lucky;
+
+const grid=document.getElementById('grid');
+data.spots.forEach(s=>{
+    grid.innerHTML+=`
+    <div class="cell">
+        <div class="num">${s.num}</div>
+        <div class="money">${s.prize?('¥'+s.prize):''}</div>
+    </div>`;
+});
+
+/* ===== 刮层（真实效果） ===== */
+function setup(c){
+    const ctx=c.getContext('2d');
+    c.width=c.offsetWidth;
+    c.height=c.offsetHeight;
+
+    ctx.fillStyle='#C0C0C0';
+    ctx.fillRect(0,0,c.width,c.height);
+
+    for(let i=0;i<500;i++){
+        ctx.fillStyle=Math.random()>0.5?'#eee':'#999';
+        ctx.fillRect(Math.random()*c.width,Math.random()*c.height,1,1);
+    }
+
+    let down=false;
+    let revealed=false;
+
+    function draw(e){
+        if(!down)return;
+        const r=c.getBoundingClientRect();
+        const x=(e.touches?e.touches[0].clientX:e.clientX)-r.left;
+        const y=(e.touches?e.touches[0].clientY:e.clientY)-r.top;
+
+        ctx.globalCompositeOperation='destination-out';
+        ctx.beginPath();
+        ctx.arc(x,y,18,0,Math.PI*2);
+        ctx.fill();
+
+        if(!revealed){
+            let img=ctx.getImageData(0,0,c.width,c.height);
+            let clear=0;
+            for(let i=3;i<img.data.length;i+=4){
+                if(img.data[i]==0) clear++;
             }
-
-            const spots = [];
-            let allocated = 0;
-            for (let i = 0; i < 30; i++) {
-                let num = Math.floor(Math.random() * 89) + 10;
-                if (num === luckyNum) num += 1;
-                let prize = [5, 10, 20, 50, 100][Math.floor(Math.random()*3)];
-                let isMatch = false;
-
-                if (allocated < totalWin && Math.random() < 0.15) {
-                    num = luckyNum;
-                    isMatch = true;
-                    let p = totalWin - allocated;
-                    if (totalWin > 10) p = Math.max(5, Math.floor(p * 0.6));
-                    prize = p;
-                    allocated += p;
-                }
-                spots.push({ num, prize, isMatch });
+            if(clear>img.data.length/10){
+                revealed=true;
+                showResult();
             }
-            return { luckyNum, spots };
         }
+    }
 
-        // --- 资源预加载逻辑 ---
-        function preloadAssets(callback) {
-            const img = new Image();
-            img.src = BG_IMAGE_URL;
-            img.onload = () => {
-                document.getElementById('main-card').style.backgroundImage = `url(${BG_IMAGE_URL})`;
-                callback();
-            };
-        }
+    c.onmousedown=()=>down=true;
+    window.onmouseup=()=>down=false;
+    c.onmousemove=draw;
 
-        // --- 倒计时与同步显示 ---
-        function startCountdown() {
-            const el = document.getElementById('countdown-num');
-            const nums = ['3', '2', '1'];
-            let i = 0;
+    c.ontouchstart=e=>{down=true;draw(e);}
+    c.ontouchend=()=>down=false;
+    c.ontouchmove=e=>{e.preventDefault();draw(e);}
+}
 
-            const run = () => {
-                if (i < nums.length) {
-                    el.innerText = nums[i];
-                    el.className = 'zoom-effect';
-                    setTimeout(() => { el.className = ''; }, 950);
-                    i++;
-                    setTimeout(run, 1000);
-                } else {
-                    // 瞬间同步显示
-                    document.getElementById('loader').style.display = 'none';
-                    const wrapper = document.getElementById('app-wrapper');
-                    wrapper.style.display = 'block';
-                    setTimeout(() => { wrapper.style.opacity = '1'; }, 50);
-                }
-            };
-            run();
-        }
+/* ===== 结果提示 ===== */
+function showResult(){
+    let r=window.result;
+    let msg='';
 
-        // --- 初始化 ---
-        window.onload = () => {
-            preloadAssets(() => {
-                const data = getSecureData();
-                document.getElementById('win-box').innerText = data.luckyNum;
-                const grid = document.getElementById('my-grid');
-                data.spots.forEach(s => {
-                    grid.innerHTML += `<div class="num-item">${s.num}<div class="prize-item">¥${s.prize}</div></div>`;
-                });
-                
-                initCanv('canv-win', 55, 45);
-                initCanv('canv-mine', 318, 299);
-                startCountdown();
-            });
-        };
+    if(r===0) msg='差一点点，再试试 🍀';
+    else if(r<=10) msg=`不错！赢了 ¥${r}`;
+    else if(r<=50) msg=`手气不错！¥${r}`;
+    else msg=`🎉 大奖 ¥${r}！`;
 
-        function initCanv(id, w, h) {
-            const c = document.getElementById(id);
-            const ctx = c.getContext('2d', {willReadFrequently: true});
-            c.width = w; c.height = h;
-            ctx.fillStyle = '#C0C0C0';
-            ctx.fillRect(0, 0, w, h);
-            for(let i=0; i<300; i++) {
-                ctx.fillStyle = Math.random() > 0.5 ? '#EFEFEF' : '#999';
-                ctx.fillRect(Math.random()*w, Math.random()*h, 1, 1);
-            }
+    setTimeout(()=>alert(msg),300);
+}
 
-            let drawing = false;
-            const scrub = (e) => {
-                if(!drawing) return;
-                const r = c.getBoundingClientRect();
-                const x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
-                const y = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
-                ctx.globalCompositeOperation = 'destination-out';
-                ctx.beginPath(); ctx.arc(x, y, 20, 0, Math.PI*2); ctx.fill();
-            };
-            c.onmousedown = (e) => { drawing = true; scrub(e); };
-            window.onmouseup = () => drawing = false;
-            c.onmousemove = scrub;
-            c.ontouchstart = (e) => { e.preventDefault(); drawing = true; scrub(e); };
-            c.ontouchmove = (e) => { e.preventDefault(); scrub(e); };
-            c.ontouchend = () => drawing = false;
-        }
-    </script>
+/* ===== 倒计时 ===== */
+let n=3;
+const el=document.getElementById('count');
+
+let timer=setInterval(()=>{
+    n--;
+    if(n>0){
+        el.innerText=n;
+        el.style.animation='none';
+        setTimeout(()=>el.style.animation='zoom 1s',10);
+    }else{
+        clearInterval(timer);
+        document.getElementById('loader').style.display='none';
+        document.getElementById('card').style.opacity=1;
+
+        setup(document.getElementById('c1'));
+        setup(document.getElementById('c2'));
+    }
+},1000);
+
+</script>
+
 </body>
 </html>
