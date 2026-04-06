@@ -3,267 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>拾光·全球竞赛调试站</title>
+    <title>拾光·极客调优 V3.0</title>
     <style>
-        :root { --neon: #00f2fe; }
-        body { background: #000; margin: 0; font-family: "PingFang SC", sans-serif; display: flex; overflow: hidden; color: #fff; }
+        :root { --accent: #00f2fe; --bg: #0a0a0a; }
+        body { background: var(--bg); margin: 0; font-family: "Segoe UI", sans-serif; display: flex; color: #fff; height: 100vh; overflow: hidden; }
 
-        /* --- 左侧预览区 --- */
-        #preview-area { flex: 1; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #111; position: relative; }
-        .card-container { position: relative; width: 360px; height: 720px; background-size: 100% 100%; box-shadow: 0 0 50px #000; }
+        /* --- 预览区 --- */
+        #preview-area { flex: 1; position: relative; display: flex; justify-content: center; align-items: center; background: #151515; }
+        .card-container { position: relative; width: 360px; height: 720px; background-size: 100% 100%; box-shadow: 0 0 40px #000; }
         
-        #win-box { position: absolute; z-index: 1; display: flex; justify-content: center; align-items: center; font-weight: 900; pointer-events: none; }
-        #my-grid { position: absolute; z-index: 1; display: grid; grid-template-columns: repeat(6, 1fr); pointer-events: none; }
+        #win-box { position: absolute; z-index: 2; font-weight: 900; }
+        #my-grid { position: absolute; z-index: 2; display: grid; grid-template-columns: repeat(6, 1fr); }
         .num-item { display: flex; flex-direction: column; justify-content: center; align-items: center; font-weight: 900; }
-        .scratch-layer { position: absolute; z-index: 10; cursor: crosshair; }
+        .pts-text { font-weight: bold; }
+        
+        .scratch-layer { position: absolute; z-index: 10; transition: opacity 0.3s; pointer-events: auto; }
+        .ghost-mode { opacity: 0.05 !important; pointer-events: none !important; }
 
-        /* --- 右侧超强控制台 --- */
-        #debug-panel { width: 380px; height: 100vh; background: #050505; border-left: 2px solid #333; padding: 20px; overflow-y: auto; box-sizing: border-box; }
-        h3 { color: var(--neon); text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        /* --- 控制中心 --- */
+        #panel { width: 400px; background: #000; border-left: 1px solid #333; padding: 20px; overflow-y: auto; box-sizing: border-box; }
+        h3 { color: var(--accent); border-bottom: 1px solid #222; padding-bottom: 10px; margin: 0 0 15px 0; display: flex; justify-content: space-between; }
         
-        .section { background: #111; padding: 15px; margin-bottom: 15px; border-radius: 8px; border-left: 4px solid var(--neon); }
-        .section h4 { margin: 0 0 10px 0; font-size: 13px; color: #888; }
+        .card { background: #111; padding: 12px; margin-bottom: 12px; border-radius: 6px; border: 1px solid #222; }
+        .card h4 { margin: 0 0 10px 0; font-size: 12px; color: #666; text-transform: uppercase; }
         
-        .ctrl-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 12px; }
-        .ctrl-row label { width: 120px; }
-        .ctrl-row input[type=range] { flex: 1; margin: 0 10px; accent-color: var(--neon); }
-        .ctrl-row span { width: 35px; text-align: right; font-family: monospace; color: var(--neon); }
+        .row { display: flex; align-items: center; margin-bottom: 8px; font-size: 11px; }
+        .row label { width: 90px; color: #aaa; }
+        .row input[type=range] { flex: 1; margin: 0 10px; accent-color: var(--accent); }
+        .row span { width: 30px; color: var(--accent); font-family: monospace; }
+        .row input[type=color] { border: none; width: 30px; height: 20px; background: none; cursor: pointer; }
         
-        .theme-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 10px; }
-        .theme-item { height: 30px; border-radius: 4px; cursor: pointer; border: 1px solid #333; transition: 0.2s; }
-        .theme-item:hover { transform: scale(1.1); }
+        select { background: #222; color: #fff; border: 1px solid #444; padding: 3px; font-size: 11px; flex: 1; }
 
-        .action-btn { width: 100%; padding: 15px; background: var(--neon); border: none; color: #000; font-weight: bold; border-radius: 5px; cursor: pointer; margin-top: 10px; }
-        #progress-info { position: absolute; top: 10px; left: 10px; font-size: 12px; color: var(--neon); background: rgba(0,0,0,0.5); padding: 5px; border-radius: 4px; }
-        
-        /* 弹窗样式 */
-        #modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; display: none; justify-content: center; align-items: center; }
-        #modal { width: 300px; height: 185px; border-radius: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: 0.5s; transform: scale(0.5); opacity: 0; }
-        #modal.show { transform: scale(1); opacity: 1; }
+        .master-btn { width: 100%; padding: 12px; margin-top: 5px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .ghost-btn { background: #333; color: #fff; margin-bottom: 15px; }
+        .ghost-btn.active { background: var(--accent); color: #000; }
+        .save-btn { background: var(--accent); color: #000; }
     </style>
 </head>
 <body>
 
-    <div id="preview-area">
-        <div id="progress-info">刮开进度: 0% (需达95%)</div>
-        <div class="card-container" id="main-card">
-            <div id="win-box">88</div>
-            <div id="my-grid"></div>
-            <canvas id="canv-win" class="scratch-layer"></canvas>
-            <canvas id="canv-mine" class="scratch-layer"></canvas>
+<div id="preview-area">
+    <div class="card-container" id="main-card">
+        <div id="win-box">88</div>
+        <div id="my-grid"></div>
+        <canvas id="canv-win" class="scratch-layer"></canvas>
+        <canvas id="canv-mine" class="scratch-layer"></canvas>
+    </div>
+</div>
+
+<div id="panel">
+    <h3>调试台 <span id="ver">V3.0</span></h3>
+    
+    <button id="ghost-toggle" class="master-btn ghost-btn" onclick="toggleGhost()">👻 开启幽灵透视 (隐藏涂层)</button>
+
+    <div class="card">
+        <h4>1. 中奖号码 (Win Area)</h4>
+        <div class="row"><label>位置 Y/X</label>
+            <input type="range" min="100" max="500" value="273" oninput="upd('wt',this.value)">
+            <input type="range" min="0" max="360" value="175" oninput="upd('wl',this.value)">
+        </div>
+        <div class="row"><label>字号/颜色</label>
+            <input type="range" min="10" max="60" value="22" oninput="upd('ws',this.value)">
+            <input type="color" value="#000000" oninput="upd('wc',this.value)">
+        </div>
+        <div class="row"><label>涂层 Y/X</label>
+            <input type="range" min="100" max="500" value="260" oninput="upd('ct',this.value)">
+            <input type="range" min="0" max="360" value="157" oninput="upd('cl',this.value)">
+        </div>
+        <div class="row"><label>涂层 W/H</label>
+            <input type="range" min="10" max="150" value="61" oninput="upd('cw',this.value)">
+            <input type="range" min="10" max="100" value="49" oninput="upd('ch',this.value)">
         </div>
     </div>
 
-    <div id="debug-panel">
-        <h3>控制台 | 像素调优</h3>
+    <div class="card">
+        <h4>2. 玩法网格 (Grid Area)</h4>
+        <div class="row"><label>区域 Y/X</label>
+            <input type="range" min="200" max="600" value="343" oninput="upd('gt',this.value)">
+            <input type="range" min="0" max="100" value="42" oninput="upd('gl',this.value)">
+        </div>
+        <div class="row"><label>行距/列距</label>
+            <input type="range" min="0" max="60" value="29" oninput="upd('gr',this.value)">
+            <input type="range" min="0" max="60" value="34" oninput="upd('gc',this.value)">
+        </div>
+        <div class="row"><label>字号/颜色</label>
+            <input type="range" min="8" max="30" value="16" oninput="upd('gs',this.value)">
+            <input type="color" value="#000000" oninput="upd('gnc',this.value)">
+        </div>
+        <div class="row"><label>PTS颜色</label>
+            <input type="color" value="#d00000" oninput="upd('pc',this.value)">
+            <select onchange="upd('font',this.value)">
+                <option value="Arial">系统默认</option>
+                <option value="'Courier New', monospace">极客等宽</option>
+                <option value="Georgia">优雅衬线</option>
+                <option value="'Impact'">硬核加粗</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="card">
+        <h4>3. 玩法大涂层 (Main Canvas)</h4>
+        <div class="row"><label>垂直 Y/X</label>
+            <input type="range" min="200" max="600" value="322" oninput="upd('mt',this.value)">
+            <input type="range" min="0" max="100" value="21" oninput="upd('ml',this.value)">
+        </div>
+        <div class="row"><label>宽度/高度</label>
+            <input type="range" min="100" max="360" value="318" oninput="upd('mw',this.value)">
+            <input type="range" min="50" max="500" value="299" oninput="upd('mh',this.value)">
+        </div>
+    </div>
+
+    <button class="master-btn save-btn" onclick="exportJSON()">💾 生成最终对齐参数</button>
+</div>
+
+<script>
+    let p = { 
+        wt:273, wl:175, ws:22, wc:'#000000', 
+        ct:260, cl:157, cw:61, ch:49, 
+        gt:343, gl:42, gs:16, gnc:'#000000', pc:'#d00000', gr:29, gc:34, 
+        mt:322, ml:21, mw:318, mh:299, font: 'Arial'
+    };
+
+    let isGhost = false;
+
+    function toggleGhost() {
+        isGhost = !isGhost;
+        const btn = document.getElementById('ghost-toggle');
+        const layers = document.querySelectorAll('.scratch-layer');
+        layers.forEach(l => l.classList.toggle('ghost-mode', isGhost));
+        btn.classList.toggle('active', isGhost);
+        btn.innerText = isGhost ? "👁️ 已进入透视模式" : "👻 开启幽灵透视 (隐藏涂层)";
+    }
+
+    function upd(key, val) {
+        p[key] = isNaN(val) ? val : parseInt(val);
+        apply();
+    }
+
+    function apply() {
+        const wb = document.getElementById('win-box');
+        wb.style.top = p.wt+'px'; wb.style.left = p.wl+'px'; 
+        wb.style.fontSize = p.ws+'px'; wb.style.color = p.wc;
+        wb.style.fontFamily = p.font;
+
+        const gd = document.getElementById('my-grid');
+        gd.style.top = p.gt+'px'; gd.style.left = p.gl+'px';
+        gd.style.rowGap = p.gr+'px'; gd.style.columnGap = p.gc+'px';
+        gd.style.fontFamily = p.font;
         
-        <div class="section">
-            <h4>1. 中奖号码 (Win Number)</h4>
-            <div class="ctrl-row"><label>垂直 Y</label><input type="range" min="100" max="500" value="273" oninput="upd('wt',this.value)"> <span id="v_wt">273</span></div>
-            <div class="ctrl-row"><label>水平 X</label><input type="range" min="0" max="360" value="175" oninput="upd('wl',this.value)"> <span id="v_wl">175</span></div>
-            <div class="ctrl-row"><label>字号 Size</label><input type="range" min="10" max="60" value="22" oninput="upd('ws',this.value)"> <span id="v_ws">22</span></div>
-            <div class="ctrl-row"><label>颜色 Color</label><input type="color" value="#000000" oninput="upd('wc',this.value)"></div>
-        </div>
-
-        <div class="section">
-            <h4>2. 中奖涂层 (Win Canvas)</h4>
-            <div class="ctrl-row"><label>垂直 Y</label><input type="range" min="100" max="500" value="260" oninput="upd('ct',this.value)"> <span id="v_ct">260</span></div>
-            <div class="ctrl-row"><label>水平 X</label><input type="range" min="0" max="360" value="157" oninput="upd('cl',this.value)"> <span id="v_cl">157</span></div>
-            <div class="ctrl-row"><label>宽度 W</label><input type="range" min="10" max="150" value="61" oninput="upd('cw',this.value)"> <span id="v_cw">61</span></div>
-            <div class="ctrl-row"><label>高度 H</label><input type="range" min="10" max="100" value="49" oninput="upd('ch',this.value)"> <span id="v_ch">49</span></div>
-        </div>
-
-        <div class="section">
-            <h4>3. 玩法网格 (Grid)</h4>
-            <div class="ctrl-row"><label>区域 Y</label><input type="range" min="200" max="600" value="343" oninput="upd('gt',this.value)"> <span id="v_gt">343</span></div>
-            <div class="ctrl-row"><label>区域 X</label><input type="range" min="0" max="100" value="42" oninput="upd('gl',this.value)"> <span id="v_gl">42</span></div>
-            <div class="ctrl-row"><label>垂直间距</label><input type="range" min="0" max="60" value="29" oninput="upd('gr',this.value)"> <span id="v_gr">29</span></div>
-            <div class="ctrl-row"><label>水平间距</label><input type="range" min="0" max="60" value="34" oninput="upd('gc',this.value)"> <span id="v_gc">34</span></div>
-            <div class="ctrl-row"><label>数字字号</label><input type="range" min="8" max="30" value="16" oninput="upd('gs',this.value)"> <span id="v_gs">16</span></div>
-        </div>
-
-        <div class="section">
-            <h4>4. 玩法涂层 (Main Canvas)</h4>
-            <div class="ctrl-row"><label>垂直 Y</label><input type="range" min="200" max="600" value="322" oninput="upd('mt',this.value)"> <span id="v_mt">322</span></div>
-            <div class="ctrl-row"><label>水平 X</label><input type="range" min="0" max="100" value="21" oninput="upd('ml',this.value)"> <span id="v_ml">21</span></div>
-            <div class="ctrl-row"><label>宽度 W</label><input type="range" min="100" max="360" value="318" oninput="upd('mw',this.value)"> <span id="v_mw">318</span></div>
-            <div class="ctrl-row"><label>高度 H</label><input type="range" min="50" max="500" value="299" oninput="upd('mh',this.value)"> <span id="v_mh">299</span></div>
-        </div>
-
-        <div class="section">
-            <h4>5. 弹窗皮肤主题 (20选1)</h4>
-            <div class="theme-grid" id="theme-grid"></div>
-        </div>
-
-        <button class="action-btn" onclick="exportCode()">生成最终部署参数</button>
-        <button class="action-btn" style="background:#333; color:#fff;" onclick="location.reload()">重置画布</button>
-    </div>
-
-    <div id="modal-overlay">
-        <div id="modal">
-            <h2 id="m-t"></h2>
-            <p id="m-d" style="font-size:12px; margin:5px 0;"></p>
-            <h1 id="m-a"></h1>
-            <button onclick="location.reload()" style="background:#000; color:#fff; border:none; padding:10px 20px; border-radius:20px; cursor:pointer;">AGAIN</button>
-        </div>
-    </div>
-
-    <script>
-        // 核心参数
-        let p = { wt:273, wl:175, ws:22, wc:'#000000', ct:260, cl:157, cw:61, ch:49, gt:343, gl:42, gs:16, gr:29, gc:34, mt:322, ml:21, mw:318, mh:299, theme: 0 };
-
-        // 20套皮肤配色 (背景, 文字颜色, 渐变颜色)
-        const themes = [
-            {bg: '#ffffff', c: '#111', g: 'linear-gradient(45deg, #ff416c, #ff4b2b)'}, // 经典红
-            {bg: '#000000', c: '#00f2fe', g: 'linear-gradient(45deg, #00f2fe, #4facfe)'}, // 赛博蓝
-            {bg: '#1a1a1a', c: '#f9d423', g: 'linear-gradient(45deg, #f9d423, #ff4e50)'}, // 黑金
-            {bg: '#f0f9ff', c: '#0ea5e9', g: 'linear-gradient(45deg, #38bdf8, #818cf8)'}, // 极客
-            {bg: '#fff1f2', c: '#fb7185', g: 'linear-gradient(45deg, #fda4af, #f43f5e)'}, // 樱花
-            {bg: '#111', c: '#a855f7', g: 'linear-gradient(45deg, #a855f7, #ec4899)'}, // 魅惑紫
-            {bg: '#f8fafc', c: '#64748b', g: 'linear-gradient(45deg, #94a3b8, #475569)'}, // 工业灰
-            {bg: '#064e3b', c: '#34d399', g: 'linear-gradient(45deg, #10b981, #34d399)'}, // 翡翠
-            {bg: '#4c1d95', c: '#ddd6fe', g: 'linear-gradient(45deg, #c4b5fd, #a78bfa)'}, // 梦幻
-            {bg: '#78350f', c: '#fcd34d', g: 'linear-gradient(45deg, #fbbf24, #f59e0b)'}, // 琥珀
-            {bg: '#000', c: '#fff', g: 'linear-gradient(45deg, #444, #000)'}, // 极简黑
-            {bg: '#fff', c: '#000', g: 'linear-gradient(45deg, #eee, #fff)'}, // 极简白
-            {bg: '#1e293b', c: '#38bdf8', g: 'linear-gradient(45deg, #0ea5e9, #2563eb)'}, // 深海
-            {bg: '#27272a', c: '#a1a1aa', g: 'linear-gradient(45deg, #52525b, #27272a)'}, // 炭灰
-            {bg: '#ef4444', c: '#fff', g: 'linear-gradient(45deg, #f87171, #ef4444)'}, // 烈焰
-            {bg: '#ecfdf5', c: '#059669', g: 'linear-gradient(45deg, #34d399, #10b981)'}, // 薄荷
-            {bg: '#fff7ed', c: '#ea580c', g: 'linear-gradient(45deg, #f97316, #ea580c)'}, // 暖橙
-            {bg: '#faf5ff', c: '#9333ea', g: 'linear-gradient(45deg, #a855f7, #9333ea)'}, // 薰衣草
-            {bg: '#fdf2f8', c: '#db2777', g: 'linear-gradient(45deg, #f472b6, #db2777)'}, // 芭比粉
-            {bg: '#000', c: '#0f0', g: 'linear-gradient(45deg, #00ff00, #003300)'} // 骇客绿
-        ];
-
-        function upd(key, val) {
-            p[key] = isNaN(val) ? val : parseInt(val);
-            document.getElementById('v_'+key).innerText = val;
-            render();
-        }
-
-        function render() {
-            const wb = document.getElementById('win-box');
-            wb.style.top = p.wt+'px'; wb.style.left = p.wl+'px'; wb.style.fontSize = p.ws+'px'; wb.style.color = p.wc;
-            
-            const gd = document.getElementById('my-grid');
-            gd.style.top = p.gt+'px'; gd.style.left = p.gl+'px';
-            gd.style.rowGap = p.gr+'px'; gd.style.columnGap = p.gc+'px';
-            gd.querySelectorAll('.num-item').forEach(i => i.style.fontSize = p.gs+'px');
-
-            const cw = document.getElementById('canv-win');
-            cw.style.top = p.ct+'px'; cw.style.left = p.cl+'px'; cw.width = p.cw; cw.height = p.ch;
-            draw(cw);
-
-            const cm = document.getElementById('canv-mine');
-            cm.style.top = p.mt+'px'; cm.style.left = p.ml+'px'; cm.width = p.mw; cm.height = p.mh;
-            draw(cm);
-        }
-
-        function draw(c) {
-            const ctx = c.getContext('2d');
-            ctx.fillStyle = '#BBB'; ctx.fillRect(0,0,c.width,c.height);
-        }
-
-        // 渲染皮肤选择器
-        const themeGrid = document.getElementById('theme-grid');
-        themes.forEach((t, i) => {
-            const d = document.createElement('div');
-            d.className = 'theme-item';
-            d.style.background = t.g;
-            d.onclick = () => { p.theme = i; applyTheme(i); };
-            themeGrid.appendChild(d);
+        gd.querySelectorAll('.num-item').forEach(i => {
+            i.style.fontSize = p.gs+'px';
+            i.style.color = p.gnc;
+            i.querySelector('.pts-text').style.color = p.pc;
         });
 
-        function applyTheme(i) {
-            const t = themes[i];
-            const m = document.getElementById('modal');
-            m.style.background = t.bg;
-            m.style.color = t.c;
-            document.getElementById('m-a').style.background = t.g;
-            document.getElementById('m-a').style.webkitBackgroundClip = 'text';
-            document.getElementById('m-a').style.webkitTextFillColor = 'transparent';
-        }
+        const cw = document.getElementById('canv-win');
+        cw.style.top = p.ct+'px'; cw.style.left = p.cl+'px'; 
+        cw.width = p.cw; cw.height = p.ch;
+        draw(cw);
 
-        // 核心逻辑：中奖率与点位
-        function getGameData() {
-            const ln = 88;
-            const dice = Math.random();
-            // 盈利率逻辑：起码中奖 250 PTS (针对 1000 PTS面值)
-            let tw = dice < 0.4 ? 250 : (dice < 0.8 ? 500 : 2500); 
-            const sp = []; let acc = 0;
+        const cm = document.getElementById('canv-mine');
+        cm.style.top = p.mt+'px'; cm.style.left = p.ml+'px'; 
+        cm.width = p.mw; cm.height = p.mh;
+        draw(cm);
+    }
+
+    function draw(c) {
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#BBB'; ctx.fillRect(0,0,c.width,c.height);
+    }
+
+    function exportJSON() {
+        console.log("ALIGN_DATA:", JSON.stringify(p));
+        alert("对齐参数已记录，请复制发送给AI：\n\n" + JSON.stringify(p));
+    }
+
+    window.onload = () => {
+        const img = new Image(); img.src = '64005.jpg';
+        img.onload = () => {
+            document.getElementById('main-card').style.backgroundImage = `url(64005.jpg)`;
+            const gd = document.getElementById('my-grid');
             for(let i=0; i<30; i++) {
-                let n = Math.floor(Math.random()*89)+10; if(n===ln) n++;
-                let pz = [50, 100, 200][Math.floor(Math.random()*3)];
-                if(acc < tw && Math.random()<0.2) { n=ln; pz=Math.max(50, tw-acc); acc+=pz; }
-                sp.push({n, p: pz});
+                gd.innerHTML += `<div class="num-item">88<div class="pts-text" style="font-size:8px">PTS 500</div></div>`;
             }
-            return {ln, sp, tw: acc};
-        }
-
-        const game = getGameData();
-
-        function initScratch(id, isMain) {
-            const c = document.getElementById(id);
-            const ctx = c.getContext('2d');
-            let drawing = false;
-            
-            const scrub = (e) => {
-                if(!drawing) return;
-                const r = c.getBoundingClientRect();
-                const x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
-                const y = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
-                ctx.globalCompositeOperation = 'destination-out';
-                ctx.beginPath(); ctx.arc(x,y,22,0,Math.PI*2); ctx.fill();
-                checkProgress(c);
-            };
-
-            c.onmousedown = () => drawing = true;
-            window.onmouseup = () => drawing = false;
-            c.onmousemove = scrub;
-            c.ontouchstart = (e) => { e.preventDefault(); drawing = true; scrub(e); };
-            c.ontouchmove = (e) => { e.preventDefault(); scrub(e); };
-        }
-
-        function checkProgress(c) {
-            const ctx = c.getContext('2d');
-            const imgData = ctx.getImageData(0,0,c.width,c.height);
-            let clear = 0;
-            for(let i=3; i<imgData.data.length; i+=4) if(imgData.data[i] === 0) clear++;
-            const percent = Math.round((clear / (imgData.data.length/4)) * 100);
-            document.getElementById('progress-info').innerText = `刮开进度: ${percent}% (需达95%)`;
-            if(percent >= 95) showModal();
-        }
-
-        function showModal() {
-            if(document.getElementById('modal-overlay').style.display === 'flex') return;
-            const m = document.getElementById('modal');
-            document.getElementById('m-t').innerText = game.tw > 500 ? "MIRACLE!" : "NICE TRY";
-            document.getElementById('m-d').innerText = game.tw > 500 ? "You've dominated the global leaderboards!" : "Every point counts toward glory.";
-            document.getElementById('m-a').innerText = game.tw + " PTS";
-            document.getElementById('modal-overlay').style.display = 'flex';
-            setTimeout(() => document.getElementById('modal').classList.add('show'), 100);
-        }
-
-        function exportCode() {
-            console.log("FINAL_PARAMS:", JSON.stringify(p));
-            alert("调试参数已导出！请在控制台复制 JSON 并发送给AI。");
-        }
-
-        window.onload = () => {
-            const img = new Image(); img.src = '64005.jpg';
-            img.onload = () => {
-                document.getElementById('main-card').style.backgroundImage = `url(64005.jpg)`;
-                const gd = document.getElementById('my-grid');
-                game.sp.forEach(s => {
-                    gd.innerHTML += `<div class="num-item">${s.n}<div style="font-size:8px; color:#d00">PTS ${s.p}</div></div>`;
-                });
-                render();
-                initScratch('canv-win', false);
-                initScratch('canv-mine', true);
-                applyTheme(0);
-            };
+            apply();
         };
-    </script>
+    };
+</script>
 </body>
 </html>
