@@ -3,243 +3,187 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=360, user-scalable=no">
-    <title>SCRATCH GOLD - V4.0 FINAL</title>
+    <title>GOLDEN LUCK - ABSOLUTE FIX</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;900&family=Oswald:wght@700&family=Dancing+Script:wght@700&display=swap');
 
-        :root { 
-            --gold: #fcc201; 
-            --glass: rgba(15, 15, 20, 0.9);
-            --border: rgba(252, 194, 1, 0.4);
-        }
-
+        :root { --gold: #fcc201; --panel: rgba(15, 15, 20, 0.95); }
         body { margin: 0; background: #000; color: #fff; font-family: 'Outfit', sans-serif; overflow: hidden; touch-action: none; }
 
-        /* --- 1. 流行风倒计时 (Modern Minimalist) --- */
+        /* --- 1. 流行风倒计时 (极简扩散) --- */
         #loader {
             position: fixed; inset: 0; background: #000; z-index: 99999;
             display: flex; justify-content: center; align-items: center;
-            transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .cd-circle {
-            position: relative; width: 160px; height: 160px;
-            display: flex; justify-content: center; align-items: center;
-            border: 2px solid rgba(255,255,255,0.1); border-radius: 50%;
+        .cd-wrap { text-align: center; }
+        .cd-num { 
+            font-size: 100px; font-weight: 900; color: var(--gold);
+            filter: drop-shadow(0 0 20px var(--gold));
+            animation: zoom 1s infinite alternate;
         }
-        .cd-num {
-            font-size: 80px; font-weight: 900; color: var(--gold);
-            text-shadow: 0 0 30px rgba(252, 194, 1, 0.5);
-            animation: pulse 0.8s infinite;
-        }
-        @keyframes pulse {
-            0% { transform: scale(0.8); opacity: 0.5; }
-            50% { transform: scale(1.1); opacity: 1; }
-            100% { transform: scale(0.9); opacity: 0.5; }
-        }
+        @keyframes zoom { from { transform: scale(0.8); opacity: 0.6; } to { transform: scale(1.1); opacity: 1; } }
 
-        /* --- 2. 流行风悬浮对话框 (iOS Dynamic Style) --- */
-        #top-dialog {
-            position: fixed; top: -150px; left: 50%; transform: translateX(-50%);
-            width: 310px; height: 100px;
-            background: var(--glass); 
-            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-            border: 1px solid var(--border); border-radius: 24px;
-            z-index: 10000; display: flex; flex-direction: column; 
-            align-items: center; justify-content: center;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
-            transition: top 0.8s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+        /* --- 2. 优美小型对话框 (iOS 通知风格) --- */
+        #modern-dialog {
+            position: fixed; top: -180px; left: 50%; transform: translateX(-50%);
+            width: 300px; height: 110px;
+            background: var(--panel); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(252, 194, 1, 0.5); border-radius: 25px;
+            z-index: 100000; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.8);
+            transition: top 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             pointer-events: none;
         }
-        #top-dialog.show { top: 25px; pointer-events: auto; }
-        
-        .dialog-title { font-size: 18px; font-weight: 900; letter-spacing: 2px; color: var(--gold); margin: 0; }
-        .dialog-msg { font-family: 'Dancing Script'; font-size: 15px; color: #eee; margin: 4px 0; }
-        .balance-pill { 
-            background: rgba(0, 255, 135, 0.1); padding: 3px 12px; border-radius: 12px;
-            border: 1px solid rgba(0, 255, 135, 0.3); font-family: 'Oswald';
-            color: #00ff87; font-size: 13px; margin-top: 5px;
-        }
+        #modern-dialog.active { top: 25px; pointer-events: auto; }
+        .d-title { font-size: 20px; font-weight: 900; color: var(--gold); margin: 0; }
+        .d-msg { font-family: 'Dancing Script'; font-size: 15px; color: #eee; margin: 4px 0; }
+        .d-bal { background: rgba(0,255,135,0.1); padding: 3px 15px; border-radius: 12px; border: 1px solid rgba(0,255,135,0.3); color: #00ff87; font-family: 'Oswald'; font-size: 14px; margin-top: 5px; }
 
-        /* --- 3. 游戏舞台 --- */
-        #game-stage {
-            position: relative; width: 360px; height: 720px; margin: 0 auto;
-            background: #111 url('64005.jpg') center/100% 100% no-repeat;
-            opacity: 0; transition: opacity 1.2s;
-        }
-
-        #win-val { position: absolute; left: 151px; top: 263px; width: 72px; height: 66px; display: flex; align-items: center; justify-content: center; color: #09140d; font-size: 26px; font-weight: 900; }
+        /* --- 3. 游戏核心 --- */
+        #stage { position: relative; width: 360px; height: 720px; margin: 0 auto; background: #111 url('64005.jpg') center/100% 100% no-repeat; opacity: 0; transition: opacity 1s; }
+        #win-area { position: absolute; left: 151px; top: 263px; width: 72px; height: 66px; display: flex; align-items: center; justify-content: center; color: #09140d; font-size: 26px; font-weight: 900; }
         #grid-area { position: absolute; left: 27px; top: 335px; width: 310px; height: 284px; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(5, 1fr); gap: 10px; padding: 5px; box-sizing: border-box; }
-        .cell-v { font-size: 18px; font-weight: 900; color: #09140d; text-align: center; }
-        .cell-p { font-family: 'Oswald'; font-size: 10px; color: #d00; text-align: center; }
+        .cell { text-align: center; color: #09140d; }
+        .cell b { font-size: 18px; display: block; }
+        .cell i { font-family: 'Oswald'; font-size: 10px; color: #d00; font-style: normal; }
 
         canvas { position: absolute; z-index: 100; touch-action: none; cursor: crosshair; }
     </style>
 </head>
 <body>
 
-    <div id="loader">
-        <div class="cd-circle">
-            <div id="num" class="cd-num">3</div>
-        </div>
+    <div id="loader"><div class="cd-wrap"><div id="cd" class="cd-num">3</div></div></div>
+
+    <div id="modern-dialog">
+        <div class="d-title" id="dt">LUCKY REVEAL</div>
+        <div class="d-msg" id="dm">Magic is happening...</div>
+        <div class="d-bal">WALLET: <span id="db">$100.00</span></div>
     </div>
 
-    <div id="top-dialog">
-        <div class="dialog-title" id="d-title">LUCKY REVEAL</div>
-        <div class="dialog-msg" id="d-msg">Fortune is in your hands...</div>
-        <div class="balance-pill">WALLET: <span id="d-bal">$100.00</span></div>
-    </div>
-
-    <div id="game-stage">
-        <div id="win-val">88</div>
+    <div id="stage">
+        <div id="win-area">88</div>
         <div id="grid-area"></div>
-
         <canvas id="c_win" style="left:153px; top:258px; width:71px; height:52px;"></canvas>
         <canvas id="c_grid" style="left:22px; top:322px; width:317px; height:300px;"></canvas>
     </div>
 
     <script>
-        let balance = 100.00;
-        let isActive = false;
-        let isEnded = false;
-        let jackpot = 0;
-        let scratchPath = 0; // 划动位移追踪
+        let balance = 100.00, isEnded = false, winTotal = 0;
+        let sensorPoints = []; // 物理感应点
+        let hitCount = 0;
 
-        // 1. 倒计时迭代
-        async function runCountdown() {
-            const num = document.getElementById('num');
-            const seq = ['2', '1', 'GO'];
-            for (let s of seq) {
+        // 1. 流行倒计时
+        async function run() {
+            const el = document.getElementById('cd');
+            for(let s of ['2','1','GO']) {
                 await new Promise(r => setTimeout(r, 900));
-                num.innerText = s;
+                el.innerText = s;
             }
             document.getElementById('loader').style.opacity = '0';
             setTimeout(() => {
                 document.getElementById('loader').style.display = 'none';
-                document.getElementById('game-stage').style.opacity = '1';
-                initGame();
-            }, 600);
+                document.getElementById('stage').style.opacity = '1';
+                init();
+            }, 500);
         }
 
-        // 2. 初始化
-        function initGame() {
-            const grid = document.getElementById('grid-area');
-            let content = "";
+        // 2. 初始化感应点和网格
+        function init() {
+            const g = document.getElementById('grid-area');
+            let h = "";
             for(let i=0; i<30; i++) {
                 const n = Math.random() > 0.88 ? "88" : Math.floor(Math.random()*89+10);
-                const p = (Math.random()*40 + 10).toFixed(2);
-                if(n === "88") jackpot += parseFloat(p);
-                content += `<div><div class="cell-v">${n}</div><div class="cell-p">$${p}</div></div>`;
+                const p = (Math.random()*50+10).toFixed(2);
+                if(n === "88") winTotal += parseFloat(p);
+                h += `<div class="cell"><b>${n}</b><i>$${p}</i></div>`;
             }
-            grid.innerHTML = content;
+            g.innerHTML = h;
 
-            createCanvas("c_win");
-            createCanvas("c_grid");
-            
-            // 关键修复：开启后台定时检查循环
-            isActive = true;
-            setInterval(autoCheck, 1000); 
+            // 预设 20 个物理感应坐标点（均匀分布在 c_grid 区域内）
+            for(let i=0; i<5; i++) {
+                for(let j=0; j<4; j++) {
+                    sensorPoints.push({
+                        x: 40 + j * 75,
+                        y: 40 + i * 55,
+                        hit: false
+                    });
+                }
+            }
+
+            setupCanvas("c_win");
+            setupCanvas("c_grid");
         }
 
-        function createCanvas(id) {
+        function setupCanvas(id) {
             const cvs = document.getElementById(id);
-            const ctx = cvs.getContext('2d', { willReadFrequently: true });
-            cvs.width = cvs.offsetWidth;
-            cvs.height = cvs.offsetHeight;
+            const ctx = cvs.getContext('2d');
+            cvs.width = cvs.offsetWidth; cvs.height = cvs.offsetHeight;
 
             // 涂层美化
-            ctx.fillStyle = '#b0b0b0';
+            ctx.fillStyle = '#b8b8b8';
             ctx.fillRect(0,0,cvs.width, cvs.height);
             ctx.fillStyle = "rgba(0,0,0,0.15)";
-            ctx.font = "bold 15px Arial";
-            for(let x=5; x<cvs.width; x+=25) 
-                for(let y=18; y<cvs.height; y+=25) ctx.fillText((x+y)%2===0 ? "$":"€", x, y);
+            ctx.font = "bold 16px Arial";
+            for(let x=5; x<cvs.width; x+=28) 
+                for(let y=18; y<cvs.height; y+=28) ctx.fillText((x+y)%2===0 ? "$":"€", x, y);
 
-            let painting = false;
-
-            const doScratch = (e) => {
-                if(!isActive || isEnded) return;
-                const rect = cvs.getBoundingClientRect();
-                const x = (e.clientX || e.touches[0].clientX) - rect.left;
-                const y = (e.clientY || e.touches[0].clientY) - rect.top;
+            const scratch = (e) => {
+                if(isEnded) return;
+                const r = cvs.getBoundingClientRect();
+                const x = (e.clientX || (e.touches && e.touches[0].clientX)) - r.left;
+                const y = (e.clientY || (e.touches && e.touches[0].clientY)) - r.top;
 
                 ctx.globalCompositeOperation = 'destination-out';
-                ctx.beginPath();
-                ctx.arc(x, y, 35, 0, Math.PI*2);
-                ctx.fill();
-                
-                // 增加位移计数（第二判定轨迹）
-                if(id === "c_grid") scratchPath++; 
-                if(scratchPath > 250) autoCheck(); // 位移足够多时强制检查
+                ctx.beginPath(); ctx.arc(x, y, 35, 0, Math.PI*2); ctx.fill();
+
+                // 物理判定核心：检查坐标碰撞
+                if(id === "c_grid") {
+                    sensorPoints.forEach(p => {
+                        if(!p.hit) {
+                            const dist = Math.sqrt((x - p.x)**2 + (y - p.y)**2);
+                            if(dist < 35) {
+                                p.hit = true;
+                                hitCount++;
+                                // 70% 阈值 (20个点中满14个)
+                                if(hitCount >= 14) triggerPopup();
+                            }
+                        }
+                    });
+                }
             };
 
+            let painting = false;
             cvs.addEventListener('mousedown', () => painting = true);
-            window.addEventListener('mouseup', () => { painting = false; autoCheck(); });
-            cvs.addEventListener('mousemove', (e) => { if(painting) doScratch(e); });
-            cvs.addEventListener('touchstart', (e) => { painting = true; doScratch(e); e.preventDefault(); });
-            cvs.addEventListener('touchmove', (e) => { doScratch(e); e.preventDefault(); });
-            cvs.addEventListener('touchend', () => { painting = false; autoCheck(); });
-        }
-
-        // 3. 核心修复：多维判定引擎
-        function autoCheck() {
-            if(!isActive || isEnded) return;
-
-            const cvs = document.getElementById('c_grid');
-            const ctx = cvs.getContext('2d', { willReadFrequently: true });
-            const pix = ctx.getImageData(0, 0, cvs.width, cvs.height).data;
-            
-            let transparent = 0;
-            for (let i = 3; i < pix.length; i += 64) {
-                if (pix[i] === 0) transparent++;
-            }
-            
-            const ratio = transparent / (pix.length / 64);
-            
-            // 只要达到 70% 或者是划动次数极多（兜底逻辑）
-            if (ratio > 0.70 || scratchPath > 600) {
-                triggerPopup();
-            }
+            window.addEventListener('mouseup', () => painting = false);
+            cvs.addEventListener('mousemove', (e) => { if(painting) scratch(e); });
+            cvs.addEventListener('touchstart', (e) => { painting = true; scratch(e); e.preventDefault(); });
+            cvs.addEventListener('touchmove', (e) => { scratch(e); e.preventDefault(); });
         }
 
         function triggerPopup() {
             if(isEnded) return;
             isEnded = true;
 
-            // 渐隐所有涂层
-            document.querySelectorAll('canvas').forEach(c => {
-                c.style.transition = 'opacity 1s';
-                c.style.opacity = '0';
-                setTimeout(() => c.style.display = 'none', 1000);
-            });
+            // 彻底清除涂层
+            document.querySelectorAll('canvas').forEach(c => c.style.display = 'none');
 
-            const dialog = document.getElementById('top-dialog');
-            const title = document.getElementById('d-title');
-            const msg = document.getElementById('d-msg');
-            const bal = document.getElementById('d-bal');
-
-            if(jackpot > 0) {
-                title.innerText = "BIG WINNER!";
-                title.style.color = "var(--gold)";
-                msg.innerText = `You have discovered $${jackpot.toFixed(2)}`;
-                balance += jackpot;
+            const dialog = document.getElementById('modern-dialog');
+            document.getElementById('db').innerText = `$${(balance + winTotal).toFixed(2)}`;
+            
+            if(winTotal > 0) {
+                document.getElementById('dt').innerText = "YOU WON!";
+                document.getElementById('dm').innerText = `Amazing! You found $${winTotal.toFixed(2)}`;
             } else {
-                title.innerText = "ALMOST THERE";
-                title.style.color = "#aaa";
-                msg.innerText = "The next one is your lucky star!";
+                document.getElementById('dt').innerText = "LUCKY NEXT!";
+                document.getElementById('dm').innerText = "Fortune is just one scratch away.";
             }
 
-            bal.innerText = `$${balance.toFixed(2)}`;
-            
-            // 强制渲染弹窗
-            requestAnimationFrame(() => {
-                dialog.classList.add('show');
-            });
-
-            // 震动
-            if(navigator.vibrate) navigator.vibrate(150);
+            // 强制弹出
+            dialog.classList.add('active');
+            if(navigator.vibrate) navigator.vibrate(200);
         }
 
-        window.onload = runCountdown;
+        window.onload = run;
     </script>
 </body>
 </html>
