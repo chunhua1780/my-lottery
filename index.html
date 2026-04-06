@@ -1,187 +1,146 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ULTIMATE ENGINEER V8.0</title>
+    <title>拾光·中国龙</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --neon: #00f2fe; --panel-bg: #111; }
-        body { background: #000; margin: 0; font-family: 'Arial', sans-serif; display: flex; color: #fff; height: 100vh; overflow: hidden; }
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap');
+        body { background: #000; margin: 0; padding: 0; font-family: "Microsoft YaHei", 'Montserrat', sans-serif; overflow: hidden; -webkit-user-select: none; user-select: none; }
+        
+        /* --- 加载层 --- */
+        #loader { position: fixed; inset: 0; background: #1a1a1a; z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #d4af37; }
+        .spinner { width: 40px; height: 40px; border: 3px solid rgba(212,175,55,0.2); border-top: 3px solid #d4af37; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 10px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* --- 实时预览区 --- */
-        #stage { flex: 1; position: relative; display: flex; justify-content: center; align-items: center; background: #222; }
-        .canvas-card { position: relative; width: 360px; height: 720px; background-color: #444; background-size: 100% 100%; box-shadow: 0 0 50px #000; }
-        
-        /* 绝对对齐层 */
-        #w-num { position: absolute; z-index: 2; font-weight: 900; pointer-events: none; text-align: center; }
-        #grid { position: absolute; z-index: 2; display: grid; grid-template-columns: repeat(6, 1fr); pointer-events: none; }
-        .item { display: flex; flex-direction: column; justify-content: center; align-items: center; font-weight: 900; line-height: 1; }
-        
-        .layer { position: absolute; z-index: 10; touch-action: none; cursor: crosshair; }
-        .hide-layer { opacity: 0 !important; }
+        /* --- 游戏主容器 --- */
+        .card-container { position: relative; width: 360px; height: 720px; background: url('64005.jpg') no-repeat; background-size: 100% 100%; margin: 0 auto; visibility: hidden; }
 
-        /* --- 全功能控制面板 --- */
-        #controls { width: 420px; background: var(--panel-bg); border-left: 2px solid var(--neon); padding: 20px; overflow-y: auto; box-sizing: border-box; }
-        .group { background: #1a1a1a; padding: 12px; margin-bottom: 12px; border-radius: 8px; border: 1px solid #333; }
-        .group h3 { margin: 0 0 10px 0; font-size: 11px; color: var(--neon); text-transform: uppercase; }
-        
-        .row { display: flex; align-items: center; margin-bottom: 8px; }
-        .row label { width: 130px; font-size: 11px; color: #888; }
-        .row input[type=range] { flex: 1; accent-color: var(--neon); }
-        .row span { width: 45px; text-align: right; color: var(--neon); font-family: monospace; font-size: 12px; }
-        
-        .btn { width: 100%; padding: 10px; margin: 5px 0; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .btn-img { background: #fff; color: #000; }
-        .btn-ghost { background: #333; color: #fff; border: 1px solid #444; }
-        .btn-ghost.active { background: #ff4757; }
+        /* 中奖号码 (精准对齐) */
+        #win-box { position: absolute; top: 266px; left: 169px; width: 40px; height: 35px; z-index: 1; display: flex; justify-content: center; align-items: center; font-size: 22px; color: #000; font-weight: 900; }
+
+        /* 玩法网格 (5行6列) */
+        #my-grid { position: absolute; top: 326px; left: 25px; width: 310px; z-index: 1; display: grid; grid-template-columns: repeat(6, 1fr); row-gap: 2px; column-gap: 9px; }
+        .num-item { display: flex; flex-direction: column; justify-content: center; align-items: center; color: #000; font-weight: 900; height: 55px; line-height: 1.0; }
+        .num-val { font-size: 16px; margin-bottom: 2px; }
+        .prize-item { font-size: 8px; color: #8B0000; font-weight: 900; white-space: nowrap; }
+
+        /* 刮奖涂层 */
+        .scratch-layer { position: absolute; z-index: 10; touch-action: none; cursor: crosshair; }
+        #canv-win { top: 260px; left: 160px; width: 55px; height: 45px; }
+        #canv-mine { top: 322px; left: 21px; width: 318px; height: 299px; }
     </style>
 </head>
 <body>
 
-<div id="stage">
-    <div class="canvas-card" id="card">
-        <div id="w-num">88</div>
-        <div id="grid"></div>
-        <canvas id="c-win" class="layer"></canvas>
-        <canvas id="c-main" class="layer"></canvas>
-    </div>
-</div>
-
-<div id="controls">
-    <h2 style="color:var(--neon); margin:0 0 15px 0;">DEBUG STUDIO V8.0</h2>
-    
-    <div class="group">
-        <h3>背景与对齐 (CORE)</h3>
-        <input type="file" id="imgLoader" accept="image/*" style="display:none" onchange="handleImage(this)">
-        <button class="btn btn-img" onclick="document.getElementById('imgLoader').click()">📁 1. 上传背景图</button>
-        <button id="ghost-btn" class="btn btn-ghost" onclick="toggleGhost()">👻 2. 开启对齐模式 (隐藏涂层)</button>
+    <div id="loader">
+        <div class="spinner"></div>
+        <div id="loader-text">正在开启拾光之旅... 3s</div>
     </div>
 
-    <div class="group">
-        <h3>中奖区 (WIN ZONE)</h3>
-        <div class="row"><label>垂直 Y</label><input type="range" min="100" max="600" value="273" oninput="upd('wt',this.value)"> <span id="v_wt">273</span></div>
-        <div class="row"><label>水平 X</label><input type="range" min="0" max="360" value="175" oninput="upd('wl',this.value)"> <span id="v_wl">175</span></div>
-        <div class="row"><label>数字大小</label><input type="range" min="10" max="60" value="22" oninput="upd('ws',this.value)"> <span id="v_ws">22</span></div>
+    <div class="card-container" id="main-card">
+        <div id="win-box"></div>
+        <div id="my-grid"></div>
+        <canvas id="canv-win" class="scratch-layer"></canvas>
+        <canvas id="canv-mine" class="scratch-layer"></canvas>
     </div>
-
-    <div class="group">
-        <h3>玩法网格 (GRID SYSTEM)</h3>
-        <div class="row"><label>起始 Y (Top)</label><input type="range" min="200" max="600" value="343" oninput="upd('gt',this.value)"> <span id="v_gt">343</span></div>
-        <div class="row"><label>起始 X (Left)</label><input type="range" min="0" max="150" value="33" oninput="upd('gl',this.value)"> <span id="v_gl">33</span></div>
-        <div class="row"><label>垂直间隔 (Row)</label><input type="range" min="10" max="80" value="34" oninput="upd('gr',this.value)"> <span id="v_gr">34</span></div>
-        <div class="row"><label>横向间隔 (Col)</label><input type="range" min="10" max="60" value="23" oninput="upd('gc',this.value)"> <span id="v_gc">23</span></div>
-        <div class="row"><label>网格总宽</label><input type="range" min="200" max="360" value="295" oninput="upd('gw',this.value)"> <span id="v_gw">295</span></div>
-    </div>
-
-    <div class="group">
-        <h3>字体细节 (TYPOGRAPHY)</h3>
-        <div class="row"><label>主数字大小</label><input type="range" min="8" max="40" value="16" oninput="upd('gs',this.value)"> <span id="v_gs">16</span></div>
-        <div class="row"><label>金额字号</label><input type="range" min="5" max="25" value="8" oninput="upd('ps',this.value)"> <span id="v_ps">8</span></div>
-    </div>
-
-    <div class="group">
-        <h3>硬核刮刀 (HARD SCRAPER)</h3>
-        <div class="row"><label>刮刀半径</label><input type="range" min="10" max="50" value="20" oninput="upd('rad',this.value)"> <span id="v_rad">20</span></div>
-        <div class="row"><label>涂层颜色(深度)</label><input type="range" min="30" max="90" value="50" oninput="upd('dark',this.value)"> <span id="v_dark">50</span></div>
-    </div>
-
-    <button class="btn" style="background:var(--neon); color:#000;" onclick="exportParams()">💾 导出最终参数</button>
-</div>
 
 <script>
-    let p = { wt:273, wl:175, ws:22, gt:343, gl:33, gr:34, gc:23, gw:295, gs:16, ps:8, rad:20, dark:50 };
-    let isGhost = false;
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
 
-    function handleImage(input) {
-        if (input.files && input.files[0]) {
-            let reader = new FileReader();
-            reader.onload = (e) => document.getElementById('card').style.backgroundImage = `url(${e.target.result})`;
-            reader.readAsDataURL(input.files[0]);
+    // --- 核心逻辑 ---
+    function generateGameData() {
+        const luckyNum = Math.floor(Math.random() * 89) + 10;
+        const spots = [];
+        const isOverallWin = Math.random() > 0.7; // 30% 中奖率
+        
+        for (let i = 0; i < 30; i++) {
+            let isWin = isOverallWin && Math.random() < 0.15;
+            let num = isWin ? luckyNum : Math.floor(Math.random() * 89) + 10;
+            if (!isWin && num === luckyNum) num += 1;
+            
+            // 奖金池
+            let prize = isWin ? [100, 500, 1000][Math.floor(Math.random()*3)] : [2, 5, 10, 20][Math.floor(Math.random()*4)];
+            spots.push({ num, prize });
         }
+        return { luckyNum, spots };
     }
 
-    function toggleGhost() {
-        isGhost = !isGhost;
-        document.getElementById('ghost-btn').classList.toggle('active', isGhost);
-        document.querySelectorAll('.layer').forEach(l => l.classList.toggle('hide-layer', isGhost));
-    }
-
-    function upd(key, val) {
-        p[key] = parseInt(val);
-        document.getElementById('v_'+key).innerText = val;
-        render();
-        if(key === 'dark') initScratchAll(); // 实时改变涂层深度
-    }
-
-    function render() {
-        const wn = document.getElementById('w-num');
-        wn.style.top = p.wt+'px'; wn.style.left = p.wl+'px'; wn.style.fontSize = p.ws+'px';
-        const gr = document.getElementById('grid');
-        gr.style.top = p.gt+'px'; gr.style.left = p.gl+'px'; 
-        gr.style.rowGap = p.gr+'px'; gr.style.columnGap = p.gc+'px'; gr.style.width = p.gw+'px';
-        document.querySelectorAll('.item').forEach(it => {
-            it.style.fontSize = p.gs+'px';
-            it.querySelector('.usd').style.fontSize = p.ps+'px';
+    window.onload = function() {
+        const data = generateGameData();
+        document.getElementById('win-box').innerText = data.luckyNum;
+        const grid = document.getElementById('my-grid');
+        
+        data.spots.forEach(s => {
+            // 这里修改为 $ 符号包裹金额
+            grid.innerHTML += `
+                <div class="num-item">
+                    <span class="num-val">${s.num}</span>
+                    <div class="prize-item">$ ${s.prize} $</div>
+                </div>`;
         });
-    }
 
-    function initScratchAll() {
-        setupScratch('c-win', 157, 260, 61, 49);
-        setupScratch('c-main', 21, 322, 318, 299);
-    }
+        initScratch('canv-win', 55, 45);
+        initScratch('canv-mine', 318, 299);
 
-    function setupScratch(id, x, y, w, h) {
+        // 倒计时
+        let count = 3;
+        const timer = setInterval(() => {
+            count--;
+            document.getElementById('loader-text').innerText = `正在开启拾光之旅... ${count}s`;
+            if (count <= 0) {
+                clearInterval(timer);
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('main-card').style.visibility = 'visible';
+            }
+        }, 800);
+    };
+
+    // --- 物理铲刀引擎 ---
+    function initScratch(id, w, h) {
         const c = document.getElementById(id);
-        c.style.left = x+'px'; c.style.top = y+'px';
-        c.width = w; c.height = h;
         const ctx = c.getContext('2d');
+        c.width = w; c.height = h;
 
-        // 绘制深色、高纯度涂层 (无拉丝)
-        const gray = p.dark;
-        ctx.fillStyle = `rgb(${gray},${gray},${gray})`;
+        // 1. 绘制深灰色高质感涂层
+        ctx.fillStyle = '#7a7a7a';
         ctx.fillRect(0, 0, w, h);
         
-        // 漂亮暗花
-        ctx.fillStyle = 'rgba(255,255,255,0.1)';
-        ctx.font = 'bold 15px Arial';
-        const icons = ['★', '$', '♥', '♣'];
-        for(let i=5; i<w; i+=30) for(let j=20; j<h; j+=30) ctx.fillText(icons[Math.floor(Math.random()*4)], i, j);
+        // 2. 绘制暗花 (漂亮的星星和美金符)
+        ctx.fillStyle = 'rgba(255,255,255,0.12)';
+        ctx.font = 'bold 14px Montserrat';
+        const icons = ['★', '$', '★', '$'];
+        for(let x=5; x<w; x+=30) {
+            for(let y=20; y<h; y+=30) {
+                ctx.fillText(icons[Math.floor(Math.random()*4)], x, y);
+            }
+        }
 
-        let drawing = false;
-        const scrub = (e) => {
-            if(!drawing) return;
+        let active = false;
+
+        const scratch = (e) => {
+            if (!active) return;
             const r = c.getBoundingClientRect();
-            const tx = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
-            const ty = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
-            
-            // --- 硬核物理刮除：不留任何虚边或残留 ---
+            const x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+            const y = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
+
+            // 硬铲刀效果：destination-out 瞬间擦除像素，边缘锐利
             ctx.globalCompositeOperation = 'destination-out';
             ctx.beginPath();
-            ctx.arc(tx, ty, p.rad, 0, Math.PI * 2);
+            ctx.arc(x, y, 20, 0, Math.PI * 2); // 20半径铲刀
             ctx.fill();
         };
 
-        c.onmousedown = () => drawing = true;
-        window.onmouseup = () => drawing = false;
-        c.onmousemove = scrub;
-        c.ontouchstart = (e) => { e.preventDefault(); drawing = true; };
-        c.ontouchmove = (e) => { e.preventDefault(); scrub(e); };
+        c.addEventListener('mousedown', () => active = true);
+        c.addEventListener('touchstart', (e) => { active = true; scratch(e); }, {passive: false});
+        window.addEventListener('mouseup', () => active = false);
+        window.addEventListener('touchend', () => active = false);
+        c.addEventListener('mousemove', scratch);
+        c.addEventListener('touchmove', (e) => { e.preventDefault(); scratch(e); }, {passive: false});
     }
-
-    function exportParams() {
-        alert("请在控制台复制参数：\n" + JSON.stringify(p));
-        console.log("FINAL_PARAMS:", JSON.stringify(p));
-    }
-
-    window.onload = () => {
-        const grid = document.getElementById('grid');
-        grid.innerHTML = '';
-        for(let i=0; i<30; i++) {
-            grid.innerHTML += `<div class="item" style="color:#000;">88<div class="usd" style="color:#d00000;">$ 500 $</div></div>`;
-        }
-        render();
-        initScratchAll();
-    };
 </script>
 </body>
 </html>
