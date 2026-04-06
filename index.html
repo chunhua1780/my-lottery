@@ -3,101 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=360, user-scalable=no">
-    <title>GOLDEN LUCK - SUPREME EDITION</title>
+    <title>GOLDEN LUCK - THE FINAL MASTERPIECE</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&family=Dancing+Script:wght@700&family=Space+Mono:wght@700&display=swap');
 
         :root { 
             --accent: #6366f1;
-            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-bg: rgba(255, 255, 255, 0.88);
         }
 
-        body { margin: 0; background: #ffffff; color: #1e293b; font-family: 'Outfit', sans-serif; overflow: hidden; touch-action: none; }
+        body { margin: 0; background: #fff; color: #1e293b; font-family: 'Outfit', sans-serif; overflow: hidden; touch-action: none; }
 
-        /* --- 1. 高级倒计时：带动态收缩圆环 --- */
+        /* --- 1. 倒计时：每秒转一圈的动态环 --- */
         #loader {
             position: fixed; inset: 0; z-index: 100000;
             display: flex; justify-content: center; align-items: center;
             background: #fff;
-            background-image: 
-                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.1) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.1) 0px, transparent 50%);
         }
-
-        .cd-container {
-            position: relative; width: 160px; height: 160px;
-            display: flex; justify-content: center; align-items: center;
-        }
-
-        /* SVG 圆环动画 */
-        .cd-ring {
-            position: absolute; width: 100%; height: 100%;
-            transform: rotate(-90deg);
-        }
+        .cd-container { position: relative; width: 150px; height: 150px; display: flex; justify-content: center; align-items: center; }
+        
+        .cd-ring { position: absolute; width: 100%; height: 100%; transform: rotate(-90deg); }
         .cd-ring circle {
             fill: none; stroke-width: 6; stroke-linecap: round;
             stroke: url(#ringGradient);
-            stroke-dasharray: 440; /* 周长 */
+            stroke-dasharray: 440;
             stroke-dashoffset: 0;
-            animation: ringAnim 3s linear forwards;
         }
+        /* 每一秒转一圈的动画类 */
+        .ring-active { animation: ringTick 1s linear infinite; }
+        @keyframes ringTick { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 440; } }
 
-        @keyframes ringAnim {
-            from { stroke-dashoffset: 0; }
-            to { stroke-dashoffset: 440; }
-        }
-
-        .cd-num {
-            font-size: 75px; font-weight: 900;
-            color: #1e293b;
-            animation: pulse 1s infinite alternate ease-in-out;
-        }
-
-        @keyframes pulse { from { transform: scale(0.9); opacity: 0.8; } to { transform: scale(1.1); opacity: 1; } }
+        .cd-num { font-size: 70px; font-weight: 900; color: #1e293b; }
 
         /* --- 2. 悬浮对话框 --- */
         #top-dialog {
             position: fixed; top: 30px; left: 50%; transform: translateX(-50%) translateY(-20px);
             width: 320px; padding: 22px 0;
-            background: var(--glass-bg);
-            backdrop-filter: blur(25px) saturate(180%); -webkit-backdrop-filter: blur(25px) saturate(180%);
-            border: 1px solid rgba(252, 194, 1, 0.3);
-            border-radius: 35px; z-index: 100001;
+            background: var(--glass-bg); backdrop-filter: blur(25px) saturate(180%);
+            border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 35px; z-index: 100001;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.12);
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.15);
             opacity: 0; filter: blur(10px);
-            transition: all 1.8s cubic-bezier(0.19, 1, 0.22, 1);
+            transition: all 1.5s cubic-bezier(0.19, 1, 0.22, 1);
             pointer-events: none; 
         }
-        
         #top-dialog.active { opacity: 1; filter: blur(0px); transform: translateX(-50%) translateY(0); }
-
-        .d-title { font-size: 24px; font-weight: 900; color: #0f172a; margin: 0; }
+        .d-title { font-size: 24px; font-weight: 900; color: #000; margin: 0; }
         .d-msg { font-family: 'Dancing Script'; font-size: 17px; color: #475569; margin: 6px 0; }
-        .d-bal-box { 
-            margin-top: 10px; padding: 6px 30px; border-radius: 50px;
-            background: #1e293b; color: #fff;
-            font-family: 'Space Mono', monospace; font-size: 15px;
-        }
+        .d-bal-box { margin-top: 10px; padding: 6px 30px; border-radius: 50px; background: #000; color: #fff; font-family: 'Space Mono', monospace; font-size: 14px; }
 
-        /* --- 3. 舞台与高清数字 --- */
-        #stage { 
-            position: relative; width: 360px; height: 720px; margin: 0 auto; 
-            background: #fff url('64005.jpg') center/100% 100% no-repeat; 
-            opacity: 0; transition: opacity 1.5s ease;
-        }
-        
+        /* --- 3. 舞台与金额设计 --- */
+        #stage { position: relative; width: 360px; height: 720px; margin: 0 auto; background: #fff url('64005.jpg') center/100% 100% no-repeat; opacity: 0; transition: opacity 1s; }
         #win-area { position: absolute; left: 151px; top: 263px; width: 72px; height: 66px; display: flex; align-items: center; justify-content: center; color: #000; font-size: 26px; font-weight: 900; }
         #grid-area { position: absolute; left: 27px; top: 335px; width: 310px; height: 284px; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(5, 1fr); gap: 10px; padding: 5px; box-sizing: border-box; }
         
-        /* 改进：数字下方的点数采用黑色、加粗、更清晰 */
         .cell b { font-size: 19px; display: block; font-weight: 900; color: #000; text-align: center; }
-        .cell i { 
-            font-family: 'Space Mono'; font-size: 10px; 
-            color: #000; /* 改为纯黑色 */
-            font-weight: 700; /* 加粗 */
-            display: block; text-align: center; margin-top: -2px;
-        }
+        /* 金额夹心样式：$ 10.00 € */
+        .cell i { font-family: 'Space Mono'; font-size: 9px; color: #000; font-weight: 700; display: block; text-align: center; margin-top: -2px; }
 
         canvas { position: absolute; z-index: 500; touch-action: none; }
     </style>
@@ -106,14 +68,8 @@
 
     <div id="loader">
         <div class="cd-container">
-            <svg class="cd-ring">
-                <defs>
-                    <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#6366f1" />
-                        <stop offset="100%" stop-color="#a855f7" />
-                    </linearGradient>
-                </defs>
-                <circle cx="80" cy="80" r="70"></circle>
+            <svg class="cd-ring"><defs><linearGradient id="ringGradient"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#a855f7"/></linearGradient></defs>
+                <circle id="rc" cx="75" cy="75" r="70" class="ring-active"></circle>
             </svg>
             <div id="cd" class="cd-num">3</div>
         </div>
@@ -121,10 +77,8 @@
 
     <div id="top-dialog">
         <div class="d-title" id="dt">LUCKY REVEAL</div>
-        <div class="d-msg" id="dm">Every scratch is a new hope...</div>
-        <div class="d-bal-box">
-            BALANCE: <span id="db">$100.00</span>
-        </div>
+        <div class="d-msg" id="dm">The fortune has been unveiled...</div>
+        <div class="d-bal-box">BALANCE: <span id="db">$100.00</span></div>
     </div>
 
     <div id="stage">
@@ -138,12 +92,12 @@
         let balance = 100.00, winTriggered = false, winTotal = 0;
         let sensorPoints = [];
         let hitCount = 0;
+        let mainScrached = false; // 是否已经刮开了中奖号码区域
 
         // 1. 倒计时流程
         async function runCD() {
             const el = document.getElementById('cd');
-            const sequence = ['2', '1', 'GO'];
-            for(let s of sequence) {
+            for(let s of ['2', '1', 'GO']) {
                 await new Promise(r => setTimeout(r, 1000));
                 el.innerText = s;
             }
@@ -152,7 +106,7 @@
                 document.getElementById('loader').style.display = 'none';
                 document.getElementById('stage').style.opacity = '1';
                 initGame();
-            }, 800);
+            }, 600);
         }
 
         function initGame() {
@@ -162,7 +116,8 @@
                 const n = Math.random() > 0.88 ? "88" : Math.floor(Math.random()*89+10);
                 const p = (Math.random()*50+10).toFixed(2);
                 if(n === "88") winTotal += parseFloat(p);
-                h += `<div class="cell"><b>${n}</b><i>$${p}</i></div>`;
+                // 修改：前后美元欧元夹心
+                h += `<div class="cell"><b>${n}</b><i>$${p}€</i></div>`;
             }
             g.innerHTML = h;
 
@@ -180,7 +135,7 @@
 
             ctx.fillStyle = '#e2e8f0';
             ctx.fillRect(0,0,cvs.width, cvs.height);
-            ctx.fillStyle = "rgba(100,116,139,0.12)";
+            ctx.fillStyle = "rgba(100,116,139,0.15)";
             ctx.font = "bold 16px Arial";
             for(let x=5; x<cvs.width; x+=28) 
                 for(let y=18; y<cvs.height; y+=28) ctx.fillText((x+y)%2===0 ? "€":"$", x, y);
@@ -193,11 +148,21 @@
                 ctx.globalCompositeOperation = 'destination-out';
                 ctx.beginPath(); ctx.arc(x, y, 32, 0, Math.PI*2); ctx.fill();
 
+                // 逻辑控制：如果刮的是中奖区域
+                if(id === "c_win") {
+                    // 只要在中心点附近刮一下就判定主号码已露面
+                    if(Math.abs(x - cvs.width/2) < 20) mainScrached = true;
+                }
+
                 if(id === "c_grid" && !winTriggered) {
                     sensorPoints.forEach(p => {
                         if(!p.hit) {
                             const d = Math.sqrt((x - p.x)**2 + (y - p.y)**2);
-                            if(d < 32) { p.hit = true; hitCount++; if(hitCount >= 14) showPopup(); }
+                            if(d < 32) { 
+                                p.hit = true; hitCount++; 
+                                // 满足 70% 且 必须先刮开了主号码
+                                if(hitCount >= 14 && mainScrached) showPopup(); 
+                            }
                         }
                     });
                 }
@@ -218,17 +183,15 @@
             setTimeout(() => {
                 const dialog = document.getElementById('top-dialog');
                 document.getElementById('db').innerText = `$${(balance + winTotal).toFixed(2)}`;
-
                 if(winTotal > 0) {
-                    document.getElementById('dt').innerText = "BIG WIN!";
-                    document.getElementById('dm').innerText = `You discovered $${winTotal.toFixed(2)} in total!`;
+                    document.getElementById('dt').innerText = "CONGRATS!";
+                    document.getElementById('dm').innerText = `You've uncovered $${winTotal.toFixed(2)}€ rewards.`;
                 } else {
-                    document.getElementById('dt').innerText = "GOOD LUCK";
-                    document.getElementById('dm').innerText = "Almost there! One more try?";
+                    document.getElementById('dt').innerText = "TRY AGAIN";
+                    document.getElementById('dm').innerText = "Fortune favors the persistent!";
                 }
-
                 dialog.classList.add('active');
-                if(navigator.vibrate) navigator.vibrate([60, 60]);
+                if(navigator.vibrate) navigator.vibrate([50, 50]);
             }, 2500); 
         }
 
