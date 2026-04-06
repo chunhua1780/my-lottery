@@ -1,145 +1,199 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>拾光·中国龙</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>LUCKY 88 - SILVER PRO</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap');
-        body { background: #000; margin: 0; padding: 0; font-family: "Microsoft YaHei", 'Montserrat', sans-serif; overflow: hidden; -webkit-user-select: none; user-select: none; }
-        
-        /* --- 加载层 --- */
-        #loader { position: fixed; inset: 0; background: #1a1a1a; z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #d4af37; }
-        .spinner { width: 40px; height: 40px; border: 3px solid rgba(212,175,55,0.2); border-top: 3px solid #d4af37; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 10px; }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        :root { --gold: #FFD700; --pure-black: #000000; --win-red: #d00000; }
+        body { background: #000; margin: 0; font-family: 'Montserrat', sans-serif; overflow: hidden; color: white; user-select: none; }
 
-        /* --- 游戏主容器 --- */
-        .card-container { position: relative; width: 360px; height: 720px; background: url('64005.jpg') no-repeat; background-size: 100% 100%; margin: 0 auto; visibility: hidden; }
+        /* --- 倒计时 --- */
+        #loader { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; justify-content: center; align-items: center; }
+        .cd-num { font-size: 150px; font-weight: 900; background: linear-gradient(180deg, #fff, var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { transform: scale(0.6); opacity: 0; } 50% { opacity: 1; } 100% { transform: scale(1.2); opacity: 0; } }
 
-        /* 中奖号码 (精准对齐) */
-        #win-box { position: absolute; top: 266px; left: 169px; width: 40px; height: 35px; z-index: 1; display: flex; justify-content: center; align-items: center; font-size: 22px; color: #000; font-weight: 900; }
+        /* --- 核心游戏容器 (锁定你的精准参数) --- */
+        #app { display: none; opacity: 0; transition: opacity 1s; }
+        .card { position: relative; width: 360px; height: 720px; background-size: 100% 100%; margin: 0 auto; }
 
-        /* 玩法网格 (5行6列) */
-        #my-grid { position: absolute; top: 326px; left: 25px; width: 310px; z-index: 1; display: grid; grid-template-columns: repeat(6, 1fr); row-gap: 2px; column-gap: 9px; }
-        .num-item { display: flex; flex-direction: column; justify-content: center; align-items: center; color: #000; font-weight: 900; height: 55px; line-height: 1.0; }
-        .num-val { font-size: 16px; margin-bottom: 2px; }
-        .prize-item { font-size: 8px; color: #8B0000; font-weight: 900; white-space: nowrap; }
+        /* 中奖区锚定: wt:273, wl:175 */
+        #win-box { 
+            position: absolute; z-index: 1; top: 273px; left: 175px; width: 30px; height: 30px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 22px; color: var(--pure-black); font-weight: 900;
+        }
 
-        /* 刮奖涂层 */
-        .scratch-layer { position: absolute; z-index: 10; touch-action: none; cursor: crosshair; }
-        #canv-win { top: 260px; left: 160px; width: 55px; height: 45px; }
-        #canv-mine { top: 322px; left: 21px; width: 318px; height: 299px; }
+        /* 玩法网格锚定: gt:343, gl:33, gw:295, gr:34, gc:23 */
+        #grid-box { 
+            position: absolute; z-index: 1; top: 343px; left: 33px; width: 295px;
+            display: grid; grid-template-columns: repeat(6, 1fr);
+            row-gap: 34px; column-gap: 23px;
+        }
+        .cell { display: flex; flex-direction: column; justify-content: center; align-items: center; width: 30px; height: 40px; }
+        .num { font-size: 16px; color: var(--pure-black); font-weight: 900; line-height: 1; }
+        .val { font-size: 8px; color: var(--win-red); font-weight: 800; margin-top: 2px; }
+
+        /* 涂层配置 */
+        .sc-layer { position: absolute; z-index: 10; touch-action: none; cursor: crosshair; }
+        #sc-win { top: 260px; left: 157px; width: 61px; height: 49px; }
+        #sc-main { top: 322px; left: 21px; width: 318px; height: 299px; }
+
+        /* Vegas 风格弹窗: bt:120 */
+        #pop-up {
+            position: absolute; top: 120px; left: 50%; transform: translateX(-50%) translateY(30px);
+            width: 320px; height: 140px; background: rgba(0,0,0,0.98);
+            border: 3px solid var(--gold); border-radius: 30px; z-index: 100;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: all 0.7s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+        #pop-up.active { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+        .p-amt { font-size: 50px; font-weight: 900; color: #fff; margin: 5px 0; text-shadow: 0 0 15px rgba(255,255,255,0.4); }
     </style>
 </head>
 <body>
 
-    <div id="loader">
-        <div class="spinner"></div>
-        <div id="loader-text">正在开启拾光之旅... 3s</div>
-    </div>
+<div id="loader"><div class="cd-num" id="cd-txt">3</div></div>
 
-    <div class="card-container" id="main-card">
-        <div id="win-box"></div>
-        <div id="my-grid"></div>
-        <canvas id="canv-win" class="scratch-layer"></canvas>
-        <canvas id="canv-mine" class="scratch-layer"></canvas>
+<div id="app">
+    <div class="card" id="card-bg">
+        <div id="pop-up">
+            <div style="color:var(--gold); font-size:12px; font-weight:900; letter-spacing:2px;">CONGRATULATIONS</div>
+            <div class="p-amt" id="final-amt">$ 0 $</div>
+            <button style="background:var(--gold); color:#000; border:none; padding:6px 20px; border-radius:20px; font-weight:900; font-size:11px; cursor:pointer;" onclick="location.reload()">PLAY AGAIN</button>
+        </div>
+        <div id="win-box">88</div>
+        <div id="grid-box"></div>
+        <canvas id="sc-win" class="sc-layer"></canvas>
+        <canvas id="sc-main" class="sc-layer"></canvas>
     </div>
+</div>
 
 <script>
-    const tg = window.Telegram.WebApp;
-    tg.ready();
-    tg.expand();
+    const TARGET_NUM = 88;
+    let time = 3;
+    let winDone = false, mainDone = false;
 
-    // --- 核心逻辑 ---
-    function generateGameData() {
-        const luckyNum = Math.floor(Math.random() * 89) + 10;
-        const spots = [];
-        const isOverallWin = Math.random() > 0.7; // 30% 中奖率
-        
-        for (let i = 0; i < 30; i++) {
-            let isWin = isOverallWin && Math.random() < 0.15;
-            let num = isWin ? luckyNum : Math.floor(Math.random() * 89) + 10;
-            if (!isWin && num === luckyNum) num += 1;
-            
-            // 奖金池
-            let prize = isWin ? [100, 500, 1000][Math.floor(Math.random()*3)] : [2, 5, 10, 20][Math.floor(Math.random()*4)];
-            spots.push({ num, prize });
+    // 倒计时逻辑
+    const cdTimer = setInterval(() => {
+        time--;
+        if(time > 0) document.getElementById('cd-txt').innerText = time;
+        else {
+            clearInterval(cdTimer);
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            setTimeout(()=>document.getElementById('app').style.opacity='1',50);
         }
-        return { luckyNum, spots };
+    }, 1000);
+
+    // 渲染游戏数据
+    function buildGame() {
+        const slots = [];
+        const isWinner = Math.random() < 0.3; // 30% 中奖率
+        let totalWin = isWinner ? [500, 1000, 5000][Math.floor(Math.random()*3)] : 0;
+        let currAcc = 0;
+
+        for(let i=0; i<30; i++) {
+            let n = Math.floor(Math.random()*80)+10; if(n===TARGET_NUM) n++;
+            let v = [10, 20, 50, 100][Math.floor(Math.random()*4)];
+            if(isWinner && currAcc < totalWin && Math.random() < 0.2) { n = TARGET_NUM; v = Math.max(50, totalWin-currAcc); currAcc += v; }
+            slots.push({n, v});
+        }
+        return {slots, total: currAcc || 0};
     }
+    const game = buildGame();
 
-    window.onload = function() {
-        const data = generateGameData();
-        document.getElementById('win-box').innerText = data.luckyNum;
-        const grid = document.getElementById('my-grid');
-        
-        data.spots.forEach(s => {
-            // 这里修改为 $ 符号包裹金额
-            grid.innerHTML += `
-                <div class="num-item">
-                    <span class="num-val">${s.num}</span>
-                    <div class="prize-item">$ ${s.prize} $</div>
-                </div>`;
-        });
-
-        initScratch('canv-win', 55, 45);
-        initScratch('canv-mine', 318, 299);
-
-        // 倒计时
-        let count = 3;
-        const timer = setInterval(() => {
-            count--;
-            document.getElementById('loader-text').innerText = `正在开启拾光之旅... ${count}s`;
-            if (count <= 0) {
-                clearInterval(timer);
-                document.getElementById('loader').style.display = 'none';
-                document.getElementById('main-card').style.visibility = 'visible';
-            }
-        }, 800);
+    window.onload = () => {
+        const img = new Image(); img.src = '64005.jpg'; // 锚定你的背景图
+        img.onload = () => {
+            document.getElementById('card-bg').style.backgroundImage = `url(64005.jpg)`;
+            document.getElementById('win-box').innerText = TARGET_NUM;
+            const g = document.getElementById('grid-box');
+            game.slots.forEach(s => {
+                g.innerHTML += `<div class="cell"><span class="num">${s.n}</span><span class="val">$ ${s.v} $</span></div>`;
+            });
+            drawScratch('sc-win', 61, 49, 'win');
+            drawScratch('sc-main', 318, 299, 'main');
+        };
     };
 
-    // --- 物理铲刀引擎 ---
-    function initScratch(id, w, h) {
+    // --- 核心：真·银色炫彩涂层与利刃铲除引擎 ---
+    function drawScratch(id, w, h, type) {
         const c = document.getElementById(id);
         const ctx = c.getContext('2d');
         c.width = w; c.height = h;
 
-        // 1. 绘制深灰色高质感涂层
-        ctx.fillStyle = '#7a7a7a';
-        ctx.fillRect(0, 0, w, h);
+        // 1. 绘制真·银色炫彩涂层 (带金属渐变)
+        const grd = ctx.createLinearGradient(0, 0, w, h);
+        grd.addColorStop(0, '#A0A0A0'); // 亮银
+        grd.addColorStop(0.5, '#E0E0E0'); // 高光
+        grd.addColorStop(1, '#808080'); // 暗银
+        ctx.fillStyle = grd; ctx.fillRect(0,0,w,h);
         
-        // 2. 绘制暗花 (漂亮的星星和美金符)
-        ctx.fillStyle = 'rgba(255,255,255,0.12)';
-        ctx.font = 'bold 14px Montserrat';
-        const icons = ['★', '$', '★', '$'];
-        for(let x=5; x<w; x+=30) {
-            for(let y=20; y<h; y+=30) {
-                ctx.fillText(icons[Math.floor(Math.random()*4)], x, y);
-            }
-        }
+        // 随机银色噪点纹理
+        for(let i=0; i<300; i++) { ctx.fillStyle = `rgba(255,255,255,${Math.random()*0.15})`; ctx.fillRect(Math.random()*w, Math.random()*h, 1, 1); }
+
+        // 2. 欧美潮流暗纹 (微缩Luck symbols)
+        ctx.fillStyle = 'rgba(0,0,0,0.06)'; // 极淡暗花
+        ctx.font = 'bold 15px Montserrat';
+        const icons = ['♣', '$', '★', '♦'];
+        for(let x=8; x<w; x+=32) for(let y=20; y<h; y+=32) ctx.fillText(icons[Math.floor(Math.random()*4)], x, y);
 
         let active = false;
-
-        const scratch = (e) => {
-            if (!active) return;
+        const scrub = (e) => {
+            if(!active) return;
             const r = c.getBoundingClientRect();
-            const x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
-            const y = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
-
-            // 硬铲刀效果：destination-out 瞬间擦除像素，边缘锐利
+            const tx = (e.touches?e.touches[0].clientX:e.clientX) - r.left;
+            const ty = (e.touches?e.touches[0].clientY:e.clientY) - r.top;
+            
+            // --- 物理利刃铲除算法 (Hard Clipping) ---
             ctx.globalCompositeOperation = 'destination-out';
-            ctx.beginPath();
-            ctx.arc(x, y, 20, 0, Math.PI * 2); // 20半径铲刀
-            ctx.fill();
+            
+            // 使用多个随机散射的硬边缘碎片，模拟物理剥离
+            for(let i=0; i<10; i++) {
+                const offX = (Math.random()-0.5) * 22;
+                const offY = (Math.random()-0.5) * 22;
+                const size = 10 + Math.random() * 16;
+                
+                ctx.save();
+                ctx.translate(tx + offX, ty + offY);
+                ctx.rotate(Math.random() * Math.PI); // 随机旋转碎片
+                
+                // 绘制不规则碎片 (多边形铲刀感)
+                ctx.beginPath();
+                ctx.moveTo(-size/2, -size/2);
+                ctx.lineTo(size/2, -size/2);
+                ctx.lineTo(size/2 * (Math.random()*0.3+0.7), size/2); // 随机畸变
+                ctx.lineTo(-size/2, size/2);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            }
+            check(c, type);
         };
 
-        c.addEventListener('mousedown', () => active = true);
-        c.addEventListener('touchstart', (e) => { active = true; scratch(e); }, {passive: false});
-        window.addEventListener('mouseup', () => active = false);
-        window.addEventListener('touchend', () => active = false);
-        c.addEventListener('mousemove', scratch);
-        c.addEventListener('touchmove', (e) => { e.preventDefault(); scratch(e); }, {passive: false});
+        c.onmousedown = () => active = true;
+        window.onmouseup = () => active = false;
+        c.onmousemove = scrub;
+        c.ontouchstart = (e) => { e.preventDefault(); active = true; scrub(e); };
+        c.ontouchmove = (e) => { e.preventDefault(); scrub(e); };
+    }
+
+    function check(c, type) {
+        const d = c.getContext('2d').getImageData(0,0,c.width,c.height).data;
+        let hits = 0;
+        for(let i=3; i<d.length; i+=4) if(d[i] === 0) hits++;
+        if(hits / (d.length/4) > 0.93) {
+            if(type === 'win') winDone = true;
+            if(type === 'main') mainDone = true;
+        }
+        if(winDone && mainDone) {
+            setTimeout(() => {
+                document.getElementById('final-amt').innerText = `$ ${game.total} $`;
+                document.getElementById('pop-up').classList.add('active');
+            }, 400);
+        }
     }
 </script>
 </body>
