@@ -170,7 +170,7 @@
             c.addEventListener('touchmove', (e) => { scratch(e); e.preventDefault(); });
         }
 
-        // 3. 双重判定逻辑
+        // 3. 双重判定逻辑 - 修改为85%触发
         function updateProgress(c, ctx) {
             const data = ctx.getImageData(0, 0, c.width, c.height).data;
             let clear = 0;
@@ -183,8 +183,8 @@
             // 记录当前画布的比例
             state[c.dataset.id] = ratio;
 
-            // 关键：当【中奖区】和【矩阵区】都超过 90% 时弹出
-            if (state.win >= 0.9 && state.grid >= 0.9) {
+            // 关键：当【中奖区】和【矩阵区】都超过 85% 时弹出
+            if (state.win >= 0.85 && state.grid >= 0.85) {
                 showResult();
             }
         }
@@ -199,21 +199,21 @@
                 setTimeout(() => cvs.style.display = 'none', 500);
             });
 
-            // 更新弹窗内容
+            // 更新弹窗内容 - 修改为更温柔鼓励的文案
             const pop = document.getElementById('result-popup');
             const rt = document.getElementById('rt');
             const rs = document.getElementById('rs');
             const rb = document.getElementById('rb');
 
             if(winTotal > 0) {
-                rt.innerText = "BIG WINNER!";
+                rt.innerText = "🎉 恭喜中奖啦！";
                 rt.style.color = "var(--gold)";
-                rs.innerText = `You've just won $${winTotal.toFixed(2)}!`;
+                rs.innerText = `太幸运啦～你喜提 $${winTotal.toFixed(2)} 奖励！好运连连，下次还能中大奖～`;
                 balance += winTotal;
             } else {
-                rt.innerText = "ALMOST THERE";
+                rt.innerText = "💖 小可爱再接再厉";
                 rt.style.color = "#aaa";
-                rs.innerText = "The luck is coming, try another one!";
+                rs.innerText = "这次差一点点运气哦～温柔蓄力，下一次好运马上就来，继续玩超治愈～";
             }
 
             rb.innerText = `$${balance.toFixed(2)}`;
