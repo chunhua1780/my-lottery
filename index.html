@@ -1,273 +1,271 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>刮刮乐Pro</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>拾光·至臻调试器</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root { --accent-color: #00f2fe; }
+        body { background: #000; margin: 0; font-family: "Microsoft YaHei", sans-serif; overflow: hidden; color: white; }
 
-<style>
-body{
-    margin:0;
-    background:#000;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    height:100vh;
-    font-family:Arial;
-}
+        /* --- 1. 炫彩粒子倒计时 --- */
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, #1a1a2e 0%, #000 100%);
+            z-index: 100; display: flex; justify-content: center; align-items: center;
+        }
+        #countdown-num {
+            font-size: 180px; font-weight: 900;
+            background: linear-gradient(45deg, #ff00cc, #3333ff, #00f2fe, #ff00cc);
+            background-size: 300%;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 30px rgba(0, 242, 254, 0.5));
+            animation: flow 3s infinite linear;
+            transform: scale(0); opacity: 0;
+        }
+        @keyframes flow { 0% { background-position: 0%; } 100% { background-position: 100%; } }
+        .zoom-effect { animation: zoomInBlur 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes zoomInBlur {
+            0% { transform: scale(0.3) rotate(-10deg); opacity: 0; filter: blur(20px); }
+            50% { transform: scale(1.1) rotate(0deg); opacity: 1; filter: blur(0); }
+            100% { transform: scale(3) rotate(10deg); opacity: 0; filter: blur(30px); }
+        }
 
-/* 卡片 */
-.card{
-    position:relative;
-    width:360px;
-    height:720px;
-    background:url('64005.jpg') no-repeat;
-    background-size:cover;
-}
+        /* --- 2. 参数调节面板 (模拟器) --- */
+        #debug-panel {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 35vh;
+            background: rgba(0, 0, 0, 0.9); border-top: 1px solid #4facfe;
+            z-index: 200; padding: 10px; box-sizing: border-box;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+            overflow-y: auto; font-size: 12px;
+        }
+        .ctrl-grp { display: flex; flex-direction: column; gap: 2px; }
+        input[type=range] { width: 100%; }
 
-/* 数据层 */
-.layer{
-    position:absolute;
-    left:20px;
-    top:120px;
-    width:320px;
-}
+        /* --- 3. 彩票主容器 --- */
+        #app-wrapper { display: none; }
+        .card-container { 
+            position: relative; width: 360px; height: 720px;
+            background-size: cover; margin: 0 auto;
+        }
 
-/* 中奖号 */
-#win{
-    position:absolute;
-    top:150px;
-    left:155px;
-    font-size:22px;
-    font-weight:900;
-}
+        /* 动态样式绑定 */
+        #win-box { position: absolute; z-index: 1; display: flex; justify-content: center; align-items: center; font-weight: 900; }
+        #my-grid { position: absolute; z-index: 1; display: grid; grid-template-columns: repeat(6, 1fr); row-gap: 2px; column-gap: 9px; }
+        .num-item { display: flex; flex-direction: column; justify-content: center; align-items: center; font-weight: 900; line-height: 1.2; }
+        .prize-item { font-weight: bold; }
 
-/* 网格 */
-.grid{
-    position:absolute;
-    top:230px;
-    left:15px;
-    width:310px;
-    display:grid;
-    grid-template-columns:repeat(6,1fr);
-    gap:6px;
-}
-.cell{
-    height:48px;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    align-items:center;
-}
-.num{font-size:15px;font-weight:900;}
-.money{font-size:11px;color:#700000;}
+        /* --- 4. 惊喜气球弹窗 --- */
+        #result-modal {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
+            width: 280px; height: 280px; z-index: 300;
+            background: radial-gradient(circle, #fff 0%, #f0f0f0 100%);
+            border-radius: 50%; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 -10px 20px rgba(0,0,0,0.1);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            padding: 20px; color: #333;
+        }
+        #result-modal.show { transform: translate(-50%, -50%) scale(1); }
+        #result-modal h2 { margin: 0; color: #ff4757; font-size: 24px; }
+        #result-modal p { margin: 10px 0; font-style: italic; color: #57606f; }
+        .btn-retry { background: #4facfe; color: white; border: none; padding: 10px 20px; border-radius: 20px; margin-top: 10px; }
 
-/* canvas */
-canvas{
-    position:absolute;
-    z-index:10;
-}
-#c1{ top:140px; left:150px; width:70px; height:50px;} /* 玩法区 */
-#c2{ top:220px; left:15px; width:310px; height:310px;} /* 刮奖区 */
-
-/* 余额 */
-#balance{
-    position:absolute;
-    top:20px;
-    left:20px;
-    color:#fff;
-    font-size:16px;
-}
-
-/* 结果弹窗 */
-#popup{
-    position:fixed;
-    top:0;left:0;width:100%;height:100%;
-    display:none;
-    justify-content:center;
-    align-items:center;
-    background:rgba(0,0,0,0.6);
-}
-.box{
-    background:linear-gradient(45deg,#ff9a9e,#fad0c4);
-    padding:30px;
-    border-radius:20px;
-    text-align:center;
-    animation:pop 0.5s;
-}
-@keyframes pop{
-    from{transform:scale(0.5);opacity:0;}
-    to{transform:scale(1);opacity:1;}
-}
-button{
-    margin-top:15px;
-    padding:10px 20px;
-    border:none;
-    border-radius:10px;
-    background:#fff;
-    cursor:pointer;
-}
-</style>
+        .scratch-layer { position: absolute; z-index: 10; touch-action: none; }
+    </style>
 </head>
-
 <body>
 
-<div class="card">
-
-<div id="balance">余额：¥100</div>
-
-<div class="layer">
-    <div id="win"></div>
-    <div class="grid" id="grid"></div>
-</div>
-
-<canvas id="c1"></canvas>
-<canvas id="c2"></canvas>
-
-</div>
-
-<!-- 结果 -->
-<div id="popup">
-    <div class="box">
-        <h2 id="resultText"></h2>
-        <button onclick="location.reload()">再来一张</button>
+    <div id="loader">
+        <div id="countdown-num"></div>
     </div>
-</div>
 
-<!-- 声音 -->
-<audio id="scratchSound" src="https://actions.google.com/sounds/v1/scrapes/scratch.ogg"></audio>
+    <div id="debug-panel">
+        <div class="ctrl-grp">
+            <label>中奖号-大小: <span id="val1">22</span></label>
+            <input type="range" min="10" max="50" value="22" oninput="updateStyle('winSize', this.value, 'px', 'val1')">
+            <label>中奖号-上下: <span id="val2">266</span></label>
+            <input type="range" min="200" max="400" value="266" oninput="updateStyle('winTop', this.value, 'px', 'val2')">
+            <label>中奖号-左右: <span id="val3">169</span></label>
+            <input type="range" min="100" max="250" value="169" oninput="updateStyle('winLeft', this.value, 'px', 'val3')">
+        </div>
+        <div class="ctrl-grp">
+            <label>网格-上下: <span id="val4">326</span></label>
+            <input type="range" min="250" max="500" value="326" oninput="updateStyle('gridTop', this.value, 'px', 'val4')">
+            <label>数字-大小: <span id="val5">14</span></label>
+            <input type="range" min="10" max="30" value="14" oninput="updateStyle('numSize', this.value, 'px', 'val5')">
+            <label>数字-颜色 (HEX)</label>
+            <input type="color" value="#000000" oninput="updateStyle('numColor', this.value, '', '')">
+        </div>
+        <button onclick="console.log(currentConfig)" style="grid-column: span 2; height: 30px; background: #4facfe; border:none; color:white; border-radius: 5px;">保存参数并发送</button>
+    </div>
 
-<script>
+    <div id="app-wrapper">
+        <div class="card-container" id="main-card">
+            <div id="win-box"></div>
+            <div id="my-grid"></div>
+            <canvas id="canv-win" class="scratch-layer"></canvas>
+            <canvas id="canv-mine" class="scratch-layer"></canvas>
+        </div>
+    </div>
 
-/* ===== 数据模型（真实一点） ===== */
-function getData(){
-    let lucky = Math.floor(Math.random()*90)+10;
+    <div id="result-modal">
+        <div id="modal-content">
+            <h2 id="res-title">恭喜你!</h2>
+            <p id="res-desc">运气爆棚，这份惊喜请收好。</p>
+            <h1 id="res-amt">¥0</h1>
+            <button class="btn-retry" onclick="location.reload()">再来一次</button>
+        </div>
+    </div>
 
-    let total=0;
-    let r=Math.random();
+    <script>
+        const currentConfig = { winSize:22, winTop:266, winLeft:169, gridTop:326, numSize:14, numColor:'#000000' };
 
-    if(r<0.5) total=0;
-    else if(r<0.8) total=5;
-    else if(r<0.95) total=20;
-    else total=100;
-
-    let spots=[];
-    let hits=0;
-
-    for(let i=0;i<30;i++){
-        let num=Math.floor(Math.random()*90)+10;
-        let prize=0;
-
-        if(Math.random()<0.15 && hits<2 && total>0){
-            num=lucky;
-            prize=Math.floor(total/2);
-            hits++;
+        function updateStyle(key, val, unit, labelId) {
+            currentConfig[key] = val;
+            if(labelId) document.getElementById(labelId).innerText = val;
+            applyStyles();
         }
 
-        spots.push({num,prize});
-    }
-
-    return {lucky,spots,total};
-}
-
-let balance=100;
-
-/* ===== 初始化 ===== */
-const data=getData();
-document.getElementById('win').innerText=data.lucky;
-
-const grid=document.getElementById('grid');
-data.spots.forEach(s=>{
-    grid.innerHTML+=`
-    <div class="cell">
-        <div class="num">${s.num}</div>
-        <div class="money">${s.prize?('¥'+s.prize):''}</div>
-    </div>`;
-});
-
-/* ===== 刮层 ===== */
-function setup(id){
-    const c=document.getElementById(id);
-    const ctx=c.getContext('2d');
-
-    c.width=c.offsetWidth;
-    c.height=c.offsetHeight;
-
-    ctx.fillStyle='#bbb';
-    ctx.fillRect(0,0,c.width,c.height);
-
-    for(let i=0;i<800;i++){
-        ctx.fillStyle=Math.random()>0.5?'#eee':'#888';
-        ctx.fillRect(Math.random()*c.width,Math.random()*c.height,1,1);
-    }
-
-    let down=false;
-    let done=false;
-    const sound=document.getElementById('scratchSound');
-
-    function draw(e){
-        if(!down)return;
-
-        sound.currentTime=0;
-        sound.play();
-
-        const r=c.getBoundingClientRect();
-        const x=(e.touches?e.touches[0].clientX:e.clientX)-r.left;
-        const y=(e.touches?e.touches[0].clientY:e.clientY)-r.top;
-
-        ctx.globalCompositeOperation='destination-out';
-        ctx.beginPath();
-        ctx.arc(x,y,18,0,Math.PI*2);
-        ctx.fill();
-
-        if(!done){
-            let img=ctx.getImageData(0,0,c.width,c.height);
-            let clear=0;
-            for(let i=3;i<img.data.length;i+=4){
-                if(img.data[i]==0) clear++;
-            }
-            if(clear>img.data.length/8){
-                done=true;
-                showResult();
-            }
+        function applyStyles() {
+            const wb = document.getElementById('win-box');
+            wb.style.fontSize = currentConfig.winSize + 'px';
+            wb.style.top = currentConfig.winTop + 'px';
+            wb.style.left = currentConfig.winLeft + 'px';
+            
+            const grid = document.getElementById('my-grid');
+            grid.style.top = currentConfig.gridTop + 'px';
+            grid.querySelectorAll('.num-item').forEach(item => {
+                item.style.fontSize = currentConfig.numSize + 'px';
+                item.style.color = currentConfig.numColor;
+            });
         }
-    }
 
-    c.onmousedown=()=>down=true;
-    window.onmouseup=()=>down=false;
-    c.onmousemove=draw;
+        // --- 核心逻辑 ---
+        const tg = window.Telegram.WebApp;
+        tg.ready(); tg.expand();
 
-    c.ontouchstart=e=>{down=true;draw(e);}
-    c.ontouchmove=e=>{e.preventDefault();draw(e);}
-    c.ontouchend=()=>down=false;
-}
+        const HUMOR_QUOTES = [
+            "哎呀，擦肩而过！一定是刚才刮的姿势不够帅。",
+            "没关系，好运气正在排队，下一张可能就是它！",
+            "离暴富只差0.01毫米，再接再厉呀！",
+            "生活不止眼前的苟且，还有下一张彩票的惊喜。"
+        ];
 
-setup('c1');
-setup('c2');
+        function getGameData() {
+            const luckyNum = Math.floor(Math.random() * 89) + 10;
+            const dice = Math.random();
+            let totalWin = 0;
 
-/* ===== 结果 ===== */
-function showResult(){
-    let r=data.total;
+            if (dice < 0.4) totalWin = 0; 
+            else if (dice < 0.9) totalWin = Math.floor(Math.random() * 15) + 5; 
+            else totalWin = Math.floor(Math.random() * 30) + 20;
 
-    let text='';
-    if(r===0){
-        text='差一点点，再来一张 🍀';
-    }else if(r<=5){
-        text=`不错！赢 ¥${r}`;
-    }else if(r<=20){
-        text=`手气不错！¥${r}`;
-    }else{
-        text=`🎉 大奖 ¥${r}`;
-    }
+            const spots = [];
+            let allocated = 0;
+            for (let i = 0; i < 30; i++) {
+                let num = Math.floor(Math.random() * 89) + 10;
+                if (num === luckyNum) num += 1;
+                let isMatch = false;
+                let prize = [5, 10, 20][Math.floor(Math.random()*3)];
 
-    balance+=r;
-    document.getElementById('balance').innerText='余额：¥'+balance;
+                if (allocated < totalWin && Math.random() < 0.1) {
+                    num = luckyNum; isMatch = true;
+                    let p = Math.max(5, totalWin - allocated);
+                    prize = p; allocated += p;
+                }
+                spots.push({ num, prize, isMatch });
+            }
+            return { luckyNum, spots, totalWin };
+        }
 
-    document.getElementById('resultText').innerText=text;
-    document.getElementById('popup').style.display='flex';
-}
+        let gameData = getGameData();
 
-</script>
+        window.onload = () => {
+            const img = new Image();
+            img.src = '64005.jpg';
+            img.onload = () => {
+                document.getElementById('main-card').style.backgroundImage = `url(64005.jpg)`;
+                document.getElementById('win-box').innerText = gameData.luckyNum;
+                const grid = document.getElementById('my-grid');
+                gameData.spots.forEach(s => {
+                    grid.innerHTML += `<div class="num-item">${s.num}<div class="prize-item">¥${s.prize}</div></div>`;
+                });
+                
+                initCanv('canv-win', 55, 45);
+                initCanv('canv-mine', 318, 299);
+                applyStyles();
+                startCountdown();
+            };
+        };
 
+        function startCountdown() {
+            const el = document.getElementById('countdown-num');
+            const nums = ['3', '2', '1'];
+            let i = 0;
+            const run = () => {
+                if (i < nums.length) {
+                    el.innerText = nums[i];
+                    el.className = 'zoom-effect';
+                    setTimeout(() => { el.className = ''; }, 950);
+                    i++; setTimeout(run, 1000);
+                } else {
+                    document.getElementById('loader').style.display = 'none';
+                    document.getElementById('app-wrapper').style.display = 'block';
+                }
+            };
+            run();
+        }
+
+        function showResult() {
+            const modal = document.getElementById('result-modal');
+            const title = document.getElementById('res-title');
+            const desc = document.getElementById('res-desc');
+            const amt = document.getElementById('res-amt');
+
+            if(gameData.totalWin > 0) {
+                title.innerText = "🎉 惊喜掉落!";
+                title.style.color = "#ff4757";
+                desc.innerText = "看来今天财神爷就在你身边！";
+                amt.innerText = "¥" + gameData.totalWin;
+            } else {
+                title.innerText = "☕ 歇一歇吧";
+                title.style.color = "#2f3542";
+                desc.innerText = HUMOR_QUOTES[Math.floor(Math.random()*HUMOR_QUOTES.length)];
+                amt.innerText = "¥0";
+            }
+            modal.classList.add('show');
+        }
+
+        let scratchedPercent = 0;
+        function initCanv(id, w, h) {
+            const c = document.getElementById(id);
+            const ctx = c.getContext('2d');
+            c.width = w; c.height = h;
+            ctx.fillStyle = '#C0C0C0';
+            ctx.fillRect(0, 0, w, h);
+            
+            let drawing = false;
+            let pixelsScratched = 0;
+            const scrub = (e) => {
+                if(!drawing) return;
+                const r = c.getBoundingClientRect();
+                const x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+                const y = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath(); ctx.arc(x, y, 20, 0, Math.PI*2); ctx.fill();
+                
+                pixelsScratched++;
+                if(pixelsScratched > 150 && id === 'canv-mine') showResult();
+            };
+            c.onmousedown = () => drawing = true;
+            window.onmouseup = () => drawing = false;
+            c.onmousemove = scrub;
+            c.ontouchstart = (e) => { e.preventDefault(); drawing = true; scrub(e); };
+            c.ontouchmove = (e) => { e.preventDefault(); scrub(e); };
+            c.ontouchend = () => drawing = false;
+        }
+    </script>
 </body>
 </html>
