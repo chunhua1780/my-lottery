@@ -3,93 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>拾光·至臻调试版</title>
+    <title>拾光·全权调试器</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root { --neon: #00f2fe; }
-        body { background: #000; margin: 0; font-family: "Microsoft YaHei", sans-serif; overflow: hidden; color: white; }
+        body { background: #000; margin: 0; font-family: "sans-serif"; overflow: hidden; color: white; }
 
-        /* --- 1. 时尚流光倒计时 --- */
+        /* --- 1. 炫酷倒计时 --- */
         #loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at center, #1a1a2e 0%, #000 100%);
-            z-index: 100; display: flex; justify-content: center; align-items: center;
+            background: #000; z-index: 1000; display: flex; justify-content: center; align-items: center;
         }
         #countdown-num {
-            font-size: 180px; font-weight: 900;
-            background: linear-gradient(45deg, #00f2fe, #4facfe, #f093fb, #f5576c);
-            background-size: 300%; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 30px rgba(0, 242, 254, 0.6));
-            animation: flow 3s infinite linear; transform: scale(0); opacity: 0;
+            font-size: 150px; font-weight: 900;
+            background: linear-gradient(45deg, #00f2fe, #f5576c);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            transform: scale(0); opacity: 0;
         }
-        @keyframes flow { 0% { background-position: 0%; } 100% { background-position: 100%; } }
-        .zoom-effect { animation: zoomInBlur 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-        @keyframes zoomInBlur {
-            0% { transform: scale(0.3) blur(20px); opacity: 0; }
-            50% { transform: scale(1.1) blur(0); opacity: 1; }
-            100% { transform: scale(3) blur(30px); opacity: 0; }
-        }
+        .zoom-anim { animation: zoom 1s ease-out forwards; }
+        @keyframes zoom { 0%{transform:scale(0.5);opacity:0;} 50%{transform:scale(1.2);opacity:1;} 100%{transform:scale(2.5);opacity:0;} }
 
-        /* --- 2. 实时调试面板 (调整好后告诉我数值) --- */
+        /* --- 2. 超强调试面板 --- */
         #debug-panel {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: 35vh;
-            background: rgba(0,0,0,0.85); border-top: 2px solid var(--neon);
-            z-index: 200; padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
-            overflow-y: auto; font-size: 11px; backdrop-filter: blur(10px);
+            position: fixed; top: 0; right: 0; width: 200px; height: 100%;
+            background: rgba(0,0,0,0.9); border-left: 1px solid var(--neon);
+            z-index: 2000; padding: 10px; font-size: 10px; overflow-y: auto;
+            display: none; /* 默认隐藏，点击按钮开启 */
         }
-        .ctrl-grp { display: flex; flex-direction: column; }
-        input[type=range] { width: 100%; margin: 4px 0; }
+        .ctrl-box { margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        .ctrl-box label { display: block; color: #aaa; margin-bottom: 3px; }
+        input[type=range] { width: 100%; }
+        #toggle-debug { position: fixed; top: 10px; right: 10px; z-index: 2001; background: var(--neon); border:none; padding: 5px; border-radius: 5px; font-size: 10px; }
 
-        /* --- 3. 彩票主容器 --- */
-        #app-wrapper { display: none; opacity: 0; transition: opacity 0.5s ease; }
+        /* --- 3. 彩票容器 --- */
+        #app-wrapper { display: none; }
         .card-container { position: relative; width: 360px; height: 720px; background-size: 100% 100%; margin: 0 auto; }
 
-        /* 初始坐标(待调) */
+        /* 元素定位 - 全部通过JS动态控制 */
         #win-box { position: absolute; z-index: 1; display: flex; justify-content: center; align-items: center; font-weight: 900; }
         #my-grid { position: absolute; z-index: 1; display: grid; grid-template-columns: repeat(6, 1fr); }
         .num-item { display: flex; flex-direction: column; justify-content: center; align-items: center; font-weight: 900; }
-        .prize-item { font-weight: bold; color: #8B0000; }
-        .scratch-layer { position: absolute; z-index: 10; touch-action: none; }
+        .prize-item { font-weight: bold; }
+        .scratch-layer { position: absolute; z-index: 10; touch-action: none; border: 1px dashed rgba(255,255,255,0.2); }
 
-        /* --- 4. 惊喜气球弹窗 --- */
+        /* --- 4. 弹窗 --- */
         #result-modal {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
-            width: 280px; height: 280px; z-index: 300;
-            background: radial-gradient(circle at 30% 30%, #fff 0%, #e0e0e0 100%);
-            border-radius: 50%; display: flex; flex-direction: column;
-            justify-content: center; align-items: center; text-align: center;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.5), inset -10px -10px 30px rgba(0,0,0,0.1);
-            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            padding: 20px; color: #333;
+            width: 260px; height: 260px; z-index: 3000;
+            background: #fff; border-radius: 50%; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center; color: #333;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
         }
         #result-modal.show { transform: translate(-50%, -50%) scale(1); }
-        #res-title { margin: 0; font-size: 26px; }
-        #res-amt { font-size: 48px; margin: 10px 0; background: linear-gradient(45deg, #f5576c, #f093fb); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .btn-retry { background: var(--neon); color: black; border: none; padding: 12px 25px; border-radius: 30px; font-weight: bold; margin-top: 10px; }
     </style>
 </head>
 <body>
 
+    <button id="toggle-debug" onclick="document.getElementById('debug-panel').style.display='block'">⚙️ 调试面板</button>
+    
     <div id="loader"><div id="countdown-num"></div></div>
 
     <div id="debug-panel">
-        <div class="ctrl-grp">
-            <label>中奖号-上下(<span id="v1">266</span>px)</label>
-            <input type="range" min="200" max="400" value="266" oninput="ui('winT',this.value,'v1')">
-            <label>中奖号-左移(<span id="v2">169</span>px)</label>
-            <input type="range" min="100" max="250" value="169" oninput="ui('winL',this.value,'v2')">
-            <label>中奖号-字体(<span id="v3">22</span>px)</label>
-            <input type="range" min="15" max="40" value="22" oninput="ui('winF',this.value,'v3')">
+        <h3 style="color:var(--neon)">拾光·像素调优</h3>
+        
+        <div class="ctrl-box">
+            <label>中奖数字 Y: <span id="val_wt">266</span></label>
+            <input type="range" min="150" max="400" value="266" oninput="upd('wt',this.value,'val_wt')">
+            <label>中奖数字 X: <span id="val_wl">169</span></label>
+            <input type="range" min="50" max="300" value="169" oninput="upd('wl',this.value,'val_wl')">
+            <label>中奖号字号: <span id="val_ws">22</span></label>
+            <input type="range" min="10" max="50" value="22" oninput="upd('ws',this.value,'val_ws')">
+            <label>中奖号颜色</label>
+            <input type="color" value="#000000" oninput="upd('wc',this.value)">
         </div>
-        <div class="ctrl-grp">
-            <label>网格-上下(<span id="v4">326</span>px)</label>
-            <input type="range" min="300" max="500" value="326" oninput="ui('grdT',this.value,'v4')">
-            <label>网格-左移(<span id="v5">25</span>px)</label>
-            <input type="range" min="0" max="100" value="25" oninput="ui('grdL',this.value,'v5')">
-            <label>网格-字体(<span id="v6">14</span>px)</label>
-            <input type="range" min="10" max="25" value="14" oninput="ui('grdF',this.value,'v6')">
+
+        <div class="ctrl-box">
+            <label>中奖涂层 Y: <span id="val_ct">260</span></label>
+            <input type="range" min="150" max="400" value="260" oninput="upd('ct',this.value,'val_ct')">
+            <label>中奖涂层 X: <span id="val_cl">160</span></label>
+            <input type="range" min="50" max="300" value="160" oninput="upd('cl',this.value,'val_cl')">
+            <label>中奖涂层 宽: <span id="val_cw">55</span></label>
+            <input type="range" min="20" max="150" value="55" oninput="upd('cw',this.value,'val_cw')">
         </div>
-        <button onclick="document.getElementById('debug-panel').style.display='none'" style="grid-column: span 2; padding: 5px; background: #555; color: white; border: none; border-radius: 5px;">关闭调节面板</button>
+
+        <div class="ctrl-box">
+            <label>网格区域 Y: <span id="val_gt">326</span></label>
+            <input type="range" min="250" max="550" value="326" oninput="upd('gt',this.value,'val_gt')">
+            <label>网格区域 X: <span id="val_gl">25</span></label>
+            <input type="range" min="0" max="100" value="25" oninput="upd('gl',this.value,'val_gl')">
+            <label>网格字号: <span id="val_gs">14</span></label>
+            <input type="range" min="8" max="25" value="14" oninput="upd('gs',this.value,'val_gs')">
+            <label>网格间距(Row): <span id="val_gr">2</span></label>
+            <input type="range" min="0" max="20" value="2" oninput="upd('gr',this.value,'val_gr')">
+            <label>网格间距(Col): <span id="val_gc">9</span></label>
+            <input type="range" min="0" max="20" value="9" oninput="upd('gc',this.value,'val_gc')">
+        </div>
+
+        <div class="ctrl-box">
+            <label>大涂层 Y: <span id="val_mt">322</span></label>
+            <input type="range" min="250" max="550" value="322" oninput="upd('mt',this.value,'val_mt')">
+            <label>大涂层 宽: <span id="val_mw">318</span></label>
+            <input type="range" min="200" max="360" value="318" oninput="upd('mw',this.value,'val_mw')">
+            <label>大涂层 高: <span id="val_mh">299</span></label>
+            <input type="range" min="100" max="500" value="299" oninput="upd('mh',this.value,'val_mh')">
+        </div>
+
+        <button onclick="exportConfig()" style="width:100%; background:var(--neon); border:none; padding:10px; font-weight:bold;">保存并导出参数</button>
+        <button onclick="document.getElementById('debug-panel').style.display='none'" style="width:100%; margin-top:5px;">关闭</button>
     </div>
 
     <div id="app-wrapper">
@@ -102,157 +123,143 @@
     </div>
 
     <div id="result-modal">
-        <h2 id="res-title">恭喜!</h2>
-        <p id="res-desc">运气爆棚</p>
-        <div id="res-amt">¥0</div>
-        <button class="btn-retry" onclick="location.reload()">再刮一张</button>
+        <h2 id="res-t"></h2>
+        <p id="res-d"></p>
+        <h1 id="res-a" style="color:#f5576c"></h1>
+        <button onclick="location.reload()" style="background:var(--neon);border:none;padding:10px 20px;border-radius:20px;">再刮一张</button>
     </div>
 
     <script>
-        const cfg = { winT:266, winL:169, winF:22, grdT:326, grdL:25, grdF:14 };
+        // 初始参数对象
+        let p = { 
+            wt:266, wl:169, ws:22, wc:'#000000', 
+            ct:260, cl:160, cw:55, ch:45,
+            gt:326, gl:25, gs:14, gr:2, gc:9,
+            mt:322, ml:21, mw:318, mh:299
+        };
 
-        function ui(key, val, vid) {
-            cfg[key] = parseInt(val);
-            document.getElementById(vid).innerText = val;
-            applyStyles();
+        function upd(key, val, vid) {
+            p[key] = isNaN(val) ? val : parseInt(val);
+            if(vid) document.getElementById(vid).innerText = val;
+            apply();
         }
 
-        function applyStyles() {
+        function apply() {
             const wb = document.getElementById('win-box');
-            wb.style.top = cfg.winT + 'px';
-            wb.style.left = cfg.winL + 'px';
-            wb.style.fontSize = cfg.winF + 'px';
-            
-            const gd = document.getElementById('my-grid');
-            gd.style.top = cfg.grdT + 'px';
-            gd.style.left = cfg.grdL + 'px';
-            gd.querySelectorAll('.num-item').forEach(i => i.style.fontSize = cfg.grdF + 'px');
+            wb.style.top = p.wt+'px'; wb.style.left = p.wl+'px'; wb.style.fontSize = p.ws+'px'; wb.style.color = p.wc;
 
-            // 涂层位置也需要同步（微调偏移）
             const cw = document.getElementById('canv-win');
-            cw.style.top = (cfg.winT - 6) + 'px';
-            cw.style.left = (cfg.winL - 9) + 'px';
+            cw.style.top = p.ct+'px'; cw.style.left = p.cl+'px'; cw.width = p.cw; cw.height = p.ch;
+            renderCanvas(cw);
+
+            const gd = document.getElementById('my-grid');
+            gd.style.top = p.gt+'px'; gd.style.left = p.gl+'px';
+            gd.style.rowGap = p.gr+'px'; gd.style.columnGap = p.gc+'px';
+            gd.querySelectorAll('.num-item').forEach(i => i.style.fontSize = p.gs+'px');
 
             const cm = document.getElementById('canv-mine');
-            cm.style.top = (cfg.grdT - 4) + 'px';
-            cm.style.left = (cfg.grdL - 4) + 'px';
+            cm.style.top = p.mt+'px'; cm.style.left = p.ml+'px'; cm.width = p.mw; cm.height = p.mh;
+            renderCanvas(cm);
         }
 
-        // --- 核心逻辑 ---
+        function renderCanvas(canvas) {
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#C0C0C0';
+            ctx.fillRect(0,0,canvas.width, canvas.height);
+            for(let i=0;i<200;i++){
+                ctx.fillStyle = Math.random()>0.5?'#E0E0E0':'#AAA';
+                ctx.fillRect(Math.random()*canvas.width, Math.random()*canvas.height, 1, 1);
+            }
+        }
+
+        function exportConfig() {
+            console.log("当前调整好的参数：", JSON.stringify(p));
+            alert("参数已导出到控制台，请复制反馈给AI！\n" + JSON.stringify(p));
+        }
+
+        // --- 逻辑初始化 ---
         const tg = window.Telegram.WebApp;
         tg.ready(); tg.expand();
 
-        const HUMOR = ["离暴富只差0.01毫米！", "刚才刮的姿势不够帅，再来！", "财神爷在敲门，快去开门！", "好运气正在加载中..."];
-
-        function getGameData() {
-            const luckyNum = Math.floor(Math.random() * 89) + 10;
-            const dice = Math.random();
-            let totalWin = (dice < 0.45) ? 0 : (dice < 0.90 ? Math.floor(Math.random()*11)+5 : Math.floor(Math.random()*30)+20);
-
-            const spots = [];
-            let allocated = 0;
-            for (let i = 0; i < 30; i++) {
-                let num = Math.floor(Math.random() * 89) + 10;
-                if (num === luckyNum) num += 1;
-                let prize = [5, 10, 20][Math.floor(Math.random()*3)];
-                let isMatch = false;
-                if (allocated < totalWin && Math.random() < 0.15) {
-                    num = luckyNum; isMatch = true;
-                    let p = Math.max(5, totalWin - allocated);
-                    prize = p; allocated += p;
-                }
-                spots.push({ num, prize, isMatch });
-            }
-            return { luckyNum, spots, totalWin };
-        }
-
-        const data = getGameData();
-
-        window.onload = () => {
-            const img = new Image();
-            img.src = '64005.jpg';
-            img.onload = () => {
-                document.getElementById('main-card').style.backgroundImage = `url(64005.jpg)`;
-                document.getElementById('win-box').innerText = data.luckyNum;
-                const grid = document.getElementById('my-grid');
-                data.spots.forEach(s => {
-                    grid.innerHTML += `<div class="num-item">${s.num}<div class="prize-item">¥${s.prize}</div></div>`;
-                });
-                
-                initCanv('canv-win', 55, 45);
-                initCanv('canv-mine', 318, 299);
-                applyStyles();
-                startCountdown();
-            };
-        };
-
-        function startCountdown() {
+        function start() {
             const el = document.getElementById('countdown-num');
-            const nums = ['3', '2', '1'];
-            let i = 0;
+            const nums = ['3','2','1'];
+            let i=0;
             const run = () => {
-                if (i < nums.length) {
-                    el.innerText = nums[i];
-                    el.className = 'zoom-effect';
-                    setTimeout(() => el.className = '', 950);
+                if(i<3){
+                    el.innerText = nums[i]; el.className = 'zoom-anim';
+                    setTimeout(()=>{el.className='';}, 950);
                     i++; setTimeout(run, 1000);
                 } else {
-                    document.getElementById('loader').style.display = 'none';
-                    const wrap = document.getElementById('app-wrapper');
-                    wrap.style.display = 'block';
-                    setTimeout(() => wrap.style.opacity = '1', 50);
+                    document.getElementById('loader').style.display='none';
+                    document.getElementById('app-wrapper').style.display='block';
                 }
             };
             run();
         }
 
-        function showPop() {
-            const modal = document.getElementById('result-modal');
-            const amt = document.getElementById('res-amt');
-            const desc = document.getElementById('res-desc');
-            const title = document.getElementById('res-title');
+        window.onload = () => {
+            const img = new Image(); img.src = '64005.jpg';
+            img.onload = () => {
+                document.getElementById('main-card').style.backgroundImage = `url(64005.jpg)`;
+                const data = getLogic();
+                document.getElementById('win-box').innerText = data.ln;
+                const gd = document.getElementById('my-grid');
+                data.sp.forEach(s => {
+                    gd.innerHTML += `<div class="num-item">${s.n}<div class="prize-item">¥${s.p}</div></div>`;
+                });
+                apply(); start();
+                bindScratch('canv-win'); bindScratch('canv-mine', data.tw);
+            };
+        };
 
-            if(data.totalWin > 0) {
-                title.innerText = "🎊 惊喜!";
-                amt.innerText = "¥" + data.totalWin;
-                desc.innerText = "财神爷点名找你！";
-            } else {
-                title.innerText = "☕ 歇一歇";
-                amt.innerText = "¥0";
-                desc.innerText = HUMOR[Math.floor(Math.random()*HUMOR.length)];
+        function getLogic() {
+            const ln = Math.floor(Math.random()*89)+10;
+            const dice = Math.random();
+            let tw = dice<0.45 ? 0 : (dice<0.9 ? Math.floor(Math.random()*11)+5 : Math.floor(Math.random()*30)+20);
+            const sp = []; let acc = 0;
+            for(let i=0; i<30; i++) {
+                let n = Math.floor(Math.random()*89)+10; if(n===ln) n++;
+                let pz = [5,10,20][Math.floor(Math.random()*3)];
+                if(acc < tw && Math.random()<0.1) { n=ln; pz=Math.max(5, tw-acc); acc+=pz; }
+                sp.push({n, p:pz});
             }
-            modal.classList.add('show');
+            return {ln, sp, tw};
         }
 
-        function initCanv(id, w, h) {
+        function bindScratch(id, winAmt) {
             const c = document.getElementById(id);
-            const ctx = c.getContext('2d', {willReadFrequently:true});
-            c.width = w; c.height = h;
-            ctx.fillStyle = '#C0C0C0';
-            ctx.fillRect(0,0,w,h);
-            for(let i=0; i<300; i++) {
-                ctx.fillStyle = Math.random()>0.5?'#EFEFEF':'#999';
-                ctx.fillRect(Math.random()*w, Math.random()*h, 1, 1);
-            }
-
+            const ctx = c.getContext('2d');
             let drawing = false;
             let count = 0;
-            const scrub = (e) => {
+            const move = (e) => {
                 if(!drawing) return;
                 const r = c.getBoundingClientRect();
                 const x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
                 const y = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
                 ctx.globalCompositeOperation = 'destination-out';
-                ctx.beginPath(); ctx.arc(x,y,20,0,Math.PI*2); ctx.fill();
-                count++;
-                if(count > 150 && id === 'canv-mine') showPop();
+                ctx.beginPath(); ctx.arc(x,y,22,0,Math.PI*2); ctx.fill();
+                if(id==='canv-mine' && ++count > 100) showRes(winAmt);
             };
-            c.onmousedown = () => drawing = true;
-            window.onmouseup = () => drawing = false;
-            c.onmousemove = scrub;
-            c.ontouchstart = (e) => { e.preventDefault(); drawing = true; scrub(e); };
-            c.ontouchmove = (e) => { e.preventDefault(); scrub(e); };
-            c.ontouchend = () => drawing = false;
+            c.onmousedown = () => drawing=true;
+            window.onmouseup = () => drawing=false;
+            c.onmousemove = move;
+            c.ontouchstart = (e) => { e.preventDefault(); drawing=true; move(e); };
+            c.ontouchmove = (e) => { e.preventDefault(); move(e); };
+            c.ontouchend = () => drawing=false;
+        }
+
+        function showRes(amt) {
+            if(document.getElementById('result-modal').classList.contains('show')) return;
+            const t = document.getElementById('res-t');
+            const d = document.getElementById('res-d');
+            const a = document.getElementById('res-a');
+            if(amt > 0) {
+                t.innerText = "🎊 恭喜发财！"; d.innerText = "这运气，不去买彩票可惜了..."; a.innerText = "¥"+amt;
+            } else {
+                t.innerText = "☕ 差一点点"; d.innerText = "姿势不对，换个手指再来一张？"; a.innerText = "¥0";
+            }
+            document.getElementById('result-modal').classList.add('show');
         }
     </script>
 </body>
