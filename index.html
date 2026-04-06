@@ -3,102 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=360, user-scalable=no">
-    <title>LUXE SCRATCH - ZEN EDITION</title>
+    <title>GOLDEN LUCK - SUPREME EDITION</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&family=Dancing+Script:wght@700&family=Space+Mono&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&family=Dancing+Script:wght@700&family=Space+Mono:wght@700&display=swap');
 
         :root { 
             --accent: #6366f1;
-            --glass-bg: rgba(255, 255, 255, 0.75);
+            --glass-bg: rgba(255, 255, 255, 0.85);
         }
 
-        body { margin: 0; background: #f8fafc; color: #1e293b; font-family: 'Outfit', sans-serif; overflow: hidden; touch-action: none; }
+        body { margin: 0; background: #ffffff; color: #1e293b; font-family: 'Outfit', sans-serif; overflow: hidden; touch-action: none; }
 
-        /* --- 1. 网格渐变背景 --- */
+        /* --- 1. 高级倒计时：带动态收缩圆环 --- */
         #loader {
             position: fixed; inset: 0; z-index: 100000;
             display: flex; justify-content: center; align-items: center;
             background: #fff;
             background-image: 
-                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
-                radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.12) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.12) 0px, transparent 50%),
-                radial-gradient(at 0% 100%, rgba(59, 130, 246, 0.12) 0px, transparent 50%);
-            transition: opacity 1s ease;
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.1) 0px, transparent 50%);
         }
 
-        .cd-circle {
-            position: relative; width: 140px; height: 140px;
+        .cd-container {
+            position: relative; width: 160px; height: 160px;
             display: flex; justify-content: center; align-items: center;
-            background: rgba(255,255,255,0.6); backdrop-filter: blur(10px);
-            border-radius: 50%; box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+        }
+
+        /* SVG 圆环动画 */
+        .cd-ring {
+            position: absolute; width: 100%; height: 100%;
+            transform: rotate(-90deg);
+        }
+        .cd-ring circle {
+            fill: none; stroke-width: 6; stroke-linecap: round;
+            stroke: url(#ringGradient);
+            stroke-dasharray: 440; /* 周长 */
+            stroke-dashoffset: 0;
+            animation: ringAnim 3s linear forwards;
+        }
+
+        @keyframes ringAnim {
+            from { stroke-dashoffset: 0; }
+            to { stroke-dashoffset: 440; }
         }
 
         .cd-num {
-            font-size: 70px; font-weight: 900;
-            background: linear-gradient(135deg, #4f46e5, #9333ea);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            font-size: 75px; font-weight: 900;
+            color: #1e293b;
+            animation: pulse 1s infinite alternate ease-in-out;
         }
 
-        /* --- 2. 优雅悬浮对话框 (不再遮挡操作) --- */
+        @keyframes pulse { from { transform: scale(0.9); opacity: 0.8; } to { transform: scale(1.1); opacity: 1; } }
+
+        /* --- 2. 悬浮对话框 --- */
         #top-dialog {
             position: fixed; top: 30px; left: 50%; transform: translateX(-50%) translateY(-20px);
             width: 320px; padding: 22px 0;
             background: var(--glass-bg);
-            backdrop-filter: blur(20px) saturate(160%); -webkit-backdrop-filter: blur(20px) saturate(160%);
-            border: 1px solid rgba(255,255,255,0.7);
-            border-radius: 35px; z-index: 100001; /* 极高层级但允许点击穿透下方 */
+            backdrop-filter: blur(25px) saturate(180%); -webkit-backdrop-filter: blur(25px) saturate(180%);
+            border: 1px solid rgba(252, 194, 1, 0.3);
+            border-radius: 35px; z-index: 100001;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            box-shadow: 0 20px 60px -15px rgba(0, 0, 0, 0.15);
-            
-            opacity: 0; filter: blur(15px);
-            transition: all 1.8s cubic-bezier(0.2, 0.8, 0.2, 1);
-            pointer-events: none; /* 关键：即使弹窗出了，也不影响手在下面划 */
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.12);
+            opacity: 0; filter: blur(10px);
+            transition: all 1.8s cubic-bezier(0.19, 1, 0.22, 1);
+            pointer-events: none; 
         }
         
-        #top-dialog.active { 
-            opacity: 1; filter: blur(0px);
-            transform: translateX(-50%) translateY(0);
-        }
+        #top-dialog.active { opacity: 1; filter: blur(0px); transform: translateX(-50%) translateY(0); }
 
-        .d-title { font-size: 24px; font-weight: 900; color: #0f172a; margin: 0; letter-spacing: -0.5px; }
-        .d-msg { font-family: 'Dancing Script'; font-size: 17px; color: #64748b; margin: 6px 0; }
+        .d-title { font-size: 24px; font-weight: 900; color: #0f172a; margin: 0; }
+        .d-msg { font-family: 'Dancing Script'; font-size: 17px; color: #475569; margin: 6px 0; }
         .d-bal-box { 
-            margin-top: 12px; padding: 6px 28px; border-radius: 50px;
-            background: linear-gradient(90deg, #1e293b, #334155); color: #f8fafc;
-            font-family: 'Space Mono', monospace; font-size: 14px; font-weight: 600;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-top: 10px; padding: 6px 30px; border-radius: 50px;
+            background: #1e293b; color: #fff;
+            font-family: 'Space Mono', monospace; font-size: 15px;
         }
 
-        /* --- 3. 舞台 --- */
+        /* --- 3. 舞台与高清数字 --- */
         #stage { 
             position: relative; width: 360px; height: 720px; margin: 0 auto; 
             background: #fff url('64005.jpg') center/100% 100% no-repeat; 
             opacity: 0; transition: opacity 1.5s ease;
         }
         
-        #win-area { position: absolute; left: 151px; top: 263px; width: 72px; height: 66px; display: flex; align-items: center; justify-content: center; color: #0f172a; font-size: 26px; font-weight: 900; }
+        #win-area { position: absolute; left: 151px; top: 263px; width: 72px; height: 66px; display: flex; align-items: center; justify-content: center; color: #000; font-size: 26px; font-weight: 900; }
         #grid-area { position: absolute; left: 27px; top: 335px; width: 310px; height: 284px; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(5, 1fr); gap: 10px; padding: 5px; box-sizing: border-box; }
-        .cell b { font-size: 19px; display: block; font-weight: 900; color: #1e293b; text-align: center; }
-        .cell i { font-family: 'Space Mono'; font-size: 9px; color: #ef4444; font-style: normal; display: block; text-align: center; }
-
-        /* 画布层级 - 保证始终可以互动 */
-        canvas { 
-            position: absolute; z-index: 500; /* 高于彩票，低于弹窗 */
-            touch-action: none; 
-            transition: opacity 2s ease; /* 如果最终要消失，也是极慢的 */
+        
+        /* 改进：数字下方的点数采用黑色、加粗、更清晰 */
+        .cell b { font-size: 19px; display: block; font-weight: 900; color: #000; text-align: center; }
+        .cell i { 
+            font-family: 'Space Mono'; font-size: 10px; 
+            color: #000; /* 改为纯黑色 */
+            font-weight: 700; /* 加粗 */
+            display: block; text-align: center; margin-top: -2px;
         }
+
+        canvas { position: absolute; z-index: 500; touch-action: none; }
     </style>
 </head>
 <body>
 
     <div id="loader">
-        <div class="cd-circle"><div id="cd" class="cd-num">3</div></div>
+        <div class="cd-container">
+            <svg class="cd-ring">
+                <defs>
+                    <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#6366f1" />
+                        <stop offset="100%" stop-color="#a855f7" />
+                    </linearGradient>
+                </defs>
+                <circle cx="80" cy="80" r="70"></circle>
+            </svg>
+            <div id="cd" class="cd-num">3</div>
+        </div>
     </div>
 
     <div id="top-dialog">
         <div class="d-title" id="dt">LUCKY REVEAL</div>
-        <div class="d-msg" id="dm">Every pixel counts...</div>
+        <div class="d-msg" id="dm">Every scratch is a new hope...</div>
         <div class="d-bal-box">
             BALANCE: <span id="db">$100.00</span>
         </div>
@@ -116,10 +139,12 @@
         let sensorPoints = [];
         let hitCount = 0;
 
+        // 1. 倒计时流程
         async function runCD() {
             const el = document.getElementById('cd');
-            for(let s of ['2', '1', 'GO']) {
-                await new Promise(r => setTimeout(r, 900));
+            const sequence = ['2', '1', 'GO'];
+            for(let s of sequence) {
+                await new Promise(r => setTimeout(r, 1000));
                 el.innerText = s;
             }
             document.getElementById('loader').style.opacity = '0';
@@ -190,21 +215,20 @@
             if(winTriggered) return;
             winTriggered = true;
 
-            // 仅仅是延迟后显示弹窗，不再隐藏 Canvas！
             setTimeout(() => {
                 const dialog = document.getElementById('top-dialog');
                 document.getElementById('db').innerText = `$${(balance + winTotal).toFixed(2)}`;
 
                 if(winTotal > 0) {
-                    document.getElementById('dt').innerText = "JACKPOT!";
-                    document.getElementById('dm').innerText = `You found $${winTotal.toFixed(2)}. Clean it all!`;
+                    document.getElementById('dt').innerText = "BIG WIN!";
+                    document.getElementById('dm').innerText = `You discovered $${winTotal.toFixed(2)} in total!`;
                 } else {
                     document.getElementById('dt').innerText = "GOOD LUCK";
-                    document.getElementById('dm').innerText = "Finish scratching for full reveal.";
+                    document.getElementById('dm').innerText = "Almost there! One more try?";
                 }
 
                 dialog.classList.add('active');
-                if(navigator.vibrate) navigator.vibrate([40, 40]);
+                if(navigator.vibrate) navigator.vibrate([60, 60]);
             }, 2500); 
         }
 
