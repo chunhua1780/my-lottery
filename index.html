@@ -3,29 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=360, user-scalable=no">
-    <title>SCRATCH PRO - SENSOR LOGIC</title>
+    <title>SCRATCH PRO - MODERN UI</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&family=Oswald:wght@700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&family=Oswald:wght@700&family=Dancing+Script:wght@700&display=swap');
 
-        :root { --gold: #fcc201; }
+        :root { 
+            --gold: #fcc201; 
+            --glass: rgba(255, 255, 255, 0.1);
+            --neon: #00f2fe;
+        }
         body { margin: 0; background: #000; color: #fff; font-family: 'Montserrat', sans-serif; overflow: hidden; touch-action: none; }
 
-        /* --- 1. 结果弹窗 (Fixed 绝对顶层) --- */
+        /* --- 1. 时尚小型对话框 (Glassmorphism Style) --- */
         #result-popup {
-            position: fixed; top: -300px; left: 0; right: 0; height: 160px;
-            background: rgba(20, 20, 25, 0.98); border-bottom: 4px solid var(--gold);
-            z-index: 10000; transition: top 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.2);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            box-shadow: 0 10px 50px rgba(0,0,0,1); text-align: center;
+            position: fixed; 
+            top: -150px; /* 初始位置 */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px; /* 宽度收窄，不超出彩票头部 */
+            height: 100px; /* 高度适中 */
+            
+            /* 背景美化：磨砂玻璃 + 渐变边框 */
+            background: rgba(15, 15, 25, 0.85);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(252, 194, 1, 0.3);
+            border-radius: 20px;
+            
+            z-index: 10000;
+            transition: all 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 0 10px rgba(255,255,255,0.05);
+            pointer-events: none;
         }
-        #result-popup.active { top: 0; }
-        .res-h1 { color: var(--gold); font-size: 28px; font-weight: 900; margin: 0; }
-        .res-bal { font-family: 'Oswald'; color: #00ff88; font-size: 20px; margin-top: 5px; }
+
+        /* 弹出时的动画状态 */
+        #result-popup.active { 
+            top: 25px; /* 降临到合适高度 */
+            border: 1px solid var(--gold);
+            box-shadow: 0 15px 40px rgba(252, 194, 1, 0.2);
+        }
+
+        .res-title {
+            font-size: 18px;
+            letter-spacing: 2px;
+            background: linear-gradient(to right, #fff, var(--gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 900;
+            margin: 0;
+        }
+
+        .res-sub {
+            font-family: 'Dancing Script';
+            font-size: 14px;
+            color: #ddd;
+            margin: 2px 0;
+        }
+
+        .res-balance-box {
+            margin-top: 8px;
+            padding: 2px 15px;
+            background: rgba(0, 255, 136, 0.1);
+            border-radius: 20px;
+            border: 0.5px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .res-bal-text {
+            font-family: 'Oswald';
+            color: #00ff88;
+            font-size: 14px;
+            letter-spacing: 1px;
+        }
 
         /* --- 2. 游戏舞台 --- */
         #stage {
             position: relative; width: 360px; height: 720px; margin: 0 auto;
-            background: #222 url('64005.jpg') center/100% 100% no-repeat;
+            background: #111 url('64005.jpg') center/100% 100% no-repeat;
             opacity: 0; transition: opacity 1s;
         }
 
@@ -44,55 +101,55 @@
         .cell b { font-size: 18px; color: #09140d; }
         .cell i { font-family: 'Oswald'; font-style: normal; font-size: 10px; color: #d00; }
 
-        /* 画布 */
         canvas { position: absolute; z-index: 20; touch-action: none; }
-
-        /* 隐形感应器容器 - 核心逻辑所在 */
-        .sensor-layer { position: absolute; z-index: 30; pointer-events: none; }
-        .sensor { position: absolute; width: 30px; height: 30px; border-radius: 50%; opacity: 0; }
+        .sensor { position: absolute; width: 30px; height: 30px; opacity: 0; pointer-events: none; }
 
         /* 倒计时 */
         #loader { position: fixed; inset: 0; background: #000; z-index: 20000; display: flex; justify-content: center; align-items: center; }
-        .count { font-size: 120px; color: var(--gold); }
+        .count { font-size: 80px; color: var(--gold); font-weight: 900; }
     </style>
 </head>
 <body>
 
     <div id="result-popup">
-        <div class="res-h1" id="rt">BIG WINNER!</div>
-        <div id="rs" style="color:#fff; margin:5px 0;">Your fortune has been revealed!</div>
-        <div class="res-bal">WALLET: <span id="rb">$100.00</span></div>
+        <div class="res-title" id="rt">LUCKY STATUS</div>
+        <div class="res-sub" id="rs">Checking your fortune...</div>
+        <div class="res-balance-box">
+            <span class="res-bal-text">BALANCE: <span id="rb">$100.00</span></span>
+        </div>
     </div>
 
-    <div id="loader"><div id="cd" class="count">3</div></div>
+    <div id="loader"><div id="cd" class="count">READY</div></div>
 
     <div id="stage">
         <div id="win-val">88</div>
         <div id="grid-val"></div>
-
         <canvas id="cvs_win" style="left:153px; top:258px; width:71px; height:52px;"></canvas>
         <canvas id="cvs_grid" style="left:22px; top:322px; width:317px; height:300px;"></canvas>
-
-        <div id="sensor-container" class="sensor-layer" style="left:22px; top:322px; width:317px; height:300px;"></div>
+        <div id="sensor-container" style="position:absolute; left:22px; top:322px; width:317px; height:300px; z-index:30; pointer-events:none;"></div>
     </div>
 
     <script>
         let balance = 100.00;
         let isEnded = false;
         let totalWin = 0;
-        let sensorCount = 0;
-        const SENSOR_TARGET = 14; // 总共20个感应点，刮到14个(70%)即触发
+        let sensorHit = 0;
+        const TARGET = 14; 
 
-        // 1. 倒计时
+        // 1. 倒计时逻辑
         async function runCD() {
             const cd = document.getElementById('cd');
-            for(let s of ['2','1','GO!']) {
-                await new Promise(r => setTimeout(r, 1000));
+            const steps = ['3', '2', '1', 'GO!'];
+            for(let s of steps) {
                 cd.innerText = s;
+                await new Promise(r => setTimeout(r, 800));
             }
-            document.getElementById('loader').style.display = 'none';
-            document.getElementById('stage').style.opacity = '1';
-            init();
+            document.getElementById('loader').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('stage').style.opacity = '1';
+                init();
+            }, 400);
         }
 
         // 2. 初始化
@@ -109,20 +166,17 @@
 
             setupCanvas("cvs_win");
             setupCanvas("cvs_grid");
-            createSensors(); // 建立感应阵列
+            createSensors();
         }
 
-        // 建立 20 个隐形感应点分布在主刮奖区
         function createSensors() {
             const container = document.getElementById('sensor-container');
-            const rows = 5, cols = 4;
-            for(let i=0; i<rows; i++) {
-                for(let j=0; j<cols; j++) {
+            for(let i=0; i<5; i++) {
+                for(let j=0; j<4; j++) {
                     const s = document.createElement('div');
                     s.className = 'sensor';
                     s.style.left = (j * 25 + 10) + '%';
                     s.style.top = (i * 20 + 10) + '%';
-                    s.dataset.active = "false";
                     container.appendChild(s);
                 }
             }
@@ -133,89 +187,74 @@
             const ctx = c.getContext('2d');
             c.width = c.offsetWidth; c.height = c.offsetHeight;
 
-            ctx.fillStyle = '#c0c0c0';
+            ctx.fillStyle = '#b0b0b0';
             ctx.fillRect(0,0,c.width, c.height);
-            ctx.fillStyle = "rgba(0,0,0,0.15)";
-            ctx.font = "bold 15px Arial";
-            for(let x=2; x<c.width; x+=25) 
+            // 混合符号纹理
+            ctx.fillStyle = "rgba(0,0,0,0.1)";
+            ctx.font = "bold 14px Arial";
+            for(let x=5; x<c.width; x+=25) 
                 for(let y=18; y<c.height; y+=25) ctx.fillText((x+y)%2===0 ? "$":"€", x, y);
 
             let drawing = false;
             const scratch = (e) => {
                 if(!drawing || isEnded) return;
                 const rect = c.getBoundingClientRect();
-                const x = (e.clientX || e.touches[0].clientX) - rect.left;
-                const y = (e.clientY || e.touches[0].clientY) - rect.top;
+                const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
+                const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
 
                 ctx.globalCompositeOperation = 'destination-out';
                 ctx.beginPath(); ctx.arc(x, y, 35, 0, Math.PI*2); ctx.fill();
 
-                // 物理碰撞检测逻辑
                 if(id === "cvs_grid") checkSensors(x, y);
             };
 
             c.addEventListener('mousedown', () => drawing = true);
             window.addEventListener('mouseup', () => drawing = false);
             c.addEventListener('mousemove', scratch);
-            c.addEventListener('touchstart', (e) => { drawing = true; e.preventDefault(); });
-            c.addEventListener('touchmove', (e) => { scratch(e); e.preventDefault(); });
+            c.addEventListener('touchstart', (e) => { drawing = true; e.preventDefault(); }, {passive: false});
+            c.addEventListener('touchmove', (e) => { scratch(e); e.preventDefault(); }, {passive: false});
         }
 
-        // 核心逻辑：检查是否碰到了感应点
         function checkSensors(x, y) {
             const sensors = document.querySelectorAll('.sensor');
-            const containerRect = document.getElementById('sensor-container').getBoundingClientRect();
-            
             sensors.forEach(s => {
-                if(s.dataset.active === "true") return;
-
-                // 计算感应点在 Canvas 上的相对位置
-                const sx = s.offsetLeft + (s.offsetWidth / 2);
-                const sy = s.offsetTop + (s.offsetHeight / 2);
-
-                // 勾股定理计算距离
+                if(s.dataset.hit === "true") return;
+                const sx = s.offsetLeft + 15;
+                const sy = s.offsetTop + 15;
                 const dist = Math.sqrt(Math.pow(x - sx, 2) + Math.pow(y - sy, 2));
 
-                if(dist < 30) { // 30px 为感应半径
-                    s.dataset.active = "true";
-                    sensorCount++;
-                    console.log(`Sensors active: ${sensorCount} / ${SENSOR_TARGET}`);
-                    
-                    // 只要刮过 14 个点 (70%)
-                    if(sensorCount >= SENSOR_TARGET) {
-                        doPopup();
-                    }
+                if(dist < 35) {
+                    s.dataset.hit = "true";
+                    sensorHit++;
+                    if(sensorHit >= TARGET) triggerPopup();
                 }
             });
         }
 
-        function doPopup() {
+        // 3. 触发时尚弹窗
+        function triggerPopup() {
             if(isEnded) return;
             isEnded = true;
 
-            // 1. 强制清理
-            document.querySelectorAll('canvas').forEach(v => v.style.display = 'none');
+            // 渐隐涂层
+            document.querySelectorAll('canvas').forEach(v => v.style.transition='opacity 0.8s', v.style.opacity='0');
 
-            // 2. 弹窗数据
-            const p = document.getElementById('result-popup');
+            const pop = document.getElementById('result-popup');
             const rt = document.getElementById('rt');
+            const rs = document.getElementById('rs');
             const rb = document.getElementById('rb');
 
             if(totalWin > 0) {
-                rt.innerText = "YOU WON!";
-                rt.style.color = "#fcc201";
+                rt.innerText = "CONGRATS!";
+                rs.innerText = `You've found $${totalWin.toFixed(2)}`;
                 balance += totalWin;
             } else {
-                rt.innerText = "NO WIN";
-                rt.style.color = "#aaa";
+                rt.innerText = "GOOD EFFORT";
+                rs.innerText = "Keep chasing the gold!";
             }
+
             rb.innerText = `$${balance.toFixed(2)}`;
-            
-            // 3. 强制滑出
-            p.classList.add('active');
-            
-            // 手机震动提醒
-            if(window.navigator.vibrate) window.navigator.vibrate(200);
+            pop.classList.add('active');
         }
 
         window.onload = runCD;
