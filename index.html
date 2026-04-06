@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>刮刮乐</title>
+<title>刮刮乐Pro</title>
 
 <style>
 body{
@@ -16,31 +16,6 @@ body{
     font-family:Arial;
 }
 
-/* 倒计时 */
-#loader{
-    position:fixed;
-    width:100%;
-    height:100%;
-    background:#000;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    z-index:99;
-}
-#count{
-    font-size:120px;
-    font-weight:900;
-    background:linear-gradient(45deg,#00f2fe,#f5576c,#ffe259);
-    -webkit-background-clip:text;
-    -webkit-text-fill-color:transparent;
-    animation:zoom 1s ease forwards;
-}
-@keyframes zoom{
-    0%{transform:scale(0.3);opacity:0;}
-    50%{transform:scale(1.2);}
-    100%{transform:scale(1);opacity:1;}
-}
-
 /* 卡片 */
 .card{
     position:relative;
@@ -48,24 +23,21 @@ body{
     height:720px;
     background:url('64005.jpg') no-repeat;
     background-size:cover;
-    opacity:0;
-    transition:0.5s;
 }
 
 /* 数据层 */
 .layer{
     position:absolute;
     left:20px;
-    top:150px;
+    top:120px;
     width:320px;
-    height:500px;
 }
 
-/* 中奖号码 */
+/* 中奖号 */
 #win{
     position:absolute;
-    top:110px;
-    left:150px;
+    top:150px;
+    left:155px;
     font-size:22px;
     font-weight:900;
 }
@@ -73,79 +45,123 @@ body{
 /* 网格 */
 .grid{
     position:absolute;
-    top:170px;
-    left:10px;
-    width:300px;
+    top:230px;
+    left:15px;
+    width:310px;
     display:grid;
     grid-template-columns:repeat(6,1fr);
-    gap:8px;
+    gap:6px;
 }
 .cell{
-    height:50px;
+    height:48px;
     display:flex;
     flex-direction:column;
-    align-items:center;
     justify-content:center;
+    align-items:center;
 }
-.num{
-    font-size:16px;
-    font-weight:900;
-}
-.money{
-    font-size:11px;
-    color:#700000;
-}
+.num{font-size:15px;font-weight:900;}
+.money{font-size:11px;color:#700000;}
 
 /* canvas */
 canvas{
     position:absolute;
-    left:0;
-    top:0;
     z-index:10;
 }
-#c1{ top:100px; left:140px; width:80px; height:60px;}
-#c2{ top:160px; left:20px; width:320px; height:320px;}
+#c1{ top:140px; left:150px; width:70px; height:50px;} /* 玩法区 */
+#c2{ top:220px; left:15px; width:310px; height:310px;} /* 刮奖区 */
+
+/* 余额 */
+#balance{
+    position:absolute;
+    top:20px;
+    left:20px;
+    color:#fff;
+    font-size:16px;
+}
+
+/* 结果弹窗 */
+#popup{
+    position:fixed;
+    top:0;left:0;width:100%;height:100%;
+    display:none;
+    justify-content:center;
+    align-items:center;
+    background:rgba(0,0,0,0.6);
+}
+.box{
+    background:linear-gradient(45deg,#ff9a9e,#fad0c4);
+    padding:30px;
+    border-radius:20px;
+    text-align:center;
+    animation:pop 0.5s;
+}
+@keyframes pop{
+    from{transform:scale(0.5);opacity:0;}
+    to{transform:scale(1);opacity:1;}
+}
+button{
+    margin-top:15px;
+    padding:10px 20px;
+    border:none;
+    border-radius:10px;
+    background:#fff;
+    cursor:pointer;
+}
 </style>
 </head>
 
 <body>
 
-<div id="loader"><div id="count">3</div></div>
+<div class="card">
 
-<div class="card" id="card">
-    <div class="layer" id="layer">
-        <div id="win"></div>
-        <div class="grid" id="grid"></div>
-    </div>
-    <canvas id="c1"></canvas>
-    <canvas id="c2"></canvas>
+<div id="balance">余额：¥100</div>
+
+<div class="layer">
+    <div id="win"></div>
+    <div class="grid" id="grid"></div>
 </div>
+
+<canvas id="c1"></canvas>
+<canvas id="c2"></canvas>
+
+</div>
+
+<!-- 结果 -->
+<div id="popup">
+    <div class="box">
+        <h2 id="resultText"></h2>
+        <button onclick="location.reload()">再来一张</button>
+    </div>
+</div>
+
+<!-- 声音 -->
+<audio id="scratchSound" src="https://actions.google.com/sounds/v1/scrapes/scratch.ogg"></audio>
 
 <script>
 
-/* ===== 数据模型（娱乐版） ===== */
+/* ===== 数据模型（真实一点） ===== */
 function getData(){
     let lucky = Math.floor(Math.random()*90)+10;
 
-    let r=Math.random();
     let total=0;
+    let r=Math.random();
 
     if(r<0.5) total=0;
-    else if(r<0.85) total=[5,10][Math.floor(Math.random()*2)];
-    else if(r<0.97) total=[20,50][Math.floor(Math.random()*2)];
+    else if(r<0.8) total=5;
+    else if(r<0.95) total=20;
     else total=100;
 
     let spots=[];
-    let used=false;
+    let hits=0;
 
     for(let i=0;i<30;i++){
         let num=Math.floor(Math.random()*90)+10;
         let prize=0;
 
-        if(!used && total>0 && Math.random()<0.2){
+        if(Math.random()<0.15 && hits<2 && total>0){
             num=lucky;
-            prize=total;
-            used=true;
+            prize=Math.floor(total/2);
+            hits++;
         }
 
         spots.push({num,prize});
@@ -154,10 +170,10 @@ function getData(){
     return {lucky,spots,total};
 }
 
+let balance=100;
+
 /* ===== 初始化 ===== */
 const data=getData();
-window.result=data.total;
-
 document.getElementById('win').innerText=data.lucky;
 
 const grid=document.getElementById('grid');
@@ -169,25 +185,32 @@ data.spots.forEach(s=>{
     </div>`;
 });
 
-/* ===== 刮层（真实效果） ===== */
-function setup(c){
+/* ===== 刮层 ===== */
+function setup(id){
+    const c=document.getElementById(id);
     const ctx=c.getContext('2d');
+
     c.width=c.offsetWidth;
     c.height=c.offsetHeight;
 
-    ctx.fillStyle='#C0C0C0';
+    ctx.fillStyle='#bbb';
     ctx.fillRect(0,0,c.width,c.height);
 
-    for(let i=0;i<500;i++){
-        ctx.fillStyle=Math.random()>0.5?'#eee':'#999';
+    for(let i=0;i<800;i++){
+        ctx.fillStyle=Math.random()>0.5?'#eee':'#888';
         ctx.fillRect(Math.random()*c.width,Math.random()*c.height,1,1);
     }
 
     let down=false;
-    let revealed=false;
+    let done=false;
+    const sound=document.getElementById('scratchSound');
 
     function draw(e){
         if(!down)return;
+
+        sound.currentTime=0;
+        sound.play();
+
         const r=c.getBoundingClientRect();
         const x=(e.touches?e.touches[0].clientX:e.clientX)-r.left;
         const y=(e.touches?e.touches[0].clientY:e.clientY)-r.top;
@@ -197,14 +220,14 @@ function setup(c){
         ctx.arc(x,y,18,0,Math.PI*2);
         ctx.fill();
 
-        if(!revealed){
+        if(!done){
             let img=ctx.getImageData(0,0,c.width,c.height);
             let clear=0;
             for(let i=3;i<img.data.length;i+=4){
                 if(img.data[i]==0) clear++;
             }
-            if(clear>img.data.length/10){
-                revealed=true;
+            if(clear>img.data.length/8){
+                done=true;
                 showResult();
             }
         }
@@ -215,42 +238,34 @@ function setup(c){
     c.onmousemove=draw;
 
     c.ontouchstart=e=>{down=true;draw(e);}
-    c.ontouchend=()=>down=false;
     c.ontouchmove=e=>{e.preventDefault();draw(e);}
+    c.ontouchend=()=>down=false;
 }
 
-/* ===== 结果提示 ===== */
+setup('c1');
+setup('c2');
+
+/* ===== 结果 ===== */
 function showResult(){
-    let r=window.result;
-    let msg='';
+    let r=data.total;
 
-    if(r===0) msg='差一点点，再试试 🍀';
-    else if(r<=10) msg=`不错！赢了 ¥${r}`;
-    else if(r<=50) msg=`手气不错！¥${r}`;
-    else msg=`🎉 大奖 ¥${r}！`;
-
-    setTimeout(()=>alert(msg),300);
-}
-
-/* ===== 倒计时 ===== */
-let n=3;
-const el=document.getElementById('count');
-
-let timer=setInterval(()=>{
-    n--;
-    if(n>0){
-        el.innerText=n;
-        el.style.animation='none';
-        setTimeout(()=>el.style.animation='zoom 1s',10);
+    let text='';
+    if(r===0){
+        text='差一点点，再来一张 🍀';
+    }else if(r<=5){
+        text=`不错！赢 ¥${r}`;
+    }else if(r<=20){
+        text=`手气不错！¥${r}`;
     }else{
-        clearInterval(timer);
-        document.getElementById('loader').style.display='none';
-        document.getElementById('card').style.opacity=1;
-
-        setup(document.getElementById('c1'));
-        setup(document.getElementById('c2'));
+        text=`🎉 大奖 ¥${r}`;
     }
-},1000);
+
+    balance+=r;
+    document.getElementById('balance').innerText='余额：¥'+balance;
+
+    document.getElementById('resultText').innerText=text;
+    document.getElementById('popup').style.display='flex';
+}
 
 </script>
 
