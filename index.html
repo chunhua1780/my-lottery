@@ -2,64 +2,58 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=360, user-scalable=no">
-    <title>GOLDEN LUCK - THE FINAL MASTERPIECE</title>
+    <meta name="viewport" content="width=360, user-scalable=no, viewport-fit=cover">
+    <title>GOLDEN LUCK - SUPREME FIX</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-        <style>
+    <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&family=Dancing+Script:wght@700&family=Space+Mono:wght@700&display=swap');
 
         :root { 
             --accent: #6366f1;
-            --glass-bg: rgba(255, 255, 255, 0.88);
+            --glass-bg: rgba(255, 255, 255, 0.92);
         }
 
         body { margin: 0; background: #fff; color: #1e293b; font-family: 'Outfit', sans-serif; overflow: hidden; touch-action: none; }
 
-        /* --- 1. 倒计时：每秒转一圈的动态环 --- */
+        /* --- 倒计时 --- */
         #loader {
             position: fixed; inset: 0; z-index: 100000;
             display: flex; justify-content: center; align-items: center;
-            background: #fff;
+            background: #fff; transition: opacity 0.6s ease;
         }
         .cd-container { position: relative; width: 150px; height: 150px; display: flex; justify-content: center; align-items: center; }
-        
         .cd-ring { position: absolute; width: 100%; height: 100%; transform: rotate(-90deg); }
         .cd-ring circle {
             fill: none; stroke-width: 6; stroke-linecap: round;
             stroke: url(#ringGradient);
-            stroke-dasharray: 440;
-            stroke-dashoffset: 0;
+            stroke-dasharray: 440; stroke-dashoffset: 0;
         }
-        /* 每一秒转一圈的动画类 */
         .ring-active { animation: ringTick 1s linear infinite; }
         @keyframes ringTick { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 440; } }
-
         .cd-num { font-size: 70px; font-weight: 900; color: #1e293b; }
 
-        /* --- 2. 悬浮对话框 --- */
+        /* --- 悬浮对话框 --- */
         #top-dialog {
             position: fixed; top: 30px; left: 50%; transform: translateX(-50%) translateY(-20px);
-            width: 320px; padding: 22px 0;
+            width: 320px; padding: 25px 0;
             background: var(--glass-bg); backdrop-filter: blur(25px) saturate(180%);
-            border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 35px; z-index: 100001;
+            border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 35px; z-index: 100001;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.2);
             opacity: 0; filter: blur(10px);
-            transition: all 1.5s cubic-bezier(0.19, 1, 0.22, 1);
+            transition: all 1.2s cubic-bezier(0.19, 1, 0.22, 1);
             pointer-events: none; 
         }
-        #top-dialog.active { opacity: 1; filter: blur(0px); transform: translateX(-50%) translateY(0); }
-        .d-title { font-size: 24px; font-weight: 900; color: #000; margin: 0; }
-        .d-msg { font-family: 'Dancing Script'; font-size: 17px; color: #475569; margin: 6px 0; }
-        .d-bal-box { margin-top: 10px; padding: 6px 30px; border-radius: 50px; background: #000; color: #fff; font-family: 'Space Mono', monospace; font-size: 14px; }
+        #top-dialog.active { opacity: 1; filter: blur(0px); transform: translateX(-50%) translateY(0); pointer-events: auto; }
+        .d-title { font-size: 26px; font-weight: 900; color: #000; margin: 0; }
+        .d-msg { font-family: 'Dancing Script'; font-size: 18px; color: #475569; margin: 8px 0; text-align: center; padding: 0 20px; }
+        .d-bal-box { margin-top: 12px; padding: 8px 35px; border-radius: 50px; background: #000; color: #fff; font-family: 'Space Mono', monospace; font-size: 15px; }
 
-        /* --- 3. 舞台与金额设计 --- */
+        /* --- 游戏区域 --- */
         #stage { position: relative; width: 360px; height: 720px; margin: 0 auto; background: #fff url('64005.jpg') center/100% 100% no-repeat; opacity: 0; transition: opacity 1s; }
         #win-area { position: absolute; left: 151px; top: 263px; width: 72px; height: 66px; display: flex; align-items: center; justify-content: center; color: #000; font-size: 26px; font-weight: 900; }
         #grid-area { position: absolute; left: 27px; top: 335px; width: 310px; height: 284px; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(5, 1fr); gap: 10px; padding: 5px; box-sizing: border-box; }
-        
         .cell b { font-size: 19px; display: block; font-weight: 900; color: #000; text-align: center; }
-        /* 金额夹心样式：$ 10.00 € */
         .cell i { font-family: 'Space Mono'; font-size: 9px; color: #000; font-weight: 700; display: block; text-align: center; margin-top: -2px; }
 
         canvas { position: absolute; z-index: 500; touch-action: none; }
@@ -69,7 +63,8 @@
 
     <div id="loader">
         <div class="cd-container">
-            <svg class="cd-ring"><defs><linearGradient id="ringGradient"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#a855f7"/></linearGradient></defs>
+            <svg class="cd-ring">
+                <defs><linearGradient id="ringGradient"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#a855f7"/></linearGradient></defs>
                 <circle id="rc" cx="75" cy="75" r="70" class="ring-active"></circle>
             </svg>
             <div id="cd" class="cd-num">3</div>
@@ -78,8 +73,9 @@
 
     <div id="top-dialog">
         <div class="d-title" id="dt">LUCKY REVEAL</div>
-        <div class="d-msg" id="dm">The fortune has been unveiled...</div>
+        <div class="d-msg" id="dm">Every scratch brings fortune...</div>
         <div class="d-bal-box">BALANCE: <span id="db">$100.00</span></div>
+        <button onclick="location.reload()" style="margin-top:15px; border:none; background:none; color:#6366f1; font-weight:900; cursor:pointer;">TRY AGAIN</button>
     </div>
 
     <div id="stage">
@@ -90,22 +86,21 @@
     </div>
 
     <script>
+        // 1. 初始化 Telegram 对象 (放在最前面)
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.setHeaderColor('#ffffff');
+
         let balance = 100.00, winTriggered = false, winTotal = 0;
         let sensorPoints = [];
         let hitCount = 0;
-        let mainScrached = false; // 是否已经刮开了中奖号码区域
-          // 1. 初始化 Telegram WebApp 对象
-          const tg = window.Telegram.WebApp;
+        let mainScratched = false;
 
-         // 2. 告诉 Telegram：我要全屏显示，不要露出背后的聊天窗口
-          tg.expand();
-
-          // 3. (可选) 告诉 Telegram：把顶部的状态栏颜色调成白色，匹配你的浅色系
-          tg.setHeaderColor('#ffffff');
-        // 1. 倒计时流程
+        // 2. 倒计时流程
         async function runCD() {
             const el = document.getElementById('cd');
-            for(let s of ['2', '1', 'GO']) {
+            const seq = ['2', '1', 'GO'];
+            for(let s of seq) {
                 await new Promise(r => setTimeout(r, 1000));
                 el.innerText = s;
             }
@@ -117,36 +112,43 @@
             }, 600);
         }
 
+        // 3. 初始化游戏数据
         function initGame() {
             const g = document.getElementById('grid-area');
             let h = "";
+            winTotal = 0; // 重置
             for(let i=0; i<30; i++) {
-                const n = Math.random() > 0.88 ? "88" : Math.floor(Math.random()*89+10);
+                const isWin = Math.random() > 0.85;
+                const n = isWin ? "88" : Math.floor(Math.random()*89+10);
                 const p = (Math.random()*50+10).toFixed(2);
-                if(n === "88") winTotal += parseFloat(p);
-                // 修改：前后美元欧元夹心
+                if(isWin) winTotal += parseFloat(p);
                 h += `<div class="cell"><b>${n}</b><i>$${p}€</i></div>`;
             }
             g.innerHTML = h;
 
+            // 传感器坐标
+            sensorPoints = [];
             for(let i=0; i<5; i++) 
-                for(let j=0; j<4; j++) sensorPoints.push({ x: 40 + j * 75, y: 40 + i * 55, hit: false });
+                for(let j=0; j<6; j++) sensorPoints.push({ x: 25 + j * 50, y: 30 + i * 55, hit: false });
 
             setupCanvas("c_win");
             setupCanvas("c_grid");
         }
 
+        // 4. 画布逻辑
         function setupCanvas(id) {
             const cvs = document.getElementById(id);
             const ctx = cvs.getContext('2d');
             cvs.width = cvs.offsetWidth; cvs.height = cvs.offsetHeight;
 
-            ctx.fillStyle = '#e2e8f0';
+            ctx.fillStyle = '#cbd5e1'; // 经典的刮刮乐灰色
             ctx.fillRect(0,0,cvs.width, cvs.height);
-            ctx.fillStyle = "rgba(100,116,139,0.15)";
-            ctx.font = "bold 16px Arial";
-            for(let x=5; x<cvs.width; x+=28) 
-                for(let y=18; y<cvs.height; y+=28) ctx.fillText((x+y)%2===0 ? "€":"$", x, y);
+            
+            // 装饰底纹
+            ctx.fillStyle = "rgba(0,0,0,0.05)";
+            ctx.font = "bold 14px Arial";
+            for(let x=5; x<cvs.width; x+=30) 
+                for(let y=15; y<cvs.height; y+=30) ctx.fillText("$", x, y);
 
             const scratch = (e) => {
                 const r = cvs.getBoundingClientRect();
@@ -154,71 +156,60 @@
                 const y = (e.clientY || (e.touches && e.touches[0].clientY)) - r.top;
 
                 ctx.globalCompositeOperation = 'destination-out';
-                ctx.beginPath(); ctx.arc(x, y, 32, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(x, y, 25, 0, Math.PI*2); ctx.fill();
 
-                // 逻辑控制：如果刮的是中奖区域
                 if(id === "c_win") {
-                    // 只要在中心点附近刮一下就判定主号码已露面
-                    if(Math.abs(x - cvs.width/2) < 20) mainScrached = true;
+                    // 如果刮开了顶部中间区域，激活主开关
+                    if(Math.abs(x - cvs.width/2) < 25) mainScratched = true;
                 }
 
-                if(id === "c_grid" && !winTriggered) {
+                if(id === "c_grid" && !winTriggered && mainScratched) {
                     sensorPoints.forEach(p => {
                         if(!p.hit) {
                             const d = Math.sqrt((x - p.x)**2 + (y - p.y)**2);
-                            if(d < 32) { 
+                            if(d < 25) { 
                                 p.hit = true; hitCount++; 
-                                // 满足 70% 且 必须先刮开了主号码
-                                if(hitCount >= 14 && mainScrached) showPopup(); 
+                                if(hitCount >= 12) showPopup(); // 刮开约 40% 触发
                             }
                         }
                     });
                 }
             };
 
-            let paint = false;
-            cvs.addEventListener('mousedown', () => paint = true);
-            window.addEventListener('mouseup', () => paint = false);
-            cvs.addEventListener('mousemove', (e) => { if(paint) scratch(e); });
-            cvs.addEventListener('touchstart', (e) => { paint = true; scratch(e); e.preventDefault(); }, {passive: false});
+            cvs.addEventListener('mousemove', (e) => { if(e.buttons === 1) scratch(e); });
+            cvs.addEventListener('touchstart', (e) => { scratch(e); e.preventDefault(); }, {passive: false});
             cvs.addEventListener('touchmove', (e) => { scratch(e); e.preventDefault(); }, {passive: false});
         }
 
+        // 5. 核心弹窗逻辑 (已修复冲突)
         function showPopup() {
             if(winTriggered) return;
             winTriggered = true;
 
             setTimeout(() => {
                 const dialog = document.getElementById('top-dialog');
-                document.getElementById('db').innerText = `$${(balance + winTotal).toFixed(2)}`;
+                const balanceEl = document.getElementById('db');
+                
+                // 更新余额显示
+                balanceEl.innerText = `$${(balance + winTotal).toFixed(2)}`;
+                
                 if(winTotal > 0) {
                     document.getElementById('dt').innerText = "CONGRATS!";
-                    document.getElementById('dm').innerText = `You've uncovered $${winTotal.toFixed(2)}€ rewards.`;
+                    document.getElementById('dm').innerText = `You've discovered $${winTotal.toFixed(2)}€ in prizes!`;
+                    // Telegram 成功震动
+                    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
                 } else {
-                    document.getElementById('dt').innerText = "TRY AGAIN";
-                    document.getElementById('dm').innerText = "Fortune favors the persistent!";
+                    document.getElementById('dt').innerText = "KEEP GOING";
+                    document.getElementById('dm').innerText = "Better luck next time!";
+                    // Telegram 警告震动
+                    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
                 }
+
                 dialog.classList.add('active');
-                function showPopup() {
-    if(winTriggered) return;
-    winTriggered = true;
-
-    setTimeout(() => {
-        // ... 原有的弹窗代码 ...
-        
-        // 4. 加入 Telegram 原生震动反馈 (成功震动)
-        if (tg.HapticFeedback) {
-            tg.HapticFeedback.notificationOccurred('success');
+            }, 1000); // 缩短等待时间，反馈更快
         }
 
-        dialog.classList.add('active');
-    }, 2500); 
-}
-                
-                if(navigator.vibrate) navigator.vibrate([50, 50]);
-            }, 2500); 
-        }
-
+        // 启动
         window.onload = runCD;
     </script>
 </body>
