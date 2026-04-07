@@ -23,7 +23,7 @@
         @keyframes ringTick { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 440; } }
         .cd-num { font-size: 70px; font-weight: 900; }
 
-        /* --- 弹窗：更平滑的过渡 --- */
+        /* --- 弹窗：平滑过渡 --- */
         #top-dialog {
             position: fixed; top: 40px; left: 50%; transform: translateX(-50%) scale(0.9);
             width: 300px; padding: 30px 0; background: rgba(255,255,255,0.95);
@@ -36,7 +36,15 @@
         #top-dialog.active { opacity: 1; visibility: visible; transform: translateX(-50%) scale(1); }
 
         /* --- 游戏舞台 --- */
-        #stage { position: relative; width: 360px; height: 720px; margin: 0 auto; background: #fff url('64005.jpg') center/100% 100% no-repeat; opacity: 0; transition: opacity 1s; }
+        #stage { 
+            position: relative; 
+            width: 360px; 
+            height: 720px; 
+            margin: 0 auto; 
+            background: #fff url('64005.jpg') center/100% 100% no-repeat; 
+            opacity: 0; 
+            transition: opacity 1s; 
+        }
         #win-area { position: absolute; left: 151px; top: 263px; width: 72px; height: 66px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 900; }
         #grid-area { position: absolute; left: 27px; top: 335px; width: 310px; height: 284px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; padding: 5px; box-sizing: border-box; }
         .cell b { font-size: 20px; display: block; font-weight: 900; text-align: center; }
@@ -91,7 +99,7 @@
                 const n = isWin ? "88" : Math.floor(Math.random()*89+10);
                 const p = (Math.random()*50+10).toFixed(2);
                 if(isWin) winTotal += parseFloat(p);
-                h += `<div class="cell"><b>${n}</b><i>$${p}€</i></div>`;
+                h += `<div class="cell"><b>${n}</b><i>$${p}</i></div>`;
             }
             g.innerHTML = h;
             renderCanvas("c_win");
@@ -107,41 +115,48 @@
             ctx.fillStyle = '#cfd8dc';
             ctx.fillRect(0, 0, cvs.width, cvs.height);
 
-            // 2. 绘制随机时尚符号 (不规则排列)
-            const symbols = ['$', '€'];
-            ctx.save();
-            for(let i=0; i<40; i++) {
-                const s = symbols[Math.floor(Math.random()*symbols.length)];
-                const fontSize = Math.floor(Math.random()*10 + 12);
-                ctx.font = `bold ${fontSize}px Arial`;
-                ctx.fillStyle = "rgba(0,0,0,0.08)";
-                
-                const x = Math.random() * cvs.width;
-                const y = Math.random() * cvs.height;
-                const angle = (Math.random() - 0.5) * 0.8; // 随机倾斜角度
+            // 2. 绘制 Monogram 交错纹理 (类似奢侈品排列)
+            const stepX = 42; // 水平间距
+            const stepY = 38; // 垂直间距
+            ctx.font = `bold 14px Arial`;
+            ctx.fillStyle = "rgba(0,0,0,0.12)";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
 
-                ctx.translate(x, y);
-                ctx.rotate(angle);
-                ctx.fillText(s, 0, 0);
-                ctx.rotate(-angle);
-                ctx.translate(-x, -y);
+            for (let y = 0; y < cvs.height + stepY; y += stepY) {
+                for (let x = 0; x < cvs.width + stepX; x += stepX) {
+                    ctx.save();
+                    
+                    const row = Math.floor(y / stepY);
+                    const col = Math.floor(x / stepX);
+                    
+                    // 奇数行水平偏移半个间距，形成交错斜线感
+                    let offsetX = (row % 2 === 0) ? 0 : stepX / 2;
+                    
+                    ctx.translate(x + offsetX, y);
+                    
+                    // 美元和欧元符号交替分布
+                    const symbol = ((row + col) % 2 === 0) ? '$' : '€';
+                    
+                    // 增加 15 度轻微倾斜，更显优雅
+                    ctx.rotate(-0.25); 
+                    ctx.fillText(symbol, 0, 0);
+                    
+                    ctx.restore();
+                }
             }
-            ctx.restore();
 
-            // 3. 刮除逻辑优化 (清爽笔触)
+            // 3. 刮除逻辑
             const scratch = (x, y) => {
                 ctx.globalCompositeOperation = 'destination-out';
                 ctx.lineJoin = 'round';
                 ctx.lineCap = 'round';
-                ctx.lineWidth = 35; // 增加宽度，刮得更爽
                 
                 ctx.beginPath();
-                // 使用这种方式可以消除锯齿和残影
-                ctx.arc(x, y, 20, 0, Math.PI * 2, false);
+                ctx.arc(x, y, 22, 0, Math.PI * 2, false);
                 ctx.fill();
 
                 if(id === "c_win") mainScratched = true;
-                // 检查中奖判定：必须刮开顶部 且 底部有动作
                 if(id === "c_grid" && mainScratched && !winTriggered) {
                     triggerWin();
                 }
@@ -149,9 +164,11 @@
 
             const getPos = (e) => {
                 const r = cvs.getBoundingClientRect();
+                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
                 return {
-                    x: (e.clientX || e.touches[0].clientX) - r.left,
-                    y: (e.clientY || e.touches[0].clientY) - r.top
+                    x: clientX - r.left,
+                    y: clientY - r.top
                 };
             };
 
@@ -164,15 +181,14 @@
             if(winTriggered) return;
             winTriggered = true;
 
-            // 优化：延迟 3000ms (3秒) 出现，给用户留足看奖的时间
             setTimeout(() => {
                 const dialog = document.getElementById('top-dialog');
                 document.getElementById('db').innerText = `$${(100 + winTotal).toFixed(2)}`;
-                document.getElementById('dm').innerText = winTotal > 0 ? `Wow! You found $${winTotal.toFixed(2)}€` : "Better luck next time!";
+                document.getElementById('dm').innerText = winTotal > 0 ? `Amazing! You won $${winTotal.toFixed(2)}` : "Better luck next time!";
                 
                 dialog.classList.add('active');
                 if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-            }, 3000); 
+            }, 2500); 
         }
 
         window.onload = start;
