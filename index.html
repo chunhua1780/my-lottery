@@ -1,81 +1,62 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=360, user-scalable=no, viewport-fit=cover">
-    <title>GOLDEN LUCK - SUPREME FIX</title>
+    <title>拾光 - 时尚刮刮乐</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&family=Dancing+Script:wght@700&family=Space+Mono:wght@700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&family=Space+Mono:wght@700&display=swap');
 
-        :root { 
-            --accent: #6366f1;
-            --glass-bg: rgba(255, 255, 255, 0.92);
-        }
+        body { margin: 0; background: #fff; font-family: 'Outfit', sans-serif; overflow: hidden; touch-action: none; }
 
-        body { margin: 0; background: #fff; color: #1e293b; font-family: 'Outfit', sans-serif; overflow: hidden; touch-action: none; }
-
-        /* --- 倒计时 --- */
+        /* --- 计时器 --- */
         #loader {
-            position: fixed; inset: 0; z-index: 100000;
-            display: flex; justify-content: center; align-items: center;
-            background: #fff; transition: opacity 0.6s ease;
+            position: fixed; inset: 0; z-index: 1000;
+            display: flex; justify-content: center; align-items: center; background: #fff;
         }
-        .cd-container { position: relative; width: 150px; height: 150px; display: flex; justify-content: center; align-items: center; }
-        .cd-ring { position: absolute; width: 100%; height: 100%; transform: rotate(-90deg); }
+        .cd-ring { position: absolute; width: 150px; height: 150px; transform: rotate(-90deg); }
         .cd-ring circle {
-            fill: none; stroke-width: 6; stroke-linecap: round;
-            stroke: url(#ringGradient);
-            stroke-dasharray: 440; stroke-dashoffset: 0;
+            fill: none; stroke-width: 6; stroke: #6366f1;
+            stroke-dasharray: 440; animation: ringTick 1s linear infinite;
         }
-        .ring-active { animation: ringTick 1s linear infinite; }
         @keyframes ringTick { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 440; } }
-        .cd-num { font-size: 70px; font-weight: 900; color: #1e293b; }
+        .cd-num { font-size: 70px; font-weight: 900; }
 
-        /* --- 悬浮对话框 --- */
+        /* --- 弹窗：更平滑的过渡 --- */
         #top-dialog {
-            position: fixed; top: 30px; left: 50%; transform: translateX(-50%) translateY(-20px);
-            width: 320px; padding: 25px 0;
-            background: var(--glass-bg); backdrop-filter: blur(25px) saturate(180%);
-            border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 35px; z-index: 100001;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.2);
-            opacity: 0; filter: blur(10px);
-            transition: all 1.2s cubic-bezier(0.19, 1, 0.22, 1);
-            pointer-events: none; 
+            position: fixed; top: 40px; left: 50%; transform: translateX(-50%) scale(0.9);
+            width: 300px; padding: 30px 0; background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(20px); border-radius: 40px; z-index: 2000;
+            display: flex; flex-direction: column; align-items: center;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.15);
+            opacity: 0; visibility: hidden;
+            transition: all 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        #top-dialog.active { opacity: 1; filter: blur(0px); transform: translateX(-50%) translateY(0); pointer-events: auto; }
-        .d-title { font-size: 26px; font-weight: 900; color: #000; margin: 0; }
-        .d-msg { font-family: 'Dancing Script'; font-size: 18px; color: #475569; margin: 8px 0; text-align: center; padding: 0 20px; }
-        .d-bal-box { margin-top: 12px; padding: 8px 35px; border-radius: 50px; background: #000; color: #fff; font-family: 'Space Mono', monospace; font-size: 15px; }
+        #top-dialog.active { opacity: 1; visibility: visible; transform: translateX(-50%) scale(1); }
 
-        /* --- 游戏区域 --- */
+        /* --- 游戏舞台 --- */
         #stage { position: relative; width: 360px; height: 720px; margin: 0 auto; background: #fff url('64005.jpg') center/100% 100% no-repeat; opacity: 0; transition: opacity 1s; }
-        #win-area { position: absolute; left: 151px; top: 263px; width: 72px; height: 66px; display: flex; align-items: center; justify-content: center; color: #000; font-size: 26px; font-weight: 900; }
-        #grid-area { position: absolute; left: 27px; top: 335px; width: 310px; height: 284px; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(5, 1fr); gap: 10px; padding: 5px; box-sizing: border-box; }
-        .cell b { font-size: 19px; display: block; font-weight: 900; color: #000; text-align: center; }
-        .cell i { font-family: 'Space Mono'; font-size: 9px; color: #000; font-weight: 700; display: block; text-align: center; margin-top: -2px; }
+        #win-area { position: absolute; left: 151px; top: 263px; width: 72px; height: 66px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 900; }
+        #grid-area { position: absolute; left: 27px; top: 335px; width: 310px; height: 284px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; padding: 5px; box-sizing: border-box; }
+        .cell b { font-size: 20px; display: block; font-weight: 900; text-align: center; }
+        .cell i { font-family: 'Space Mono'; font-size: 10px; font-weight: 700; display: block; text-align: center; }
 
-        canvas { position: absolute; z-index: 500; touch-action: none; }
+        canvas { position: absolute; z-index: 500; cursor: crosshair; }
     </style>
 </head>
 <body>
 
     <div id="loader">
-        <div class="cd-container">
-            <svg class="cd-ring">
-                <defs><linearGradient id="ringGradient"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#a855f7"/></linearGradient></defs>
-                <circle id="rc" cx="75" cy="75" r="70" class="ring-active"></circle>
-            </svg>
-            <div id="cd" class="cd-num">3</div>
-        </div>
+        <svg class="cd-ring"><circle cx="75" cy="75" r="70"></circle></svg>
+        <div id="cd" class="cd-num">3</div>
     </div>
 
     <div id="top-dialog">
-        <div class="d-title" id="dt">LUCKY REVEAL</div>
-        <div class="d-msg" id="dm">Every scratch brings fortune...</div>
-        <div class="d-bal-box">BALANCE: <span id="db">$100.00</span></div>
-        <button onclick="location.reload()" style="margin-top:15px; border:none; background:none; color:#6366f1; font-weight:900; cursor:pointer;">TRY AGAIN</button>
+        <div style="font-size: 28px; font-weight: 900;">🎊 CONGRATS</div>
+        <div id="dm" style="margin: 10px 0; color: #64748b;">Finding Magic...</div>
+        <div style="padding: 10px 40px; background: #000; color: #fff; border-radius: 50px; font-family: 'Space Mono';" id="db">$0.00</div>
+        <button onclick="location.reload()" style="margin-top: 20px; background: none; border: 1px solid #ddd; padding: 8px 20px; border-radius: 20px; cursor: pointer;">REPLAY</button>
     </div>
 
     <div id="stage">
@@ -86,37 +67,25 @@
     </div>
 
     <script>
-        // 1. 初始化 Telegram 对象 (放在最前面)
         const tg = window.Telegram.WebApp;
         tg.expand();
-        tg.setHeaderColor('#ffffff');
 
-        let balance = 100.00, winTriggered = false, winTotal = 0;
-        let sensorPoints = [];
-        let hitCount = 0;
-        let mainScratched = false;
+        let winTriggered = false, winTotal = 0, mainScratched = false;
 
-        // 2. 倒计时流程
-        async function runCD() {
+        async function start() {
             const el = document.getElementById('cd');
-            const seq = ['2', '1', 'GO'];
-            for(let s of seq) {
+            for(let s of ['2', '1', 'GO']) {
                 await new Promise(r => setTimeout(r, 1000));
                 el.innerText = s;
             }
-            document.getElementById('loader').style.opacity = '0';
-            setTimeout(() => {
-                document.getElementById('loader').style.display = 'none';
-                document.getElementById('stage').style.opacity = '1';
-                initGame();
-            }, 600);
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('stage').style.opacity = '1';
+            init();
         }
 
-        // 3. 初始化游戏数据
-        function initGame() {
+        function init() {
             const g = document.getElementById('grid-area');
             let h = "";
-            winTotal = 0; // 重置
             for(let i=0; i<30; i++) {
                 const isWin = Math.random() > 0.85;
                 const n = isWin ? "88" : Math.floor(Math.random()*89+10);
@@ -125,92 +94,88 @@
                 h += `<div class="cell"><b>${n}</b><i>$${p}€</i></div>`;
             }
             g.innerHTML = h;
-
-            // 传感器坐标
-            sensorPoints = [];
-            for(let i=0; i<5; i++) 
-                for(let j=0; j<6; j++) sensorPoints.push({ x: 25 + j * 50, y: 30 + i * 55, hit: false });
-
-            setupCanvas("c_win");
-            setupCanvas("c_grid");
+            renderCanvas("c_win");
+            renderCanvas("c_grid");
         }
 
-        // 4. 画布逻辑
-        function setupCanvas(id) {
+        function renderCanvas(id) {
             const cvs = document.getElementById(id);
             const ctx = cvs.getContext('2d');
             cvs.width = cvs.offsetWidth; cvs.height = cvs.offsetHeight;
 
-            ctx.fillStyle = '#cbd5e1'; // 经典的刮刮乐灰色
-            ctx.fillRect(0,0,cvs.width, cvs.height);
-            
-            // 装饰底纹
-            ctx.fillStyle = "rgba(0,0,0,0.05)";
-            ctx.font = "bold 14px Arial";
-            for(let x=5; x<cvs.width; x+=30) 
-                for(let y=15; y<cvs.height; y+=30) ctx.fillText("$", x, y);
+            // 1. 绘制清爽底色
+            ctx.fillStyle = '#cfd8dc';
+            ctx.fillRect(0, 0, cvs.width, cvs.height);
 
-            const scratch = (e) => {
-                const r = cvs.getBoundingClientRect();
-                const x = (e.clientX || (e.touches && e.touches[0].clientX)) - r.left;
-                const y = (e.clientY || (e.touches && e.touches[0].clientY)) - r.top;
+            // 2. 绘制随机时尚符号 (不规则排列)
+            const symbols = ['$', '€'];
+            ctx.save();
+            for(let i=0; i<40; i++) {
+                const s = symbols[Math.floor(Math.random()*symbols.length)];
+                const fontSize = Math.floor(Math.random()*10 + 12);
+                ctx.font = `bold ${fontSize}px Arial`;
+                ctx.fillStyle = "rgba(0,0,0,0.08)";
+                
+                const x = Math.random() * cvs.width;
+                const y = Math.random() * cvs.height;
+                const angle = (Math.random() - 0.5) * 0.8; // 随机倾斜角度
 
+                ctx.translate(x, y);
+                ctx.rotate(angle);
+                ctx.fillText(s, 0, 0);
+                ctx.rotate(-angle);
+                ctx.translate(-x, -y);
+            }
+            ctx.restore();
+
+            // 3. 刮除逻辑优化 (清爽笔触)
+            const scratch = (x, y) => {
                 ctx.globalCompositeOperation = 'destination-out';
-                ctx.beginPath(); ctx.arc(x, y, 25, 0, Math.PI*2); ctx.fill();
+                ctx.lineJoin = 'round';
+                ctx.lineCap = 'round';
+                ctx.lineWidth = 35; // 增加宽度，刮得更爽
+                
+                ctx.beginPath();
+                // 使用这种方式可以消除锯齿和残影
+                ctx.arc(x, y, 20, 0, Math.PI * 2, false);
+                ctx.fill();
 
-                if(id === "c_win") {
-                    // 如果刮开了顶部中间区域，激活主开关
-                    if(Math.abs(x - cvs.width/2) < 25) mainScratched = true;
-                }
-
-                if(id === "c_grid" && !winTriggered && mainScratched) {
-                    sensorPoints.forEach(p => {
-                        if(!p.hit) {
-                            const d = Math.sqrt((x - p.x)**2 + (y - p.y)**2);
-                            if(d < 25) { 
-                                p.hit = true; hitCount++; 
-                                if(hitCount >= 12) showPopup(); // 刮开约 40% 触发
-                            }
-                        }
-                    });
+                if(id === "c_win") mainScratched = true;
+                // 检查中奖判定：必须刮开顶部 且 底部有动作
+                if(id === "c_grid" && mainScratched && !winTriggered) {
+                    triggerWin();
                 }
             };
 
-            cvs.addEventListener('mousemove', (e) => { if(e.buttons === 1) scratch(e); });
-            cvs.addEventListener('touchstart', (e) => { scratch(e); e.preventDefault(); }, {passive: false});
-            cvs.addEventListener('touchmove', (e) => { scratch(e); e.preventDefault(); }, {passive: false});
+            const getPos = (e) => {
+                const r = cvs.getBoundingClientRect();
+                return {
+                    x: (e.clientX || e.touches[0].clientX) - r.left,
+                    y: (e.clientY || e.touches[0].clientY) - r.top
+                };
+            };
+
+            cvs.addEventListener('touchstart', (e) => { e.preventDefault(); const p = getPos(e); scratch(p.x, p.y); });
+            cvs.addEventListener('touchmove', (e) => { e.preventDefault(); const p = getPos(e); scratch(p.x, p.y); });
+            cvs.addEventListener('mousemove', (e) => { if(e.buttons===1){ const p = getPos(e); scratch(p.x, p.y); } });
         }
 
-        // 5. 核心弹窗逻辑 (已修复冲突)
-        function showPopup() {
+        function triggerWin() {
             if(winTriggered) return;
             winTriggered = true;
 
+            // 优化：延迟 3000ms (3秒) 出现，给用户留足看奖的时间
             setTimeout(() => {
                 const dialog = document.getElementById('top-dialog');
-                const balanceEl = document.getElementById('db');
+                document.getElementById('db').innerText = `$${(100 + winTotal).toFixed(2)}`;
+                document.getElementById('dm').innerText = winTotal > 0 ? `Wow! You found $${winTotal.toFixed(2)}€` : "Better luck next time!";
                 
-                // 更新余额显示
-                balanceEl.innerText = `$${(balance + winTotal).toFixed(2)}`;
-                
-                if(winTotal > 0) {
-                    document.getElementById('dt').innerText = "CONGRATS!";
-                    document.getElementById('dm').innerText = `You've discovered $${winTotal.toFixed(2)}€ in prizes!`;
-                    // Telegram 成功震动
-                    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                } else {
-                    document.getElementById('dt').innerText = "KEEP GOING";
-                    document.getElementById('dm').innerText = "Better luck next time!";
-                    // Telegram 警告震动
-                    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
-                }
-
                 dialog.classList.add('active');
-            }, 1000); // 缩短等待时间，反馈更快
+                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            }, 3000); 
         }
 
-        // 启动
-        window.onload = runCD;
+        window.onload = start;
     </script>
 </body>
 </html>
