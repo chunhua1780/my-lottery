@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=360, user-scalable=no">
     <title>GOLDEN LUCK - THE FINAL MASTERPIECE</title>
-    <style>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+        <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&family=Dancing+Script:wght@700&family=Space+Mono:wght@700&display=swap');
 
         :root { 
@@ -93,7 +94,14 @@
         let sensorPoints = [];
         let hitCount = 0;
         let mainScrached = false; // 是否已经刮开了中奖号码区域
+          // 1. 初始化 Telegram WebApp 对象
+          const tg = window.Telegram.WebApp;
 
+         // 2. 告诉 Telegram：我要全屏显示，不要露出背后的聊天窗口
+          tg.expand();
+
+          // 3. (可选) 告诉 Telegram：把顶部的状态栏颜色调成白色，匹配你的浅色系
+          tg.setHeaderColor('#ffffff');
         // 1. 倒计时流程
         async function runCD() {
             const el = document.getElementById('cd');
@@ -191,6 +199,22 @@
                     document.getElementById('dm').innerText = "Fortune favors the persistent!";
                 }
                 dialog.classList.add('active');
+                function showPopup() {
+    if(winTriggered) return;
+    winTriggered = true;
+
+    setTimeout(() => {
+        // ... 原有的弹窗代码 ...
+        
+        // 4. 加入 Telegram 原生震动反馈 (成功震动)
+        if (tg.HapticFeedback) {
+            tg.HapticFeedback.notificationOccurred('success');
+        }
+
+        dialog.classList.add('active');
+    }, 2500); 
+}
+                
                 if(navigator.vibrate) navigator.vibrate([50, 50]);
             }, 2500); 
         }
