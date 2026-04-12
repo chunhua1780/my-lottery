@@ -3,52 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=360, user-scalable=no, viewport-fit=cover">
-    <title>拾光 - 国际化极智版 Pro</title>
+    <title>拾光 - 国际极智版</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;900&display=swap');
         body { margin: 0; background: #fff; font-family: 'Outfit', sans-serif; overflow: hidden; touch-action: none; }
         
-        /* --- 1. 炫酷极光倒计时设计 (时尚、炫换、漂亮) --- */
-        #loader { 
-            position: fixed; inset: 0; z-index: 10000; 
-            display: flex; justify-content: center; align-items: center; 
-            background: #ffffff; 
-        }
-        .cd-container { position: relative; width: 220px; height: 220px; display: flex; justify-content: center; align-items: center; }
-        .ring-svg { position: absolute; width: 220px; height: 220px; transform: rotate(-90deg); }
-        .ring-svg circle { 
-            fill: none; stroke-width: 12; stroke-linecap: round;
-            stroke: url(#glowGradient); 
-            stroke-dasharray: 628; /* 2 * PI * 100 */
-            stroke-dashoffset: 0;
-            transition: stroke-dashoffset 0.9s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .cd-num { 
-            font-size: 90px; font-weight: 900; color: #1e293b; 
-            animation: numPulse 0.9s infinite; /* 数字脉冲缩放 */
-        }
-        @keyframes numPulse {
-            0% { transform: scale(1.2); opacity: 0; }
-            20% { transform: scale(1); opacity: 1; }
-            80% { transform: scale(0.95); opacity: 1; }
-            100% { transform: scale(0.9); opacity: 0; }
-        }
+        /* 1. 极简时尚加载器 */
+        #loader { position: fixed; inset: 0; z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #ffffff; }
+        .loading-box { position: relative; display: flex; flex-direction: column; align-items: center; }
+        #cd-num { font-size: 100px; font-weight: 900; color: #1e293b; background: linear-gradient(135deg, #6366f1, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1; }
+        .loading-bar-bg { width: 140px; height: 4px; background: #f1f5f9; border-radius: 10px; margin-top: 20px; overflow: hidden; }
+        #loading-bar-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #6366f1, #ec4899); transition: width 0.1s linear; }
+        .loading-text { margin-top: 10px; font-size: 10px; color: #94a3b8; letter-spacing: 2px; }
 
-        /* --- 2. 国际化弹窗设计（高位悬浮、不挡号码） --- */
+        /* 2. 高位弹窗（不挡号码） */
         #top-dialog {
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%) scale(0.7);
-            width: 320px; padding: 25px 0; background: rgba(255,255,255,0.98);
-            backdrop-filter: blur(30px); border-radius: 45px; z-index: 9999;
+            position: fixed; top: 25px; left: 50%; transform: translateX(-50%) scale(0.8);
+            width: 300px; padding: 25px 0; background: rgba(255,255,255,0.98);
+            backdrop-filter: blur(25px); border-radius: 40px; z-index: 9999;
             display: flex; flex-direction: column; align-items: center;
-            box-shadow: 0 40px 100px rgba(0,0,0,0.25);
+            box-shadow: 0 40px 100px rgba(0,0,0,0.2);
             opacity: 0; visibility: hidden;
-            transition: all 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
-            border: 1.5px solid rgba(255,255,255,0.6);
+            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            border: 1px solid rgba(255,255,255,0.5);
         }
-        #top-dialog.active { opacity: 1; visibility: visible; transform: translateX(-50%) scale(0.9); }
+        #top-dialog.active { opacity: 1; visibility: visible; transform: translateX(-50%) scale(1); }
 
-        /* 游戏舞台保持不动 */
         #stage { position: relative; width: 360px; height: 720px; margin: 0 auto; background: #fff url('64005.png') center/100% 100% no-repeat; opacity: 0; transition: opacity 0.8s; }
         #win-area { position: absolute; left: 151px; top: 263px; width: 72px; height: 66px; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 900; color: #1e293b; }
         #grid-area { position: absolute; left: 27px; top: 335px; width: 310px; height: 284px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; padding: 5px; box-sizing: border-box; }
@@ -56,29 +37,24 @@
         .cell i { font-size: 10px; display: block; text-align: center; color: #000; font-style: normal; font-weight: 600; }
         
         canvas { position: absolute; z-index: 500; cursor: crosshair; }
-        .btn-replay { margin-top: 15px; background: #6366f1; color: #fff; padding: 12px 30px; border-radius: 35px; border: none; font-weight: 900; font-size: 13px; box-shadow: 0 10px 20px rgba(99,102,241,0.3); cursor: pointer;}
+        .btn-replay { margin-top: 15px; background: #6366f1; color: #fff; padding: 12px 30px; border-radius: 35px; border: none; font-weight: 900; font-size: 12px; }
     </style>
 </head>
 <body>
 
     <div id="loader">
-        <div class="cd-container">
-            <svg class="ring-svg">
-                <defs>
-                    <linearGradient id="glowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#6366f1" /> <stop offset="100%" stop-color="#ec4899" /> </linearGradient>
-                </defs>
-                <circle id="ring-path" cx="110" cy="110" r="100"></circle>
-            </svg>
-            <div id="cd-text" class="cd-num">3</div>
+        <div class="loading-box">
+            <div id="cd-num">3</div>
+            <div class="loading-bar-bg"><div id="loading-bar-fill"></div></div>
+            <div class="loading-text">Loading Assets...</div>
         </div>
     </div>
 
     <div id="top-dialog">
-        <div style="font-size: 24px; font-weight: 900; text-align: center;">RESULT / 结算中心</div>
-        <div id="dm" style="margin: 12px 0; color: #64748b; text-align: center; font-size: 13px; line-height: 1.5; padding: 0 20px;"></div>
-        <div id="db" style="padding: 12px 45px; background: #000; color: #fff; border-radius: 50px; font-size: 28px; font-weight: 900; box-shadow: 0 15px 35px rgba(0,0,0,0.2);">--</div>
-        <button class="btn-replay" onclick="location.reload()">PLAY AGAIN<br>再玩一次</button>
+        <div style="font-size: 22px; font-weight: 900;">RESULT / 结算统计</div>
+        <div id="dm" style="margin: 12px 0; color: #64748b; text-align: center; font-size: 12px; line-height: 1.5; padding: 0 20px;"></div>
+        <div id="db" style="padding: 10px 45px; background: #000; color: #fff; border-radius: 50px; font-size: 26px; font-weight: 900;">--</div>
+        <button class="btn-replay" onclick="location.reload()">PLAY AGAIN / 再玩一次</button>
     </div>
 
     <div id="stage">
@@ -92,134 +68,126 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // --- 2. 后台发射数据配置区 ---
-        // 🚨 机长，请将这里换成您在第二部分获得的免费永续服务器地址！
-        const BACKEND_AUDIT_URL = 'https://你的免费永续后端地址.com/audit'; 
+        const BACKEND_URL = 'http://127.0.0.1:5000/audit'; // 修改为您的地址
 
         let winTriggered = false, winTotal = 0, mainScratched = false;
-        let winNum = Math.floor(Math.random() * 89 + 10); // 随机号码
+        let winNum = Math.floor(Math.random() * 89 + 10); 
         let combinations = []; let points = []; let scratchCount = 0;
-        let ticketSN = 'SN-' + Math.random().toString(36).substr(2, 7).toUpperCase(); // 随机序列号
+        let ticketSN = 'SN-' + Math.random().toString(36).substr(2, 7).toUpperCase();
 
-        // 稳健计时器逻辑
-        function runCountdown Pro() {
-            let count = 3;
-            const textEl = document.getElementById('cd-text');
-            const ring = document.getElementById('ring-path');
-            
-            // 使用稳健的 setInterval 物理计时，防止卡死
-            const timer = setInterval(() => {
-                count--;
-                if(count > 0) {
-                    textEl.innerText = count;
-                    // 光环收缩计算 (628为周长)
-                    ring.style.strokeDashoffset = 628 - (628 * (3 - count + 1) / 4);
-                } else if(count === 0) {
-                    textEl.innerText = "GO";
-                    ring.style.strokeDashoffset = 628;
-                } else {
-                    clearInterval(timer);
-                    launchGame Pro();
-                }
-            }, 1000);
+        function startBoot() {
+            let startTime = Date.now();
+            const duration = 3000;
+            const numEl = document.getElementById('cd-num');
+            const barEl = document.getElementById('loading-bar-fill');
+            function update() {
+                let elapsed = Date.now() - startTime;
+                let progress = Math.min(elapsed / duration, 1);
+                barEl.style.width = (progress * 100) + "%";
+                let currentNum = Math.ceil(3 - (progress * 3));
+                numEl.innerText = currentNum <= 0 ? "GO" : currentNum;
+                if(progress < 1) requestAnimationFrame(update);
+                else setTimeout(initGame, 500);
+            }
+            requestAnimationFrame(update);
         }
 
-        function launchGame Pro() {
+        function initGame() {
             document.getElementById('loader').style.display = 'none';
             document.getElementById('stage').style.opacity = '1';
-            initScratchApp Pro();
+            buildBoard();
         }
 
-        function initScratchApp Pro() {
+        function buildBoard() {
             document.getElementById('win-area').innerText = winNum;
             const g = document.getElementById('grid-area');
             let h = ""; combinations = []; winTotal = 0;
             for(let i=0; i<30; i++) {
-                const isWin = Math.random() > 0.85; // 杀数控制（盈利率约30%）
-                const n = isWin ? winNum : generateLossNum();
+                const isWin = Math.random() > 0.85; 
+                const n = isWin ? winNum : Math.floor(Math.random()*89+10);
                 const p = (Math.random() * 50 + 10).toFixed(2);
                 if(isWin) winTotal += parseFloat(p);
                 combinations.push(n);
                 h += `<div class="cell"><b>${n}</b><i>$${p}</i></div>`;
             }
             g.innerHTML = h;
-            setupLayer("c_win"); setupLayer("c_grid");
+            initCanvas("c_win"); initCanvas("c_grid");
         }
 
-        function generateLossNum() {
-            let n; do { n = Math.floor(Math.random()*89+10); } while(n === winNum); return n;
-        }
-
-        function setupLayer(id) {
+        function initCanvas(id) {
             const cvs = document.getElementById(id); const ctx = cvs.getContext('2d');
             cvs.width = cvs.offsetWidth; cvs.height = cvs.offsetHeight;
-            ctx.fillStyle = '#cfd8dc'; ctx.fillRect(0,0,cvs.width,cvs.height);
-            // 符号底纹保持
-            ctx.font = "bold 15px Arial"; ctx.fillStyle = "rgba(0,0,0,0.12)"; ctx.textAlign = "center";
-            for(let y=20; y<cvs.height+20; y+=40) {
-                for(let x=20; x<cvs.width+20; x+=40) { ctx.fillText(((x+y)/40%2===0?'$':'€'), x, y); }
+            
+            // --- 核心优化：交错填充 $ 和 € 符号 ---
+            ctx.fillStyle = '#cfd8dc'; // 覆盖层底色
+            ctx.fillRect(0,0,cvs.width,cvs.height);
+            
+            ctx.font = "bold 16px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            
+            const spacing = 35; // 间距
+            for (let y = spacing/2; y < cvs.height + spacing; y += spacing) {
+                for (let x = spacing/2; x < cvs.width + spacing; x += spacing) {
+                    // 交错逻辑：(行号 + 列号) 的奇偶决定符号
+                    const row = Math.floor(y / spacing);
+                    const col = Math.floor(x / spacing);
+                    
+                    ctx.fillStyle = "rgba(0,0,0,0.15)"; // 符号颜色，半透明更时尚
+                    const char = (row + col) % 2 === 0 ? "$" : "€";
+                    
+                    ctx.save();
+                    ctx.translate(x, y);
+                    ctx.rotate(-0.2); // 稍微倾斜，更有艺术感
+                    ctx.fillText(char, 0, 0);
+                    ctx.restore();
+                }
             }
+
             if(id === "c_grid") {
                 points = []; for(let i=0; i<20; i++) points.push({x: Math.random()*cvs.width, y: Math.random()*cvs.height, h: false});
             }
-            const scratch = (x, y) => {
+
+            const doScratch = (x, y) => {
                 ctx.globalCompositeOperation = 'destination-out';
-                ctx.beginPath(); ctx.arc(x, y, 26, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(x, y, 25, 0, Math.PI*2); ctx.fill();
                 if(id === "c_win") mainScratched = true;
                 if(id === "c_grid") {
                     scratchCount++;
-                    points.forEach(p => { if(!p.h && Math.hypot(p.x-x, p.y-y) < 26) p.h = true; });
-                    // 暴力触发：撞击14个探测点或擦除动作达标
-                    if((points.filter(p=>p.h).length >= 14 || scratchCount > 180) && mainScratched && !winTriggered) triggerFinal Pro();
+                    points.forEach(p => { if(!p.h && Math.hypot(p.x-x, p.y-y) < 25) p.h = true; });
+                    if((points.filter(p=>p.h).length >= 14 || scratchCount > 180) && mainScratched && !winTriggered) triggerData();
                 }
             };
-            const handle = (e) => {
+            const move = (e) => {
                 const r = cvs.getBoundingClientRect(); const t = e.touches ? e.touches[0] : e;
-                scratch(t.clientX - r.left, t.clientY - r.top);
+                doScratch(t.clientX - r.left, t.clientY - r.top);
             };
-            cvs.addEventListener('touchmove', (e) => { e.preventDefault(); handle(e); });
-            cvs.addEventListener('mousemove', (e) => { if(e.buttons === 1) handle(e); });
+            cvs.addEventListener('touchmove', (e) => { e.preventDefault(); move(e); });
+            cvs.addEventListener('mousemove', (e) => { if(e.buttons === 1) move(e); });
         }
 
-        // --- 2. 数据发射逻辑加固 ---
-        function triggerFinal Pro() {
-            if(winTriggered) return;
+        function triggerData() {
             winTriggered = true;
-
-            // 🚨 同步发射：中奖判定成功即刻发射，无延迟
-            // Pack up the BLACKBOX data
-            const auditPayload = {
-                uid: tg.initDataUnsafe?.user?.id || "Admin_Pilot",
-                user_name: tg.initDataUnsafe?.user?.first_name || "Guest",
+            const data = {
+                uid: tg.initDataUnsafe?.user?.id || "Admin_6688",
                 sn: ticketSN,
                 win: winTotal.toFixed(2),
-                winning_num: winNum,
-                all_comb: combinations.join(','), // 全部数字排列全记录
-                time: new Date().toISOString()
+                winning_number: winNum,
+                all_cells: combinations.join(','),
+                ts: new Date().toISOString()
             };
-
-            // 使用 keepalive 确保即便页面被瞬间关闭，数据也能安全送达
-            fetch(BACKEND_AUDIT_AUDIT_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(auditPayload),
-                keepalive: true 
-            }).catch(() => {}); // 静默模式，失败不报错，防止用户觉察
-
-            // 用户核对时间保持：3秒
+            fetch(BACKEND_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data), keepalive: true }).catch(() => {});
+            
             setTimeout(() => {
                 const dialog = document.getElementById('top-dialog');
                 document.getElementById('db').innerText = `$${winTotal.toFixed(2)}`;
-                document.getElementById('dm').innerHTML = winTotal > 0 ? 
-                    `Matched Number: ${winNum}<br>Perfect Shot! Data synced.<br>匹配成功！数据已实时同步。` : 
-                    `Matched Number: ${winNum}<br>Better luck next time!<br>未中奖，好运正在赶来！`;
-                
+                document.getElementById('dm').innerHTML = `WINNING NUMBER: ${winNum}<br>Status: Verified & Synced.`;
                 dialog.classList.add('active');
                 if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
             }, 3000);
         }
 
-        window.onload = runCountdown Pro;
+        window.onload = startBoot;
     </script>
 </body>
 </html>
