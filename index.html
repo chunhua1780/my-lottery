@@ -13,19 +13,16 @@ from user_db import db
 
 class PilotSignal(QObject):
     log = pyqtSignal(str)
-    refresh = pyqtSignal()
     lottery_hit = pyqtSignal(dict)
 sig = PilotSignal()
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# 模块 7: 调试终端 (功能锁死)
 class PilotTerminal(QWidget):
     def __init__(self):
         super().__init__()
         l = QVBoxLayout(self); self.display = QTextEdit(); self.display.setReadOnly(True)
         self.editor = QLineEdit(); self.editor.returnPressed.connect(self.run_cmd)
         l.addWidget(self.display, 8); l.addWidget(self.editor, 1)
-        self.proc = QProcess(); self.proc.setWorkingDirectory(BASE_DIR)
+        self.proc = QProcess(); self.proc.setWorkingDirectory(os.getcwd())
         self.proc.readyReadStandardOutput.connect(lambda: self.display.append(self.proc.readAllStandardOutput().data().decode()))
     def run_cmd(self):
         self.proc.start("bash", ["-c", f"source venv/bin/activate && {self.editor.text()}"])
@@ -34,59 +31,47 @@ class PilotTerminal(QWidget):
 class EmpireSuperApp(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle('𝐄𝐌𝐏𝐈𝐑𝐄 𝐑𝐎𝐘𝐀𝐋 𝐂𝐎𝐌𝐌𝐀𝐍𝐃 - v20.0 (黑匣子深度优化版)')
-        self.resize(1600, 950)
+        self.setWindowTitle('𝐄𝐌𝐏𝐈𝐑𝐄 𝐂𝐎𝐌𝐌𝐀𝐍𝐃 v20.2 - 审计版')
+        self.resize(1500, 900)
         c = QWidget(); self.setCentralWidget(c); layout = QVBoxLayout(c)
-        
-        # 顶部 UTC
-        self.utc_clock = QLabel(); self.utc_clock.setStyleSheet("font-family:'Menlo'; color:#E67E22; font-weight:bold;")
-        layout.addWidget(self.utc_clock, alignment=Qt.AlignmentFlag.AlignRight)
-
+        self.utc_lbl = QLabel(); layout.addWidget(self.utc_lbl, alignment=Qt.AlignmentFlag.AlignRight)
         self.tabs = QTabWidget(); layout.addWidget(self.tabs)
 
         # 锁定 7 大模块
-        self.user_tab = QTableWidget(0, 6); self.tabs.addTab(self.user_tab, "👥 用户管理")
-        self.act_tab = QTableWidget(0, 5); self.tabs.addTab(self.act_tab, "📡 用户动态")
-        self.fin_tab = QTableWidget(0, 6); self.tabs.addTab(self.fin_tab, "💰 资金审计")
-        self.log_tab = QTextEdit(); self.tabs.addTab(self.log_tab, "📊 实施日志")
-        self.browser_tab = QWidget(); self.tabs.addTab(self.browser_tab, "🌐 旗舰浏览器")
-        self.lottery_audit_tab = QTableWidget(0, 6); self.tabs.addTab(self.lottery_audit_tab, "🎰 刮刮乐后台")
-        self.term_tab = PilotTerminal(); self.tabs.addTab(self.term_tab, "💻 调试测试")
+        self.user_t = QTableWidget(0, 6); self.tabs.addTab(self.user_t, "👥 用户管理")
+        self.act_t = QTableWidget(0, 4); self.tabs.addTab(self.act_t, "📡 用户动态")
+        self.fin_t = QTableWidget(0, 6); self.tabs.addTab(self.fin_t, "💰 资金审计")
+        self.log_t = QTextEdit(); self.tabs.addTab(self.log_t, "📊 实施日志")
+        self.web_t = QWebEngineView(); self.tabs.addTab(self.web_t, "🌐 旗舰浏览器")
+        self.audit_t = QTableWidget(0, 6); self.tabs.addTab(self.audit_t, "🎰 刮刮乐后台")
+        self.term_t = PilotTerminal(); self.tabs.addTab(self.term_t, "💻 调试测试")
 
-        # 模块 6 审计配置
-        self.lottery_audit_tab.setHorizontalHeaderLabels(['UTC时间', '用户ID/IP', '号码组合(Audit)', '盈亏结果', '位置', '黑匣子状态'])
-        self.lottery_audit_tab.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.audit_t.setHorizontalHeaderLabels(['UTC时间', 'UID/IP', '号码组合(审计)', '盈亏', '语言', '状态'])
+        self.audit_t.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.web_t.setUrl(QUrl("https://www.google.com"))
 
-        # 模块 5 浏览器 (功能锁死)
-        bl = QVBoxLayout(self.browser_tab); self.url = QLineEdit("https://www.google.com")
-        go = QPushButton("GO"); go.clicked.connect(lambda: self.web.setUrl(QUrl(self.url.text())))
-        bl.addLayout(QHBoxLayout()); bl.layout().addWidget(self.url); bl.layout().addWidget(go)
-        self.web = QWebEngineView(); self.web.setUrl(QUrl("https://www.google.com")); bl.addWidget(self.web)
-
-        sig.refresh.connect(self.reload_data); sig.lottery_hit.connect(self.add_audit)
-        self.t = QTimer(); self.t.timeout.connect(self.reload_data); self.t.start(3000)
-        self.tc = QTimer(); self.tc.timeout.connect(self.tick); self.tc.start(1000)
+        sig.lottery_hit.connect(self.update_audit)
+        self.timer = QTimer(); self.timer.timeout.connect(self.tick); self.timer.start(1000)
         threading.Thread(target=self.launch_bot, daemon=True).start()
 
-    def tick(self): self.utc_clock.setText(f"🕒 UTC: {datetime.datetime.now(pytz.UTC).strftime('%Y-%m-%d %H:%M:%S')}")
+    def tick(self):
+        t = datetime.datetime.now(pytz.UTC).strftime('%Y-%m-%d %H:%M:%S')
+        self.utc_lbl.setText(f"🕒 UTC: {t} ")
 
-    def add_audit(self, d):
-        self.lottery_audit_tab.insertRow(0)
-        for i, key in enumerate(['time','uid','comb','res','loc']):
-            self.lottery_audit_tab.setItem(0, i, QTableWidgetItem(str(d.get(key))))
-        self.lottery_audit_tab.setItem(0, 5, QTableWidgetItem("✅ 物理加密存证"))
-        # 同步更新模块 2
-        self.act_tab.insertRow(0)
-        self.act_tab.setItem(0, 0, QTableWidgetItem(d['time'])); self.act_tab.setItem(0, 1, QTableWidgetItem(d['uid']))
-        self.act_tab.setItem(0, 2, QTableWidgetItem("刮奖数据上报")); self.act_tab.setItem(0, 3, QTableWidgetItem(f"组合:{d['comb']}"))
-
-    def reload_data(self):
-        try:
-            u = db.get_all_users(); self.user_tab.setRowCount(0)
-            for r in u:
-                row = self.user_tab.rowCount(); self.user_tab.insertRow(row)
-                for i,v in enumerate(r): self.user_tab.setItem(row, i, QTableWidgetItem(str(v)))
-        except: pass
+    def update_audit(self, d):
+        self.audit_t.insertRow(0)
+        self.audit_t.setItem(0, 0, QTableWidgetItem(d['time']))
+        self.audit_t.setItem(0, 1, QTableWidgetItem(d['uid']))
+        self.audit_t.setItem(0, 2, QTableWidgetItem(d['comb']))
+        self.audit_t.setItem(0, 3, QTableWidgetItem(f"{d['res']}u"))
+        self.audit_t.setItem(0, 4, QTableWidgetItem(d['loc']))
+        self.audit_t.setItem(0, 5, QTableWidgetItem("✅ 已审计"))
+        
+        self.act_t.insertRow(0)
+        self.act_t.setItem(0, 0, QTableWidgetItem(d['time']))
+        self.act_t.setItem(0, 1, QTableWidgetItem(d['uid']))
+        self.act_t.setItem(0, 2, QTableWidgetItem("刮奖数据"))
+        self.act_t.setItem(0, 3, QTableWidgetItem(f"组合: {d['comb']}"))
 
     def launch_bot(self):
         loop = asyncio.new_event_loop(); asyncio.set_event_loop(loop)
@@ -94,15 +79,14 @@ class EmpireSuperApp(QMainWindow):
             app = ApplicationBuilder().token("8789746219:AAHpvM2qONoJRHuqXZk8gsuATD6LxiEvC9Q").build()
             async def h(upd, ctx):
                 try:
-                    data = json.loads(upd.effective_message.web_app_data.data)
+                    raw = json.loads(upd.effective_message.web_app_data.data)
                     uid = str(upd.effective_user.id)
-                    utc_now = datetime.datetime.now(pytz.UTC).strftime('%H:%M:%S')
-                    # 精准抓取号码组合
-                    comb = data.get("combination", "丢失数据")
-                    win = float(data.get("win", 0))
-                    db.record_finance(uid, win - 20, f"AUDIT_LOT:{comb}")
-                    sig.lottery_hit.emit({'time':utc_now, 'uid':uid, 'comb':comb, 'res':win-20, 'loc':upd.effective_user.language_code})
-                except Exception as e: sig.log.emit(f"黑匣子解析失败: {e}")
+                    comb = raw.get("combination", "N/A")
+                    res = float(raw.get("win", 0)) - 20
+                    data = {'time': datetime.datetime.now(pytz.UTC).strftime('%H:%M:%S'), 'uid': uid, 'comb': str(comb), 'res': res, 'loc': upd.effective_user.language_code or "UN"}
+                    db.record_finance(uid, res, f"LOT_AUDIT:{comb}")
+                    sig.lottery_hit.emit(data)
+                except: pass
             app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, h))
             await app.initialize(); await app.start(); await app.updater.start_polling()
             while True: await asyncio.sleep(1)
