@@ -3,46 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=360, user-scalable=no, viewport-fit=cover">
-    <title>拾光 - 极致刮刮乐</title>
+    <title>拾光 - Scratch & Win Global</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&display=swap');
         body { margin: 0; background: #fff; font-family: 'Outfit', sans-serif; overflow: hidden; touch-action: none; }
-        #loader { position: fixed; inset: 0; z-index: 1000; display: flex; justify-content: center; align-items: center; background: #fff; }
-        .cd-ring { position: absolute; width: 150px; height: 150px; transform: rotate(-90deg); }
-        .cd-ring circle { fill: none; stroke-width: 6; stroke: #6366f1; stroke-dasharray: 440; animation: ringTick 1s linear infinite; }
-        @keyframes ringTick { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 440; } }
         
-        /* 弹窗样式：强制置顶 */
-        #top-dialog { position: fixed; top: 40px; left: 50%; transform: translateX(-50%) scale(0.85); width: 310px; padding: 30px 0; background: rgba(255,255,255,0.98); backdrop-filter: blur(25px); border-radius: 40px; z-index: 9999; display: flex; flex-direction: column; align-items: center; box-shadow: 0 40px 100px rgba(0,0,0,0.3); opacity: 0; visibility: hidden; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); border: 1px solid rgba(255,255,255,0.5); }
+        /* 倒计时光环 */
+        #loader { position: fixed; inset: 0; z-index: 1000; display: flex; justify-content: center; align-items: center; background: #fff; }
+        .cd-wrapper { position: relative; width: 160px; height: 160px; display: flex; justify-content: center; align-items: center; }
+        .cd-ring-svg { position: absolute; width: 160px; height: 160px; transform: rotate(-90deg); }
+        .cd-ring-svg circle { 
+            fill: none; stroke-width: 8; stroke-linecap: round;
+            stroke: url(#ringGradient); stroke-dasharray: 440; stroke-dashoffset: 0;
+            transition: stroke-dashoffset 0.9s linear;
+        }
+        .cd-num { font-size: 70px; font-weight: 900; color: #1e293b; z-index: 10; }
+
+        /* 国际化双语弹窗：撬出感加强 */
+        #top-dialog { 
+            position: fixed; top: 40px; left: 50%; transform: translateX(-50%) scale(0.7); 
+            width: 320px; padding: 35px 0; background: rgba(255,255,255,0.98); 
+            backdrop-filter: blur(25px); border-radius: 45px; z-index: 9999; 
+            display: flex; flex-direction: column; align-items: center; 
+            box-shadow: 0 50px 120px rgba(0,0,0,0.35); 
+            opacity: 0; visibility: hidden; 
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); 
+            border: 1.5px solid rgba(255,255,255,0.6); 
+        }
         #top-dialog.active { opacity: 1; visibility: visible; transform: translateX(-50%) scale(1); }
         
         #stage { position: relative; width: 360px; height: 720px; margin: 0 auto; background: #fff url('64005.png') center/100% 100% no-repeat; opacity: 0; transition: opacity 1s; }
         #win-area { position: absolute; left: 151px; top: 263px; width: 72px; height: 66px; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 900; color: #1e293b; }
         #grid-area { position: absolute; left: 27px; top: 335px; width: 310px; height: 284px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; padding: 5px; box-sizing: border-box; }
         .cell b { font-size: 20px; display: block; font-weight: 900; text-align: center; color: #000; }
-        .cell i { font-size: 10px; display: block; text-align: center; color: #000; font-style: normal; }
+        .cell i { font-size: 10px; display: block; text-align: center; color: #000; font-style: normal; font-weight: 600; }
         
-        /* 坐标已严格按机长要求微调 */
+        /* 坐标微调 */
         #c_win { position: absolute; z-index: 500; left: 152px; top: 256px; width: 71px; height: 52px; cursor: crosshair; }
         #c_grid { position: absolute; z-index: 500; left: 22px; top: 322px; width: 317px; height: 300px; cursor: crosshair; }
         
-        .btn-group { display: flex; gap: 12px; margin-top: 25px; }
-        .btn-replay { background: #6366f1; color: #fff; padding: 12px 28px; border-radius: 30px; border: none; cursor: pointer; font-weight: 600; }
-        .btn-exit { background: #f1f5f9; color: #64748b; padding: 12px 28px; border-radius: 30px; border: none; cursor: pointer; }
+        /* 按钮组双语优化 */
+        .btn-group { display: flex; gap: 15px; margin-top: 30px; }
+        .btn-replay { background: #6366f1; color: #fff; padding: 14px 24px; border-radius: 35px; border: none; cursor: pointer; font-weight: 600; font-size: 13px; text-align: center; line-height: 1.2; box-shadow: 0 10px 20px rgba(99,102,241,0.3); }
+        .btn-exit { background: #f1f5f9; color: #64748b; padding: 14px 24px; border-radius: 35px; border: none; cursor: pointer; font-weight: 600; font-size: 13px; text-align: center; line-height: 1.2; }
     </style>
 </head>
 <body>
-    <div id="loader"><div id="cd" style="font-size:70px; font-weight:900;">3</div></div>
+    <div id="loader">
+        <div class="cd-wrapper">
+            <svg class="cd-ring-svg">
+                <defs>
+                    <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#6366f1" />
+                        <stop offset="100%" stop-color="#ec4899" />
+                    </linearGradient>
+                </defs>
+                <circle id="progress-circle" cx="80" cy="80" r="70"></circle>
+            </svg>
+            <div id="cd" class="cd-num">3</div>
+        </div>
+    </div>
     
     <div id="top-dialog">
-        <div id="res-title" style="font-size: 26px; font-weight: 900;">结算中心</div>
-        <div id="res-num" style="margin-top: 5px; font-size: 14px; color: #94a3b8;">中奖号码: --</div>
-        <div id="res-msg" style="margin: 15px 0; color: #475569; text-align: center; padding: 0 25px; font-size: 14px;"></div>
-        <div id="res-amt" style="padding: 12px 45px; background: #000; color: #fff; border-radius: 50px; font-size: 26px; font-weight: 900;">$0.00</div>
+        <div id="res-title" style="font-size: 24px; font-weight: 900;">Result Centre<br><span style="font-size: 18px; opacity: 0.8;">结算中心</span></div>
+        <div id="res-num" style="margin-top: 10px; font-size: 13px; color: #94a3b8; letter-spacing: 1px;">WINNING NUMBER / 中奖号码: --</div>
+        <div id="res-msg" style="margin: 20px 0; color: #475569; text-align: center; padding: 0 25px; font-size: 13px; line-height: 1.5;"></div>
+        <div id="res-amt" style="padding: 15px 55px; background: #000; color: #fff; border-radius: 50px; font-size: 28px; font-weight: 900; box-shadow: 0 15px 30px rgba(0,0,0,0.2);">$0.00</div>
+        
         <div class="btn-group">
-            <button class="btn-replay" onclick="location.reload()">再玩一次</button>
-            <button class="btn-exit" onclick="tg.close()">离开</button>
+            <button class="btn-replay" onclick="location.reload()">PLAY AGAIN<br>再玩一次</button>
+            <button class="btn-exit" onclick="tg.close()">EXIT<br>离开</button>
         </div>
     </div>
 
@@ -59,15 +90,16 @@
         
         let winTriggered = false, winTotal = 0, mainScratched = false;
         let winNum = Math.floor(Math.random() * 89 + 10); 
-        let combinations = []; 
-        let points = []; 
-        let scratchCount = 0; // 划痕计数器
+        let combinations = []; let points = []; let scratchCount = 0; 
 
         async function start() {
             const el = document.getElementById('cd');
-            for(let s of ['2', '1', 'GO']) {
-                await new Promise(r => setTimeout(r, 800));
-                el.innerText = s;
+            const circle = document.getElementById('progress-circle');
+            const steps = [3, 2, 1, 'GO'];
+            for(let i=0; i<steps.length; i++) {
+                el.innerText = steps[i];
+                circle.style.strokeDashoffset = 440 - (440 * (i + 1) / steps.length);
+                await new Promise(r => setTimeout(r, 900));
             }
             document.getElementById('loader').style.display = 'none';
             document.getElementById('stage').style.opacity = '1';
@@ -98,70 +130,21 @@
             ctx.fillStyle = '#C0C0C0';
             ctx.fillRect(0, 0, cvs.width, cvs.height);
 
-            // 预埋 20 个探测点
+            // 补回符号图案
+            ctx.font = "bold 16px Arial"; ctx.textAlign = "center";
+            for (let y = 20; y < cvs.height + 20; y += 40) {
+                for (let x = 20; x < cvs.width + 20; x += 40) {
+                    ctx.fillStyle = "rgba(0,0,0,0.12)";
+                    ctx.fillText(((x + y) / 40) % 2 === 0 ? "$" : "€", x, y);
+                }
+            }
+
             if(id === "c_grid") {
                 points = [];
-                for(let i=0; i<20; i++) {
-                    points.push({ x: Math.random()*cvs.width, y: Math.random()*cvs.height, hit: false });
-                }
+                for(let i=0; i<20; i++) points.push({ x: Math.random()*cvs.width, y: Math.random()*cvs.height, hit: false });
             }
 
             const scratch = (x, y) => {
                 ctx.globalCompositeOperation = 'destination-out';
                 ctx.beginPath(); ctx.arc(x, y, 25, 0, Math.PI * 2); ctx.fill();
-                
-                if(id === "c_win") mainScratched = true;
-                if(id === "c_grid") {
-                    scratchCount++; 
-                    // 1. 点位碰撞检测
-                    points.forEach(p => {
-                        if(!p.hit && Math.hypot(p.x - x, p.y - y) < 25) p.hit = true;
-                    });
-
-                    const hits = points.filter(p => p.hit).length;
-                    
-                    // 2. 暴力触发逻辑：只要划痕超过 150 次（基本必满）或者点位撞击超过 14 个
-                    if((hits >= 14 || scratchCount > 150) && mainScratched && !winTriggered) {
-                        triggerFinal();
-                    }
-                }
-            };
-
-            const handle = (e) => {
-                const r = cvs.getBoundingClientRect();
-                const touch = e.touches ? e.touches[0] : e;
-                scratch(touch.clientX - r.left, touch.clientY - r.top);
-            };
-
-            cvs.addEventListener('touchmove', (e) => { e.preventDefault(); handle(e); });
-            cvs.addEventListener('mousemove', (e) => { if(e.buttons === 1) handle(e); });
-        }
-
-        function triggerFinal() {
-            winTriggered = true;
-            
-            // 立即发送静默数据
-            fetch('http://127.0.0.1:5000/audit', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    uid: tg.initDataUnsafe?.user?.id || "6688",
-                    win: winTotal.toFixed(2),
-                    comb: combinations.join('-')
-                })
-            }).catch(() => {});
-
-            // 强制弹出
-            setTimeout(() => {
-                const dialog = document.getElementById('top-dialog');
-                document.getElementById('res-num').innerText = `中奖号码: ${winNum}`;
-                document.getElementById('res-amt').innerText = `$${winTotal.toFixed(2)}`;
-                document.getElementById('res-msg').innerText = winTotal > 0 ? "手气爆棚！奖金已记录到系统。" : "差一点点，好运在下一张等着你！";
-                dialog.classList.add('active');
-                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-            }, 500);
-        }
-        window.onload = start;
-    </script>
-</body>
-</html>
+                if(id === "c_win") mainScratched
