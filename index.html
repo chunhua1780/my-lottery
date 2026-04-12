@@ -13,6 +13,7 @@ from user_db import db
 
 class PilotSignal(QObject):
     log = pyqtSignal(str)
+    refresh = pyqtSignal()
     lottery_hit = pyqtSignal(dict)
 sig = PilotSignal()
 
@@ -31,7 +32,7 @@ class PilotTerminal(QWidget):
 class EmpireSuperApp(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle('𝐄𝐌𝐏𝐈𝐑𝐄 𝐂𝐎𝐌𝐌𝐀𝐍𝐃 v20.2 - 审计版')
+        self.setWindowTitle('𝐄𝐌𝐏𝐈𝐑𝐄 𝐑𝐎𝐘𝐀𝐋 𝐂𝐎𝐌𝐌𝐀𝐍𝐃 - v20.5 (全审计版)')
         self.resize(1500, 900)
         c = QWidget(); self.setCentralWidget(c); layout = QVBoxLayout(c)
         self.utc_lbl = QLabel(); layout.addWidget(self.utc_lbl, alignment=Qt.AlignmentFlag.AlignRight)
@@ -46,7 +47,7 @@ class EmpireSuperApp(QMainWindow):
         self.audit_t = QTableWidget(0, 6); self.tabs.addTab(self.audit_t, "🎰 刮刮乐后台")
         self.term_t = PilotTerminal(); self.tabs.addTab(self.term_t, "💻 调试测试")
 
-        self.audit_t.setHorizontalHeaderLabels(['UTC时间', 'UID/IP', '号码组合(审计)', '盈亏', '语言', '状态'])
+        self.audit_t.setHorizontalHeaderLabels(['UTC时间', 'UID/IP', '号码组合(审计)', '盈亏结果', '语言', '状态'])
         self.audit_t.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.web_t.setUrl(QUrl("https://www.google.com"))
 
@@ -65,13 +66,21 @@ class EmpireSuperApp(QMainWindow):
         self.audit_t.setItem(0, 2, QTableWidgetItem(d['comb']))
         self.audit_t.setItem(0, 3, QTableWidgetItem(f"{d['res']}u"))
         self.audit_t.setItem(0, 4, QTableWidgetItem(d['loc']))
-        self.audit_t.setItem(0, 5, QTableWidgetItem("✅ 已审计"))
+        self.audit_t.setItem(0, 5, QTableWidgetItem("✅ 数据已存证"))
         
         self.act_t.insertRow(0)
         self.act_t.setItem(0, 0, QTableWidgetItem(d['time']))
         self.act_t.setItem(0, 1, QTableWidgetItem(d['uid']))
-        self.act_t.setItem(0, 2, QTableWidgetItem("刮奖数据"))
+        self.act_t.setItem(0, 2, QTableWidgetItem("刮刮乐审计"))
         self.act_t.setItem(0, 3, QTableWidgetItem(f"组合: {d['comb']}"))
+
+    def reload_data(self):
+        try:
+            u = db.get_all_users(); self.user_t.setRowCount(0)
+            for r in u:
+                row = self.user_t.rowCount(); self.user_t.insertRow(row)
+                for i,v in enumerate(r): self.user_t.setItem(row, i, QTableWidgetItem(str(v)))
+        except: pass
 
     def launch_bot(self):
         loop = asyncio.new_event_loop(); asyncio.set_event_loop(loop)
@@ -83,9 +92,9 @@ class EmpireSuperApp(QMainWindow):
                     uid = str(upd.effective_user.id)
                     comb = raw.get("combination", "N/A")
                     res = float(raw.get("win", 0)) - 20
-                    data = {'time': datetime.datetime.now(pytz.UTC).strftime('%H:%M:%S'), 'uid': uid, 'comb': str(comb), 'res': res, 'loc': upd.effective_user.language_code or "UN"}
+                    now = datetime.datetime.now(pytz.UTC).strftime('%H:%M:%S')
+                    sig.lottery_hit.emit({'time': now, 'uid': uid, 'comb': str(comb), 'res': res, 'loc': upd.effective_user.language_code})
                     db.record_finance(uid, res, f"LOT_AUDIT:{comb}")
-                    sig.lottery_hit.emit(data)
                 except: pass
             app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, h))
             await app.initialize(); await app.start(); await app.updater.start_polling()
