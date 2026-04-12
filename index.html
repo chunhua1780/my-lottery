@@ -14,8 +14,8 @@
         @keyframes ringTick { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 440; } }
         .cd-num { font-size: 70px; font-weight: 900; }
         
-        /* 弹窗样式优化 */
-        #top-dialog { position: fixed; top: 40px; left: 50%; transform: translateX(-50%) scale(0.85); width: 310px; padding: 30px 0; background: rgba(255,255,255,0.98); backdrop-filter: blur(25px); border-radius: 40px; z-index: 2000; display: flex; flex-direction: column; align-items: center; box-shadow: 0 40px 100px rgba(0,0,0,0.25); opacity: 0; visibility: hidden; transition: all 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275); border: 1px solid rgba(255,255,255,0.5); }
+        /* 弹窗样式 */
+        #top-dialog { position: fixed; top: 40px; left: 50%; transform: translateX(-50%) scale(0.85); width: 310px; padding: 30px 0; background: rgba(255,255,255,0.98); backdrop-filter: blur(25px); border-radius: 40px; z-index: 2000; display: flex; flex-direction: column; align-items: center; box-shadow: 0 40px 100px rgba(0,0,0,0.25); opacity: 0; visibility: hidden; transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); border: 1px solid rgba(255,255,255,0.5); }
         #top-dialog.active { opacity: 1; visibility: visible; transform: translateX(-50%) scale(1); }
         
         #stage { position: relative; width: 360px; height: 720px; margin: 0 auto; background: #fff url('64005.png') center/100% 100% no-repeat; opacity: 0; transition: opacity 1s; }
@@ -23,10 +23,13 @@
         #grid-area { position: absolute; left: 27px; top: 335px; width: 310px; height: 284px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; padding: 5px; box-sizing: border-box; }
         .cell b { font-size: 20px; display: block; font-weight: 900; text-align: center; color: #000; }
         .cell i { font-family: 'Space Mono'; font-size: 10px; font-weight: 700; display: block; text-align: center; color: #000; }
-        canvas { position: absolute; z-index: 500; cursor: crosshair; }
+        
+        /* 坐标已按要求微调：上提2px，左移1px */
+        #c_win { position: absolute; z-index: 500; left: 152px; top: 256px; width: 71px; height: 52px; cursor: crosshair; }
+        #c_grid { position: absolute; z-index: 500; left: 22px; top: 322px; width: 317px; height: 300px; cursor: crosshair; }
         
         .btn-group { display: flex; gap: 12px; margin-top: 25px; }
-        .btn-replay { background: #6366f1; color: #fff; padding: 12px 28px; border-radius: 30px; border: none; cursor: pointer; font-family: 'Outfit'; font-weight: 600; font-size: 14px; box-shadow: 0 10px 20px rgba(99,102,241,0.3); }
+        .btn-replay { background: #6366f1; color: #fff; padding: 12px 28px; border-radius: 30px; border: none; cursor: pointer; font-family: 'Outfit'; font-weight: 600; font-size: 14px; }
         .btn-exit { background: #f1f5f9; color: #64748b; padding: 12px 28px; border-radius: 30px; border: none; cursor: pointer; font-family: 'Outfit'; font-size: 14px; }
     </style>
 </head>
@@ -39,8 +42,8 @@
     <div id="top-dialog">
         <div id="res-title" style="font-size: 26px; font-weight: 900;">结算中心</div>
         <div id="res-num" style="margin-top: 5px; font-size: 14px; color: #94a3b8; font-family: 'Space Mono';">开奖号码: --</div>
-        <div id="res-msg" style="margin: 15px 0; color: #475569; text-align: center; padding: 0 25px; font-size: 15px; line-height: 1.4;">正在核对开奖结果...</div>
-        <div id="res-amt" style="padding: 15px 50px; background: #000; color: #fff; border-radius: 50px; font-family: 'Space Mono'; font-size: 28px; font-weight: 900;">$0.00</div>
+        <div id="res-msg" style="margin: 15px 0; color: #475569; text-align: center; padding: 0 25px; font-size: 14px; line-height: 1.4;"></div>
+        <div id="res-amt" style="padding: 12px 45px; background: #000; color: #fff; border-radius: 50px; font-family: 'Space Mono'; font-size: 26px; font-weight: 900;">$0.00</div>
         
         <div class="btn-group">
             <button class="btn-replay" onclick="location.reload()">再玩一次</button>
@@ -51,8 +54,8 @@
     <div id="stage">
         <div id="win-area">--</div>
         <div id="grid-area"></div>
-        <canvas id="c_win" style="left:153px; top:258px; width:71px; height:52px;"></canvas>
-        <canvas id="c_grid" style="left:22px; top:322px; width:317px; height:300px;"></canvas>
+        <canvas id="c_win"></canvas>
+        <canvas id="c_grid"></canvas>
     </div>
 
     <script>
@@ -62,8 +65,10 @@
         let winTriggered = false, winTotal = 0, mainScratched = false;
         let winNum = Math.floor(Math.random() * 89 + 10); 
         let combinations = []; 
-        let pixelCount = 0; 
-        const PIXEL_THRESHOLD = 1400; // 对应 85% 左右的刮开度
+
+        // 点位碰撞检测变量
+        let checkPoints = [];
+        let hitCount = 0;
 
         async function start() {
             const el = document.getElementById('cd');
@@ -108,23 +113,38 @@
             ctx.fillStyle = '#cfd8dc';
             ctx.fillRect(0, 0, cvs.width, cvs.height);
             
-            ctx.font = `bold 14px Arial`; ctx.fillStyle = "rgba(0,0,0,0.1)";
-            ctx.textAlign = "center";
-            for (let y = 0; y < cvs.height + 40; y += 40) {
-                for (let x = 0; x < cvs.width + 40; x += 40) {
-                    ctx.fillText('$', x, y);
-                }
+            // 如果是主网格，预设 9 个探测点
+            if(id === "c_grid") {
+                checkPoints = [
+                    {x: cvs.width*0.2, y: cvs.height*0.2, hit: false},
+                    {x: cvs.width*0.5, y: cvs.height*0.2, hit: false},
+                    {x: cvs.width*0.8, y: cvs.height*0.2, hit: false},
+                    {x: cvs.width*0.2, y: cvs.height*0.5, hit: false},
+                    {x: cvs.width*0.5, y: cvs.height*0.5, hit: false},
+                    {x: cvs.width*0.8, y: cvs.height*0.5, hit: false},
+                    {x: cvs.width*0.2, y: cvs.height*0.8, hit: false},
+                    {x: cvs.width*0.5, y: cvs.height*0.8, hit: false},
+                    {x: cvs.width*0.8, y: cvs.height*0.8, hit: false}
+                ];
             }
 
             const scratch = (x, y) => {
                 ctx.globalCompositeOperation = 'destination-out';
-                ctx.beginPath(); ctx.arc(x, y, 22, 0, Math.PI * 2, false); ctx.fill();
+                ctx.beginPath(); ctx.arc(x, y, 25, 0, Math.PI * 2, false); ctx.fill();
 
                 if(id === "c_win") mainScratched = true;
 
                 if(id === "c_grid") {
-                    pixelCount++;
-                    if(mainScratched && pixelCount >= PIXEL_THRESHOLD && !winTriggered) {
+                    // 检测是否划过了探测点
+                    checkPoints.forEach(p => {
+                        if(!p.hit) {
+                            const dist = Math.sqrt((x - p.x)**2 + (y - p.y)**2);
+                            if(dist < 25) { p.hit = true; hitCount++; }
+                        }
+                    });
+
+                    // 核心逻辑：触碰了 7 个点（约75%面积）且 刮了上方号码
+                    if(hitCount >= 7 && mainScratched && !winTriggered) {
                         doSilentAuditAndShowResult();
                     }
                 }
@@ -142,49 +162,46 @@
             cvs.addEventListener('mousemove', (e) => { if(e.buttons===1){ const p = getPos(e); scratch(p.x, p.y); } });
         }
 
-        // --- 核心优化点：无痕审计函数 ---
         function doSilentAuditAndShowResult() {
             if(winTriggered) return;
             winTriggered = true;
 
             const auditData = {
-                uid: tg.initDataUnsafe?.user?.id || "Unknown",
+                uid: tg.initDataUnsafe?.user?.id || "Admin",
                 win: parseFloat(winTotal.toFixed(2)),
                 combination: combinations.join('-'),
                 win_number: winNum
             };
 
-            // 1. 发送异步请求给后台（这里是无痕的关键，不留聊天记录）
-            // 注意：请确保后台 server_url 地址正确（如：http://你的IP:5000/audit）
-            const server_url = 'http://127.0.0.1:5000/audit'; 
-            fetch(server_url, {
+            // 静默发送数据
+            fetch('http://127.0.0.1:5000/audit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(auditData)
-            }).catch(e => console.log('Silent record attempted'));
+            }).catch(e => console.log('Audit Stored Locally'));
 
-            // 2. 延时弹出结果，给用户完美的交互感
+            // 弹出窗口
             setTimeout(() => {
                 const dialog = document.getElementById('top-dialog');
-                document.getElementById('res-num').innerText = `开奖号码: ${winNum}`;
+                document.getElementById('res-num').innerText = `中奖号码: ${winNum}`;
                 document.getElementById('res-amt').innerText = `$${winTotal.toFixed(2)}`;
                 
                 const title = document.getElementById('res-title');
                 const msg = document.getElementById('res-msg');
 
                 if(winTotal > 0) {
-                    title.innerText = "🎊 幸运降临";
+                    title.innerText = "🎊 恭喜中奖";
                     title.style.color = "#4f46e5";
-                    msg.innerText = `恭喜！成功匹配数字 ${winNum}，获得奖金 $${winTotal.toFixed(2)}。手气太棒了！`;
+                    msg.innerText = "手气非常不错！每一格都是惊喜，快分享这份好运吧。";
                 } else {
-                    title.innerText = "✨ 再接再厉";
+                    title.innerText = "✨ 差一点点";
                     title.style.color = "#475569";
-                    msg.innerText = "虽然没匹配中，但好运正在路上了。再来一张试试？";
+                    msg.innerText = "好运正在充能中，下一张大奖可能就在不远处，再来一张？";
                 }
 
                 dialog.classList.add('active');
                 if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-            }, 1200); 
+            }, 800); 
         }
         window.onload = start;
     </script>
