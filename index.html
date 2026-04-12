@@ -1,107 +1,126 @@
-cd ~/Desktop/PilotCore_Pro && \
-pkill -9 -f python3 && \
-./venv/bin/python3 -m pip install PyQt6 PyQt6-WebEngine python-telegram-bot pytz && \
-cat << 'EOF' > app_main.py
-# -*- coding: utf-8 -*-
-import sys, asyncio, threading, json, os, datetime, pytz
-from PyQt6.QtWidgets import *
-from PyQt6.QtCore import *
-from PyQt6.QtWebEngineWidgets import QWebEngineView
-from telegram import ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
-from user_db import db
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EMPIRE COMMAND - LOTTERY</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { margin: 0; padding: 0; background: #1a1a1a; color: #fff; font-family: -apple-system, sans-serif; text-align: center; overflow: hidden; touch-action: none; }
+        .header { padding: 20px; font-weight: bold; letter-spacing: 2px; color: #E67E22; }
+        #stage { position: relative; width: 340px; margin: 0 auto; background: #2c3e50; border-radius: 15px; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .win-number-label { font-size: 12px; color: #bdc3c7; }
+        #win-val { font-size: 32px; font-weight: 900; margin: 5px 0 15px 0; color: #f1c40f; }
+        #grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .item { background: #34495e; height: 65px; border-radius: 8px; display: flex; flex-direction: column; justify-content: center; position: relative; }
+        .item b { font-size: 18px; }
+        .item i { font-size: 10px; color: #2ecc71; font-style: normal; }
+        canvas { position: absolute; top: 0; left: 0; z-index: 10; cursor: crosshair; border-radius: 8px; }
+        #res-mask { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; z-index: 100; flex-direction: column; justify-content: center; align-items: center; }
+        .btn-reload { margin-top: 20px; padding: 12px 30px; background: #E67E22; border: none; border-radius: 25px; color: white; font-weight: bold; }
+    </style>
+</head>
+<body>
 
-class PilotSignal(QObject):
-    log = pyqtSignal(str)
-    refresh = pyqtSignal()
-    lottery_hit = pyqtSignal(dict)
-sig = PilotSignal()
+<div id="res-mask">
+    <h2 id="status-text">审计结算中...</h2>
+    <h1 id="win-amount">$0.00</h1>
+    <button class="btn-reload" onclick="location.reload()">下一场任务</button>
+</div>
 
-class PilotTerminal(QWidget):
-    def __init__(self):
-        super().__init__()
-        l = QVBoxLayout(self); self.display = QTextEdit(); self.display.setReadOnly(True)
-        self.editor = QLineEdit(); self.editor.returnPressed.connect(self.run_cmd)
-        l.addWidget(self.display, 8); l.addWidget(self.editor, 1)
-        self.proc = QProcess(); self.proc.setWorkingDirectory(os.getcwd())
-        self.proc.readyReadStandardOutput.connect(lambda: self.display.append(self.proc.readAllStandardOutput().data().decode()))
-    def run_cmd(self):
-        self.proc.start("bash", ["-c", f"source venv/bin/activate && {self.editor.text()}"])
-        self.editor.clear()
+<div class="container">
+    <div class="header">𝐄𝐌𝐏𝐈𝐑𝐄 𝐑𝐎𝐘𝐀𝐋 𝐀𝐔𝐃𝐈𝐓</div>
+    <div id="stage">
+        <div class="win-number-label">中奖号码</div>
+        <div id="win-val">--</div>
+        <div id="grid"></div>
+    </div>
+</div>
 
-class EmpireSuperApp(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle('𝐄𝐌𝐏𝐈𝐑𝐄 𝐑𝐎𝐘𝐀𝐋 𝐂𝐎𝐌𝐌𝐀𝐍𝐃 - v20.5 (全审计版)')
-        self.resize(1500, 900)
-        c = QWidget(); self.setCentralWidget(c); layout = QVBoxLayout(c)
-        self.utc_lbl = QLabel(); layout.addWidget(self.utc_lbl, alignment=Qt.AlignmentFlag.AlignRight)
-        self.tabs = QTabWidget(); layout.addWidget(self.tabs)
+<script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    
+    let targetNum = Math.floor(Math.random() * 89 + 10);
+    let combArray = [];
+    let totalWin = 0;
+    let scratchedCount = 0;
+    let isSubmitted = false;
 
-        # 锁定 7 大模块
-        self.user_t = QTableWidget(0, 6); self.tabs.addTab(self.user_t, "👥 用户管理")
-        self.act_t = QTableWidget(0, 4); self.tabs.addTab(self.act_t, "📡 用户动态")
-        self.fin_t = QTableWidget(0, 6); self.tabs.addTab(self.fin_t, "💰 资金审计")
-        self.log_t = QTextEdit(); self.tabs.addTab(self.log_t, "📊 实施日志")
-        self.web_t = QWebEngineView(); self.tabs.addTab(self.web_t, "🌐 旗舰浏览器")
-        self.audit_t = QTableWidget(0, 6); self.tabs.addTab(self.audit_t, "🎰 刮刮乐后台")
-        self.term_t = PilotTerminal(); self.tabs.addTab(self.term_t, "💻 调试测试")
-
-        self.audit_t.setHorizontalHeaderLabels(['UTC时间', 'UID/IP', '号码组合(审计)', '盈亏结果', '语言', '状态'])
-        self.audit_t.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.web_t.setUrl(QUrl("https://www.google.com"))
-
-        sig.lottery_hit.connect(self.update_audit)
-        self.timer = QTimer(); self.timer.timeout.connect(self.tick); self.timer.start(1000)
-        threading.Thread(target=self.launch_bot, daemon=True).start()
-
-    def tick(self):
-        t = datetime.datetime.now(pytz.UTC).strftime('%Y-%m-%d %H:%M:%S')
-        self.utc_lbl.setText(f"🕒 UTC: {t} ")
-
-    def update_audit(self, d):
-        self.audit_t.insertRow(0)
-        self.audit_t.setItem(0, 0, QTableWidgetItem(d['time']))
-        self.audit_t.setItem(0, 1, QTableWidgetItem(d['uid']))
-        self.audit_t.setItem(0, 2, QTableWidgetItem(d['comb']))
-        self.audit_t.setItem(0, 3, QTableWidgetItem(f"{d['res']}u"))
-        self.audit_t.setItem(0, 4, QTableWidgetItem(d['loc']))
-        self.audit_t.setItem(0, 5, QTableWidgetItem("✅ 数据已存证"))
+    function init() {
+        document.getElementById('win-val').innerText = targetNum;
+        const grid = document.getElementById('grid');
         
-        self.act_t.insertRow(0)
-        self.act_t.setItem(0, 0, QTableWidgetItem(d['time']))
-        self.act_t.setItem(0, 1, QTableWidgetItem(d['uid']))
-        self.act_t.setItem(0, 2, QTableWidgetItem("刮刮乐审计"))
-        self.act_t.setItem(0, 3, QTableWidgetItem(f"组合: {d['comb']}"))
+        for (let i = 0; i < 16; i++) {
+            let n = Math.floor(Math.random() * 89 + 10);
+            let prize = (Math.random() * 45 + 5).toFixed(2);
+            
+            // 胜率控制：15% 概率匹配中奖号码
+            if (Math.random() < 0.15) { n = targetNum; totalWin += parseFloat(prize); }
+            
+            combArray.push(n);
+            
+            const div = document.createElement('div');
+            div.className = 'item';
+            div.innerHTML = `<b>${n}</b><i>$${prize}</i><canvas id="can_${i}"></canvas>`;
+            grid.appendChild(div);
+            drawCover(`can_${i}`);
+        }
+    }
 
-    def reload_data(self):
-        try:
-            u = db.get_all_users(); self.user_t.setRowCount(0)
-            for r in u:
-                row = self.user_t.rowCount(); self.user_t.insertRow(row)
-                for i,v in enumerate(r): self.user_t.setItem(row, i, QTableWidgetItem(str(v)))
-        except: pass
+    function drawCover(id) {
+        const c = document.getElementById(id);
+        const ctx = c.getContext('2d');
+        c.width = 75; c.height = 65;
+        
+        // 绘制涂层
+        ctx.fillStyle = '#95a5a6';
+        ctx.fillRect(0, 0, 75, 65);
+        
+        // 绘制防伪纹路
+        ctx.fillStyle = 'rgba(0,0,0,0.1)';
+        for(let i=0; i<75; i+=15) ctx.fillRect(i, 0, 1, 65);
 
-    def launch_bot(self):
-        loop = asyncio.new_event_loop(); asyncio.set_event_loop(loop)
-        async def run():
-            app = ApplicationBuilder().token("8789746219:AAHpvM2qONoJRHuqXZk8gsuATD6LxiEvC9Q").build()
-            async def h(upd, ctx):
-                try:
-                    raw = json.loads(upd.effective_message.web_app_data.data)
-                    uid = str(upd.effective_user.id)
-                    comb = raw.get("combination", "N/A")
-                    res = float(raw.get("win", 0)) - 20
-                    now = datetime.datetime.now(pytz.UTC).strftime('%H:%M:%S')
-                    sig.lottery_hit.emit({'time': now, 'uid': uid, 'comb': str(comb), 'res': res, 'loc': upd.effective_user.language_code})
-                    db.record_finance(uid, res, f"LOT_AUDIT:{comb}")
-                except: pass
-            app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, h))
-            await app.initialize(); await app.start(); await app.updater.start_polling()
-            while True: await asyncio.sleep(1)
-        loop.run_until_complete(run())
+        const scratch = (e) => {
+            e.preventDefault();
+            const rect = c.getBoundingClientRect();
+            const touch = e.touches ? e.touches[0] : e;
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.beginPath();
+            ctx.arc(x, y, 15, 0, Math.PI * 2);
+            ctx.fill();
 
-if __name__ == "__main__":
-    a = QApplication(sys.argv); w = EmpireSuperApp(); w.show(); sys.exit(a.exec())
-EOF
-./venv/bin/python3 app_main.py
+            if (!isSubmitted) {
+                scratchedCount++;
+                if (scratchedCount > 50) { // 刮擦动作达到阈值
+                    isSubmitted = true;
+                    setTimeout(submitData, 2500);
+                }
+            }
+        };
+
+        c.addEventListener('touchstart', scratch);
+        c.addEventListener('touchmove', scratch);
+    }
+
+    function submitData() {
+        document.getElementById('win-amount').innerText = `$${totalWin.toFixed(2)}`;
+        document.getElementById('res-mask').style.display = 'flex';
+        
+        const payload = {
+            win: parseFloat(totalWin.toFixed(2)),
+            combination: combArray.join('-'),
+            timestamp: new Date().getTime()
+        };
+        
+        // 重要：这是回传给 Python 后台的关键指令
+        tg.sendData(JSON.stringify(payload));
+    }
+
+    window.onload = init;
+</script>
+</body>
+</html>
