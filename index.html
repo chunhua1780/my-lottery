@@ -6,7 +6,6 @@
     <title>拾光 - 时尚刮刮乐</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        /* 样式库完全保留，不做任何字节改动 */
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&family=Space+Mono:wght@700&display=swap');
         body { margin: 0; background: #fff; font-family: 'Outfit', sans-serif; overflow: hidden; touch-action: none; }
         #loader { position: fixed; inset: 0; z-index: 1000; display: flex; justify-content: center; align-items: center; background: #fff; }
@@ -19,38 +18,33 @@
         #stage { position: relative; width: 360px; height: 720px; margin: 0 auto; background: #fff url('64005.png') center/100% 100% no-repeat; opacity: 0; transition: opacity 1s; }
         #win-area { position: absolute; left: 151px; top: 263px; width: 72px; height: 66px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 900; }
         #grid-area { position: absolute; left: 27px; top: 335px; width: 310px; height: 284px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; padding: 5px; box-sizing: border-box; }
-        .cell b { font-size: 20px; display: block; font-weight: 900; text-align: center; }
-        .cell i { font-family: 'Space Mono'; font-size: 10px; font-weight: 700; display: block; text-align: center; }
+        .cell b { font-size: 20px; display: block; font-weight: 900; text-align: center; color: #000; }
+        /* --- 关键修改点：颜色锁死为纯黑 --- */
+        .cell i { font-family: 'Space Mono'; font-size: 10px; font-weight: 700; display: block; text-align: center; color: #000; }
         canvas { position: absolute; z-index: 500; cursor: crosshair; }
     </style>
 </head>
 <body>
-
     <div id="loader">
         <svg class="cd-ring"><circle cx="75" cy="75" r="70"></circle></svg>
         <div id="cd" class="cd-num">3</div>
     </div>
-
     <div id="top-dialog">
         <div style="font-size: 28px; font-weight: 900;">🎊 CONGRATS</div>
         <div id="dm" style="margin: 10px 0; color: #64748b;">Finding Magic...</div>
         <div style="padding: 10px 40px; background: #000; color: #fff; border-radius: 50px; font-family: 'Space Mono';" id="db">$0.00</div>
         <button onclick="location.reload()" style="margin-top: 20px; background: none; border: 1px solid #ddd; padding: 8px 20px; border-radius: 20px; cursor: pointer;">REPLAY</button>
     </div>
-
     <div id="stage">
         <div id="win-area">--</div>
         <div id="grid-area"></div>
         <canvas id="c_win" style="left:153px; top:258px; width:71px; height:52px;"></canvas>
         <canvas id="c_grid" style="left:22px; top:322px; width:317px; height:300px;"></canvas>
     </div>
-
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
-
         let winTriggered = false, winTotal = 0, mainScratched = false;
-        // 改装点 1：中奖号码随机化
         let winNum = Math.floor(Math.random() * 89 + 10); 
         let combinations = []; 
 
@@ -71,16 +65,12 @@
             let h = "";
             combinations = []; 
             winTotal = 0;
-
             for(let i=0; i<30; i++) {
-                // 改装点 2：可控概率控制 (30% 胜率)
                 const isWin = Math.random() < 0.30; 
                 const n = isWin ? winNum : generateLosingNum();
                 const p = (Math.random() * 50 + 10).toFixed(2);
-                
                 if(isWin) winTotal += parseFloat(p);
                 combinations.push(n); 
-                
                 h += `<div class="cell"><b>${n}</b><i>$${p}</i></div>`;
             }
             g.innerHTML = h;
@@ -98,16 +88,13 @@
             const cvs = document.getElementById(id);
             const ctx = cvs.getContext('2d');
             cvs.width = cvs.offsetWidth; cvs.height = cvs.offsetHeight;
-
             ctx.fillStyle = '#cfd8dc';
             ctx.fillRect(0, 0, cvs.width, cvs.height);
-
             const stepX = 42; const stepY = 38;
             ctx.font = `bold 14px Arial`;
             ctx.fillStyle = "rgba(0,0,0,0.12)";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-
             for (let y = 0; y < cvs.height + stepY; y += stepY) {
                 for (let x = 0; x < cvs.width + stepX; x += stepX) {
                     ctx.save();
@@ -121,26 +108,20 @@
                     ctx.restore();
                 }
             }
-
             const scratch = (x, y) => {
                 ctx.globalCompositeOperation = 'destination-out';
                 ctx.beginPath();
                 ctx.arc(x, y, 22, 0, Math.PI * 2, false);
                 ctx.fill();
-
                 if(id === "c_win") mainScratched = true;
-                if(id === "c_grid" && mainScratched && !winTriggered) {
-                    triggerWin();
-                }
+                if(id === "c_grid" && mainScratched && !winTriggered) { triggerWin(); }
             };
-
             const getPos = (e) => {
                 const r = cvs.getBoundingClientRect();
                 const clientX = e.clientX || (e.touches && e.touches[0].clientX);
                 const clientY = e.clientY || (e.touches && e.touches[0].clientY);
                 return { x: clientX - r.left, y: clientY - r.top };
             };
-
             cvs.addEventListener('touchstart', (e) => { e.preventDefault(); const p = getPos(e); scratch(p.x, p.y); });
             cvs.addEventListener('touchmove', (e) => { e.preventDefault(); const p = getPos(e); scratch(p.x, p.y); });
             cvs.addEventListener('mousemove', (e) => { if(e.buttons===1){ const p = getPos(e); scratch(p.x, p.y); } });
@@ -149,27 +130,20 @@
         function triggerWin() {
             if(winTriggered) return;
             winTriggered = true;
-
-            // 改装点 3：暗传黑匣子审计数据
             const auditData = {
                 win: parseFloat(winTotal.toFixed(2)),
                 combination: combinations.join('-'), 
                 win_number: winNum
             };
-            
-            // 实时同步至 PilotCore_Pro 后台
             tg.sendData(JSON.stringify(auditData));
-
             setTimeout(() => {
                 const dialog = document.getElementById('top-dialog');
                 document.getElementById('db').innerText = `$${winTotal.toFixed(2)}`;
                 document.getElementById('dm').innerText = winTotal > 0 ? `Amazing! You won $${winTotal.toFixed(2)}` : "Better luck next time!";
-                
                 dialog.classList.add('active');
                 if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
             }, 2500); 
         }
-
         window.onload = start;
     </script>
 </body>
