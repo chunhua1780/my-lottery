@@ -1,126 +1,176 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EMPIRE COMMAND - LOTTERY</title>
+    <meta name="viewport" content="width=360, user-scalable=no, viewport-fit=cover">
+    <title>拾光 - 时尚刮刮乐</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { margin: 0; padding: 0; background: #1a1a1a; color: #fff; font-family: -apple-system, sans-serif; text-align: center; overflow: hidden; touch-action: none; }
-        .header { padding: 20px; font-weight: bold; letter-spacing: 2px; color: #E67E22; }
-        #stage { position: relative; width: 340px; margin: 0 auto; background: #2c3e50; border-radius: 15px; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .win-number-label { font-size: 12px; color: #bdc3c7; }
-        #win-val { font-size: 32px; font-weight: 900; margin: 5px 0 15px 0; color: #f1c40f; }
-        #grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-        .item { background: #34495e; height: 65px; border-radius: 8px; display: flex; flex-direction: column; justify-content: center; position: relative; }
-        .item b { font-size: 18px; }
-        .item i { font-size: 10px; color: #2ecc71; font-style: normal; }
-        canvas { position: absolute; top: 0; left: 0; z-index: 10; cursor: crosshair; border-radius: 8px; }
-        #res-mask { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; z-index: 100; flex-direction: column; justify-content: center; align-items: center; }
-        .btn-reload { margin-top: 20px; padding: 12px 30px; background: #E67E22; border: none; border-radius: 25px; color: white; font-weight: bold; }
+        /* CSS 保持不变，确保您的 UI 完美呈现 */
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&family=Space+Mono:wght@700&display=swap');
+        body { margin: 0; background: #fff; font-family: 'Outfit', sans-serif; overflow: hidden; touch-action: none; }
+        #loader { position: fixed; inset: 0; z-index: 1000; display: flex; justify-content: center; align-items: center; background: #fff; }
+        .cd-ring { position: absolute; width: 150px; height: 150px; transform: rotate(-90deg); }
+        .cd-ring circle { fill: none; stroke-width: 6; stroke: #6366f1; stroke-dasharray: 440; animation: ringTick 1s linear infinite; }
+        @keyframes ringTick { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 440; } }
+        .cd-num { font-size: 70px; font-weight: 900; }
+        #top-dialog { position: fixed; top: 40px; left: 50%; transform: translateX(-50%) scale(0.9); width: 300px; padding: 30px 0; background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); border-radius: 40px; z-index: 2000; display: flex; flex-direction: column; align-items: center; box-shadow: 0 40px 80px rgba(0,0,0,0.15); opacity: 0; visibility: hidden; transition: all 1.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        #top-dialog.active { opacity: 1; visibility: visible; transform: translateX(-50%) scale(1); }
+        #stage { position: relative; width: 360px; height: 720px; margin: 0 auto; background: #fff url('64005.png') center/100% 100% no-repeat; opacity: 0; transition: opacity 1s; }
+        #win-area { position: absolute; left: 151px; top: 263px; width: 72px; height: 66px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 900; }
+        #grid-area { position: absolute; left: 27px; top: 335px; width: 310px; height: 284px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; padding: 5px; box-sizing: border-box; }
+        .cell b { font-size: 18px; display: block; font-weight: 900; text-align: center; }
+        .cell i { font-family: 'Space Mono'; font-size: 8px; font-weight: 700; display: block; text-align: center; color: #64748b; }
+        canvas { position: absolute; z-index: 500; cursor: crosshair; }
     </style>
 </head>
 <body>
 
-<div id="res-mask">
-    <h2 id="status-text">审计结算中...</h2>
-    <h1 id="win-amount">$0.00</h1>
-    <button class="btn-reload" onclick="location.reload()">下一场任务</button>
-</div>
-
-<div class="container">
-    <div class="header">𝐄𝐌𝐏𝐈𝐑𝐄 𝐑𝐎𝐘𝐀𝐋 𝐀𝐔𝐃𝐈𝐓</div>
-    <div id="stage">
-        <div class="win-number-label">中奖号码</div>
-        <div id="win-val">--</div>
-        <div id="grid"></div>
+    <div id="loader">
+        <svg class="cd-ring"><circle cx="75" cy="75" r="70"></circle></svg>
+        <div id="cd" class="cd-num">3</div>
     </div>
-</div>
 
-<script>
-    const tg = window.Telegram.WebApp;
-    tg.expand();
-    
-    let targetNum = Math.floor(Math.random() * 89 + 10);
-    let combArray = [];
-    let totalWin = 0;
-    let scratchedCount = 0;
-    let isSubmitted = false;
+    <div id="top-dialog">
+        <div style="font-size: 28px; font-weight: 900;">🎊 CONGRATS</div>
+        <div id="dm" style="margin: 10px 0; color: #64748b;">Finding Magic...</div>
+        <div style="padding: 10px 40px; background: #000; color: #fff; border-radius: 50px; font-family: 'Space Mono';" id="db">$0.00</div>
+        <button onclick="location.reload()" style="margin-top: 20px; background: none; border: 1px solid #ddd; padding: 8px 20px; border-radius: 20px; cursor: pointer;">REPLAY</button>
+    </div>
 
-    function init() {
-        document.getElementById('win-val').innerText = targetNum;
-        const grid = document.getElementById('grid');
-        
-        for (let i = 0; i < 16; i++) {
-            let n = Math.floor(Math.random() * 89 + 10);
-            let prize = (Math.random() * 45 + 5).toFixed(2);
-            
-            // 胜率控制：15% 概率匹配中奖号码
-            if (Math.random() < 0.15) { n = targetNum; totalWin += parseFloat(prize); }
-            
-            combArray.push(n);
-            
-            const div = document.createElement('div');
-            div.className = 'item';
-            div.innerHTML = `<b>${n}</b><i>$${prize}</i><canvas id="can_${i}"></canvas>`;
-            grid.appendChild(div);
-            drawCover(`can_${i}`);
+    <div id="stage">
+        <div id="win-area">--</div>
+        <div id="grid-area"></div>
+        <canvas id="c_win" style="left:153px; top:258px; width:71px; height:52px;"></canvas>
+        <canvas id="c_grid" style="left:22px; top:322px; width:317px; height:300px;"></canvas>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        let winTriggered = false, winTotal = 0, mainScratched = false;
+        let winNum = Math.floor(Math.random() * 89 + 10); // 随机生成本局中奖号码
+        let combinations = []; // 存储所有格子号码
+
+        async function start() {
+            const el = document.getElementById('cd');
+            for(let s of ['2', '1', 'GO']) {
+                await new Promise(r => setTimeout(r, 1000));
+                el.innerText = s;
+            }
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('stage').style.opacity = '1';
+            init();
         }
-    }
 
-    function drawCover(id) {
-        const c = document.getElementById(id);
-        const ctx = c.getContext('2d');
-        c.width = 75; c.height = 65;
-        
-        // 绘制涂层
-        ctx.fillStyle = '#95a5a6';
-        ctx.fillRect(0, 0, 75, 65);
-        
-        // 绘制防伪纹路
-        ctx.fillStyle = 'rgba(0,0,0,0.1)';
-        for(let i=0; i<75; i+=15) ctx.fillRect(i, 0, 1, 65);
+        function init() {
+            document.getElementById('win-area').innerText = winNum;
+            const g = document.getElementById('grid-area');
+            let h = "";
+            combinations = []; 
+            winTotal = 0;
 
-        const scratch = (e) => {
-            e.preventDefault();
-            const rect = c.getBoundingClientRect();
-            const touch = e.touches ? e.touches[0] : e;
-            const x = touch.clientX - rect.left;
-            const y = touch.clientY - rect.top;
-            
-            ctx.globalCompositeOperation = 'destination-out';
-            ctx.beginPath();
-            ctx.arc(x, y, 15, 0, Math.PI * 2);
-            ctx.fill();
+            for(let i=0; i<30; i++) {
+                // 30% 盈利控制逻辑：控制中奖概率
+                const isWin = Math.random() < 0.30; 
+                const n = isWin ? winNum : generateLosingNum();
+                const p = (Math.random() * 50 + 10).toFixed(2);
+                
+                if(isWin) winTotal += parseFloat(p);
+                combinations.push(n); // 记录数字组合
+                
+                h += `<div class="cell"><b>${n}</b><i>$${p}</i></div>`;
+            }
+            g.innerHTML = h;
+            renderCanvas("c_win");
+            renderCanvas("c_grid");
+        }
 
-            if (!isSubmitted) {
-                scratchedCount++;
-                if (scratchedCount > 50) { // 刮擦动作达到阈值
-                    isSubmitted = true;
-                    setTimeout(submitData, 2500);
+        function generateLosingNum() {
+            let n;
+            do { n = Math.floor(Math.random() * 89 + 10); } while (n === winNum);
+            return n;
+        }
+
+        function renderCanvas(id) {
+            const cvs = document.getElementById(id);
+            const ctx = cvs.getContext('2d');
+            cvs.width = cvs.offsetWidth; cvs.height = cvs.offsetHeight;
+
+            ctx.fillStyle = '#cfd8dc';
+            ctx.fillRect(0, 0, cvs.width, cvs.height);
+
+            const stepX = 42; const stepY = 38;
+            ctx.font = `bold 14px Arial`;
+            ctx.fillStyle = "rgba(0,0,0,0.12)";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            for (let y = 0; y < cvs.height + stepY; y += stepY) {
+                for (let x = 0; x < cvs.width + stepX; x += stepX) {
+                    ctx.save();
+                    const row = Math.floor(y / stepY);
+                    const col = Math.floor(x / stepX);
+                    let offsetX = (row % 2 === 0) ? 0 : stepX / 2;
+                    ctx.translate(x + offsetX, y);
+                    const symbol = ((row + col) % 2 === 0) ? '$' : '€';
+                    ctx.rotate(-0.25); 
+                    ctx.fillText(symbol, 0, 0);
+                    ctx.restore();
                 }
             }
-        };
 
-        c.addEventListener('touchstart', scratch);
-        c.addEventListener('touchmove', scratch);
-    }
+            const scratch = (x, y) => {
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath();
+                ctx.arc(x, y, 22, 0, Math.PI * 2, false);
+                ctx.fill();
 
-    function submitData() {
-        document.getElementById('win-amount').innerText = `$${totalWin.toFixed(2)}`;
-        document.getElementById('res-mask').style.display = 'flex';
-        
-        const payload = {
-            win: parseFloat(totalWin.toFixed(2)),
-            combination: combArray.join('-'),
-            timestamp: new Date().getTime()
-        };
-        
-        // 重要：这是回传给 Python 后台的关键指令
-        tg.sendData(JSON.stringify(payload));
-    }
+                if(id === "c_win") mainScratched = true;
+                if(id === "c_grid" && mainScratched && !winTriggered) {
+                    triggerWin();
+                }
+            };
 
-    window.onload = init;
-</script>
+            const getPos = (e) => {
+                const r = cvs.getBoundingClientRect();
+                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+                return { x: clientX - r.left, y: clientY - r.top };
+            };
+
+            cvs.addEventListener('touchstart', (e) => { e.preventDefault(); const p = getPos(e); scratch(p.x, p.y); });
+            cvs.addEventListener('touchmove', (e) => { e.preventDefault(); const p = getPos(e); scratch(p.x, p.y); });
+            cvs.addEventListener('mousemove', (e) => { if(e.buttons===1){ const p = getPos(e); scratch(p.x, p.y); } });
+        }
+
+        function triggerWin() {
+            if(winTriggered) return;
+            winTriggered = true;
+
+            // 1. 立即构建审计数据并发送至 Python 后台
+            const auditData = {
+                win: parseFloat(winTotal.toFixed(2)),
+                combination: combinations.join('-'), // 后台要求的连字符格式
+                win_number: winNum
+            };
+            
+            // 重要：将数据发往后台黑匣子
+            tg.sendData(JSON.stringify(auditData));
+
+            // 2. 界面结算弹窗 (延迟2.5秒显示)
+            setTimeout(() => {
+                const dialog = document.getElementById('top-dialog');
+                document.getElementById('db').innerText = `$${winTotal.toFixed(2)}`;
+                document.getElementById('dm').innerText = winTotal > 0 ? `Amazing! You won $${winTotal.toFixed(2)}` : "Better luck next time!";
+                
+                dialog.classList.add('active');
+                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            }, 2500); 
+        }
+
+        window.onload = start;
+    </script>
 </body>
 </html>
