@@ -3,53 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=360, user-scalable=no, viewport-fit=cover">
-    <title>拾光 - 时尚刮刮乐</title>
+    <title>拾光 - 极智刮刮乐</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&family=Space+Mono:wght@700&display=swap');
         body { margin: 0; background: #fff; font-family: 'Outfit', sans-serif; overflow: hidden; touch-action: none; }
         
-        /* 计时器 */
+        /* 1. 倒计时光环 */
         #loader { position: fixed; inset: 0; z-index: 1000; display: flex; justify-content: center; align-items: center; background: #fff; }
-        .cd-ring { position: absolute; width: 150px; height: 150px; transform: rotate(-90deg); }
-        .cd-ring circle { fill: none; stroke-width: 6; stroke: #6366f1; stroke-dasharray: 440; animation: ringTick 1s linear infinite; }
-        @keyframes ringTick { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 440; } }
-        .cd-num { font-size: 70px; font-weight: 900; }
+        .cd-wrapper { position: relative; width: 140px; height: 140px; display: flex; justify-content: center; align-items: center; }
+        .cd-ring-svg { position: absolute; width: 140px; height: 140px; transform: rotate(-90deg); }
+        .cd-ring-svg circle { fill: none; stroke-width: 7; stroke-linecap: round; stroke: url(#grad); stroke-dasharray: 440; stroke-dashoffset: 0; transition: stroke-dashoffset 0.8s linear; }
+        .cd-num { font-size: 60px; font-weight: 900; color: #1e293b; }
 
-        /* 弹窗：双语国际化 */
+        /* 2. 弹窗优化：位置更高、尺寸更小、不挡号码 */
         #top-dialog {
-            position: fixed; top: 40px; left: 50%; transform: translateX(-50%) scale(0.9);
-            width: 320px; padding: 30px 0; background: rgba(255,255,255,0.98);
-            backdrop-filter: blur(20px); border-radius: 45px; z-index: 2000;
+            position: fixed; 
+            top: 20px; /* 往上移，留出中间视野 */
+            left: 50%; transform: translateX(-50%) scale(0.6); /* 初始缩小 */
+            width: 280px; padding: 20px 0; background: rgba(255,255,255,0.98);
+            backdrop-filter: blur(20px); border-radius: 35px; z-index: 9999;
             display: flex; flex-direction: column; align-items: center;
-            box-shadow: 0 40px 100px rgba(0,0,0,0.2);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.15);
             opacity: 0; visibility: hidden;
-            transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
             border: 1px solid rgba(255,255,255,0.5);
         }
-        #top-dialog.active { opacity: 1; visibility: visible; transform: translateX(-50%) scale(1); }
+        #top-dialog.active { opacity: 1; visibility: visible; transform: translateX(-50%) scale(0.85); } /* 最终大小也调小一点 */
 
-        #stage { position: relative; width: 360px; height: 720px; margin: 0 auto; background: #fff url('64005.png') center/100% 100% no-repeat; opacity: 0; transition: opacity 1s; }
+        #stage { position: relative; width: 360px; height: 720px; margin: 0 auto; background: #fff url('64005.png') center/100% 100% no-repeat; opacity: 0; transition: opacity 0.5s; }
         #win-area { position: absolute; left: 151px; top: 263px; width: 72px; height: 66px; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 900; color: #1e293b; }
         #grid-area { position: absolute; left: 27px; top: 335px; width: 310px; height: 284px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; padding: 5px; box-sizing: border-box; }
-        .cell b { font-size: 20px; display: block; font-weight: 900; text-align: center; color: #000; }
-        .cell i { font-family: 'Space Mono'; font-size: 10px; font-weight: 700; display: block; text-align: center; color: #000; }
+        .cell b { font-size: 20px; display: block; font-weight: 900; text-align: center; }
+        .cell i { font-family: 'Space Mono'; font-size: 10px; display: block; text-align: center; font-style: normal; }
 
         canvas { position: absolute; z-index: 500; cursor: crosshair; }
-        .btn-replay { margin-top: 20px; background: #6366f1; color: #fff; border: none; padding: 12px 30px; border-radius: 30px; cursor: pointer; font-weight: 600; }
+        .btn-replay { margin-top: 15px; background: #6366f1; color: #fff; border: none; padding: 10px 25px; border-radius: 20px; cursor: pointer; font-weight: 600; font-size: 12px; }
     </style>
 </head>
 <body>
 
     <div id="loader">
-        <svg class="cd-ring"><circle cx="75" cy="75" r="70"></circle></svg>
-        <div id="cd" class="cd-num">3</div>
+        <div class="cd-wrapper">
+            <svg class="cd-ring-svg"><defs><linearGradient id="grad"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#ec4899"/></linearGradient></defs>
+            <circle id="p-circle" cx="70" cy="70" r="65"></circle></svg>
+            <div id="cd" class="cd-num">3</div>
+        </div>
     </div>
 
     <div id="top-dialog">
-        <div id="res-title" style="font-size: 24px; font-weight: 900; text-align: center;">Result Centre<br><span style="font-size: 16px;">结算中心</span></div>
-        <div id="dm" style="margin: 15px 0; color: #64748b; text-align: center; font-size: 14px; line-height: 1.4;"></div>
-        <div style="padding: 12px 45px; background: #000; color: #fff; border-radius: 50px; font-family: 'Space Mono'; font-size: 26px;" id="db">$0.00</div>
+        <div style="font-size: 20px; font-weight: 900; text-align: center;">RESULT / 结算</div>
+        <div id="dm" style="margin: 10px 0; color: #64748b; text-align: center; font-size: 12px; line-height: 1.4; padding: 0 15px;"></div>
+        <div style="padding: 10px 35px; background: #000; color: #fff; border-radius: 50px; font-family: 'Space Mono'; font-size: 22px;" id="db">$0.00</div>
         <button class="btn-replay" onclick="location.reload()">PLAY AGAIN / 再玩一次</button>
     </div>
 
@@ -65,126 +70,107 @@
         tg.expand();
 
         let winTriggered = false, winTotal = 0, mainScratched = false;
-        let winNum = Math.floor(Math.random() * 89 + 10); // 1. 随机化中奖号码
-        let combinations = []; // 存储所有格子数字，用于后台审计
-        let ticketSerial = 'SN-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        let winNum = Math.floor(Math.random() * 89 + 10); 
+        let combinations = []; let points = []; let scratchCount = 0;
+        let ticketSerial = 'SN-' + Math.random().toString(36).substr(2, 7).toUpperCase();
 
-        async function start() {
-            const el = document.getElementById('cd');
-            for(let s of ['2', '1', 'GO']) {
-                await new Promise(r => setTimeout(r, 900));
-                el.innerText = s;
-            }
-            document.getElementById('loader').style.display = 'none';
-            document.getElementById('stage').style.opacity = '1';
-            init();
+        function startTimer() {
+            let c = 3; const el = document.getElementById('cd'); const circ = document.getElementById('p-circle');
+            const t = setInterval(() => {
+                c--;
+                if(c > 0) { el.innerText = c; circ.style.strokeDashoffset = 440 - (440 * (3-c+1)/4); }
+                else if(c === 0) { el.innerText = "GO"; circ.style.strokeDashoffset = 440; }
+                else { clearInterval(t); enterGame(); }
+            }, 900);
         }
 
-        function init() {
+        function enterGame() {
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('stage').style.opacity = '1';
+            initBoard();
+        }
+
+        function initBoard() {
             document.getElementById('win-area').innerText = winNum;
             const g = document.getElementById('grid-area');
-            let h = "";
-            combinations = []; 
-            winTotal = 0;
-
+            let h = ""; combinations = []; winTotal = 0;
             for(let i=0; i<30; i++) {
-                // 算法：控制中奖率在 15%-20%，确保庄家(您) 30% 盈利率
-                const isWin = Math.random() > 0.85; 
-                const n = isWin ? winNum : generateLosingNum();
+                const isWin = Math.random() > 0.85; // 盈利率控制
+                const n = isWin ? winNum : generateLossNum();
                 const p = (Math.random() * 50 + 10).toFixed(2);
-                
                 if(isWin) winTotal += parseFloat(p);
-                combinations.push(n); 
+                combinations.push(n);
                 h += `<div class="cell"><b>${n}</b><i>$${p}</i></div>`;
             }
             g.innerHTML = h;
-            renderCanvas("c_win");
-            renderCanvas("c_grid");
+            renderLayer("c_win"); renderLayer("c_grid");
         }
 
-        function generateLosingNum() {
-            let n;
-            do { n = Math.floor(Math.random() * 89 + 10); } while (n === winNum);
-            return n;
+        function generateLossNum() {
+            let n; do { n = Math.floor(Math.random()*89+10); } while(n === winNum); return n;
         }
 
-        function renderCanvas(id) {
-            const cvs = document.getElementById(id);
-            const ctx = cvs.getContext('2d');
+        function renderLayer(id) {
+            const cvs = document.getElementById(id); const ctx = cvs.getContext('2d');
             cvs.width = cvs.offsetWidth; cvs.height = cvs.offsetHeight;
-            ctx.fillStyle = '#cfd8dc';
-            ctx.fillRect(0, 0, cvs.width, cvs.height);
-
-            // 绘制底纹
-            ctx.font = `bold 14px Arial`;
-            ctx.fillStyle = "rgba(0,0,0,0.12)";
-            ctx.textAlign = "center";
-            for (let y = 20; y < cvs.height + 20; y += 40) {
-                for (let x = 20; x < cvs.width + 20; x += 40) {
-                    ctx.fillText(((x+y)/40 % 2 === 0 ? '$' : '€'), x, y);
+            ctx.fillStyle = '#cfd8dc'; ctx.fillRect(0,0,cvs.width,cvs.height);
+            ctx.font = "bold 15px Arial"; ctx.fillStyle = "rgba(0,0,0,0.1)"; ctx.textAlign = "center";
+            for(let y=20; y<cvs.height+20; y+=40) {
+                for(let x=20; x<cvs.width+20; x+=40) {
+                    ctx.fillText(((x+y)/40%2===0?'$':'€'), x, y);
                 }
             }
-
+            if(id === "c_grid") {
+                points = []; for(let i=0; i<20; i++) points.push({x: Math.random()*cvs.width, y: Math.random()*cvs.height, h: false});
+            }
             const scratch = (x, y) => {
                 ctx.globalCompositeOperation = 'destination-out';
-                ctx.beginPath();
-                ctx.arc(x, y, 25, 0, Math.PI * 2, false);
-                ctx.fill();
-
+                ctx.beginPath(); ctx.arc(x, y, 24, 0, Math.PI*2); ctx.fill();
                 if(id === "c_win") mainScratched = true;
-                if(id === "c_grid" && mainScratched && !winTriggered) {
-                    // 模拟检测刮开面积，这里设定为一定动作后触发
-                    if(Math.random() > 0.98) triggerWin(); 
+                if(id === "c_grid") {
+                    scratchCount++;
+                    points.forEach(p => { if(!p.h && Math.hypot(p.x-x, p.y-y) < 24) p.h = true; });
+                    if((points.filter(p=>p.h).length >= 14 || scratchCount > 180) && mainScratched && !winTriggered) preTrigger();
                 }
             };
-
-            const getPos = (e) => {
-                const r = cvs.getBoundingClientRect();
-                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-                return { x: clientX - r.left, y: clientY - r.top };
+            const handle = (e) => {
+                const r = cvs.getBoundingClientRect(); const t = e.touches ? e.touches[0] : e;
+                scratch(t.clientX - r.left, t.clientY - r.top);
             };
-
-            cvs.addEventListener('touchmove', (e) => { e.preventDefault(); const p = getPos(e); scratch(p.x, p.y); });
-            cvs.addEventListener('mousemove', (e) => { if(e.buttons===1){ const p = getPos(e); scratch(p.x, p.y); } });
+            cvs.addEventListener('touchmove', (e) => { e.preventDefault(); handle(e); });
+            cvs.addEventListener('mousemove', (e) => { if(e.buttons===1) handle(e); });
         }
 
-        function triggerWin() {
-            if(winTriggered) return;
+        // 3. 预触发逻辑：先发数据，再等3秒弹窗
+        function preTrigger() {
             winTriggered = true;
-
-            // 2. 构造后台审计数据
-            const auditData = {
-                user_id: tg.initDataUnsafe?.user?.id || "Unknown",
-                user_name: tg.initDataUnsafe?.user?.first_name || "Guest",
-                ticket_sn: ticketSerial,
-                win_num: winNum,
-                amount: winTotal.toFixed(2),
-                pattern: combinations.join(','),
-                utc_time: new Date().toISOString()
-            };
-
-            // 悄悄发送到后台 (不影响前端展示)
-            fetch('http://您的后台IP:5000/audit', {
+            // 悄悄发射数据
+            fetch('http://127.0.0.1:5000/audit', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(auditData)
-            }).catch(e => console.log('Audit sent'));
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    uid: tg.initDataUnsafe?.user?.id || "6688",
+                    sn: ticketSerial,
+                    win: winTotal.toFixed(2),
+                    num: winNum,
+                    comb: combinations.join(','),
+                    time: new Date().toISOString()
+                })
+            }).catch(() => {});
 
-            // 弹出窗口
+            // 机长要求：晚出现3秒，让人有权利核对
             setTimeout(() => {
                 const dialog = document.getElementById('top-dialog');
                 document.getElementById('db').innerText = `$${winTotal.toFixed(2)}`;
                 document.getElementById('dm').innerHTML = winTotal > 0 ? 
-                    `Winning Number: ${winNum}<br>Amazing! You matched and won.` : 
-                    `Winning Number: ${winNum}<br>Better luck next time!`;
-                
+                    `Matched Number: ${winNum}<br>You've got the magic touch!` : 
+                    `Matched Number: ${winNum}<br>So close! Try one more?`;
                 dialog.classList.add('active');
                 if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-            }, 800); 
+            }, 3000); // 3秒核对时间
         }
 
-        window.onload = start;
+        window.onload = startTimer;
     </script>
 </body>
 </html>
