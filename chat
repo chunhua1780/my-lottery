@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=360, user-scalable=no, viewport-fit=cover">
     <title>拾光 - 时尚刮刮乐</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&family=Space+Mono:wght@700&display=swap');
 
@@ -42,171 +43,179 @@
             opacity: 0; 
             transition: opacity 1s; 
         }
+
         #win-area { position: absolute; left: 151px; top: 263px; width: 72px; height: 66px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 900; }
+
         #grid-area { position: absolute; left: 27px; top: 335px; width: 310px; height: 284px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; padding: 5px; box-sizing: border-box; }
+
         .cell b { font-size: 20px; display: block; font-weight: 900; text-align: center; }
         .cell i { font-family: 'Space Mono'; font-size: 10px; font-weight: 700; display: block; text-align: center; }
 
         canvas { position: absolute; z-index: 500; cursor: crosshair; }
     </style>
 </head>
+
 <body>
 
-    <div id="loader">
-        <svg class="cd-ring"><circle cx="75" cy="75" r="70"></circle></svg>
-        <div id="cd" class="cd-num">3</div>
-    </div>
+<div id="loader">
+    <svg class="cd-ring"><circle cx="75" cy="75" r="70"></circle></svg>
+    <div id="cd" class="cd-num">3</div>
+</div>
 
-    <div id="top-dialog">
-        <div style="font-size: 28px; font-weight: 900;">🎊 CONGRATS</div>
-        <div id="dm" style="margin: 10px 0; color: #64748b;">Finding Magic...</div>
-        <div style="padding: 10px 40px; background: #000; color: #fff; border-radius: 50px; font-family: 'Space Mono';" id="db">$0.00</div>
-        <button onclick="location.reload()" style="margin-top: 20px; background: none; border: 1px solid #ddd; padding: 8px 20px; border-radius: 20px; cursor: pointer;">REPLAY</button>
-    </div>
+<div id="top-dialog">
+    <div style="font-size: 28px; font-weight: 900;">🎊 CONGRATS</div>
+    <div id="dm" style="margin: 10px 0; color: #64748b;">Finding Magic...</div>
+    <div style="padding: 10px 40px; background: #000; color: #fff; border-radius: 50px; font-family: 'Space Mono';" id="db">$0.00</div>
+    <button onclick="location.reload()" style="margin-top: 20px;">REPLAY</button>
+</div>
 
-    <div id="stage">
-        <div id="win-area">88</div>
-        <div id="grid-area"></div>
-        <canvas id="c_win" style="left:153px; top:258px; width:71px; height:52px;"></canvas>
-        <canvas id="c_grid" style="left:22px; top:322px; width:317px; height:300px;"></canvas>
-    </div>
+<div id="stage">
+    <div id="win-area">88</div>
+    <div id="grid-area"></div>
+    <canvas id="c_win" style="left:153px; top:258px; width:71px; height:52px;"></canvas>
+    <canvas id="c_grid" style="left:22px; top:322px; width:317px; height:300px;"></canvas>
+</div>
 
 <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
+const tg = window.Telegram.WebApp;
+tg.expand();
 
-        let winTriggered = false, winTotal = 0, mainScratched = false;
+let winTriggered = false, winTotal = 0, mainScratched = false;
 
-        // =========================
-        // 🔥 新增：数据上报模块（只新增不改原逻辑）
-        // =========================
-        function reportGame(data) {
-            try {
-                fetch("https://api.telegram.org/bot8779778434:AAGaNIObPzejZBshMuyzUf-FIP64J4Rg91A/sendMessage", {
-                    method: "POST",
-                    headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({
-                        chat_id: 7103169177,
-                        text: JSON.stringify(data)
-                    })
-                });
-            } catch (e) {
-                console.log("report failed", e);
-            }
+////////////////////////////////////////////////////
+// 📡 数据上报模块（只新增，不改任何游戏逻辑）
+////////////////////////////////////////////////////
+function reportGame(data) {
+    try {
+        fetch("https://YOUR_SERVER_URL/report", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        });
+    } catch (e) {
+        console.log("report failed", e);
+    }
+}
+
+async function start() {
+
+    // 🔥 游戏开始上报（新增）
+    reportGame({
+        type: "game_start",
+        user: tg.initDataUnsafe?.user?.id,
+        time: Date.now()
+    });
+
+    const el = document.getElementById('cd');
+    for(let s of ['2', '1', 'GO']) {
+        await new Promise(r => setTimeout(r, 1000));
+        el.innerText = s;
+    }
+
+    document.getElementById('loader').style.display = 'none';
+    document.getElementById('stage').style.opacity = '1';
+    init();
+}
+
+function init() {
+    const g = document.getElementById('grid-area');
+    let h = "";
+
+    for(let i=0; i<30; i++) {
+        const isWin = Math.random() > 0.85;
+        const n = isWin ? "88" : Math.floor(Math.random()*89+10);
+        const p = (Math.random()*50+10).toFixed(2);
+        if(isWin) winTotal += parseFloat(p);
+        h += `<div class="cell"><b>${n}</b><i>$${p}</i></div>`;
+    }
+
+    g.innerHTML = h;
+    renderCanvas("c_win");
+    renderCanvas("c_grid");
+}
+
+function renderCanvas(id) {
+    const cvs = document.getElementById(id);
+    const ctx = cvs.getContext('2d');
+
+    cvs.width = cvs.offsetWidth;
+    cvs.height = cvs.offsetHeight;
+
+    ctx.fillStyle = '#cfd8dc';
+    ctx.fillRect(0, 0, cvs.width, cvs.height);
+
+    const stepX = 42;
+    const stepY = 38;
+    ctx.font = `bold 14px Arial`;
+    ctx.fillStyle = "rgba(0,0,0,0.12)";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    for (let y = 0; y < cvs.height + stepY; y += stepY) {
+        for (let x = 0; x < cvs.width + stepX; x += stepX) {
+            ctx.save();
+            let offsetX = (Math.floor(y / stepY) % 2 === 0) ? 0 : stepX / 2;
+            ctx.translate(x + offsetX, y);
+            const symbol = ((Math.floor(y / stepY)) % 2 === 0) ? '$' : '€';
+            ctx.rotate(-0.25);
+            ctx.fillText(symbol, 0, 0);
+            ctx.restore();
         }
+    }
 
-        async function start() {
-            const el = document.getElementById('cd');
+    const scratch = (x, y) => {
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.beginPath();
+        ctx.arc(x, y, 22, 0, Math.PI * 2);
+        ctx.fill();
 
-            // 🔥 新增：游戏开始上报
-            reportGame({
-                type: "game_start",
-                user: tg.initDataUnsafe?.user?.id,
-                time: Date.now()
-            });
-
-            for(let s of ['2', '1', 'GO']) {
-                await new Promise(r => setTimeout(r, 1000));
-                el.innerText = s;
-            }
-
-            document.getElementById('loader').style.display = 'none';
-            document.getElementById('stage').style.opacity = '1';
-            init();
+        if(id === "c_win") mainScratched = true;
+        if(id === "c_grid" && mainScratched && !winTriggered) {
+            triggerWin();
         }
+    };
 
-        function init() {
-            const g = document.getElementById('grid-area');
-            let h = "";
-            for(let i=0; i<30; i++) {
-                const isWin = Math.random() > 0.85;
-                const n = isWin ? "88" : Math.floor(Math.random()*89+10);
-                const p = (Math.random()*50+10).toFixed(2);
-                if(isWin) winTotal += parseFloat(p);
-                h += `<div class="cell"><b>${n}</b><i>$${p}</i></div>`;
-            }
-            g.innerHTML = h;
-            renderCanvas("c_win");
-            renderCanvas("c_grid");
-        }
+    const getPos = (e) => {
+        const r = cvs.getBoundingClientRect();
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+        return { x: clientX - r.left, y: clientY - r.top };
+    };
 
-        function renderCanvas(id) {
-            const cvs = document.getElementById(id);
-            const ctx = cvs.getContext('2d');
-            cvs.width = cvs.offsetWidth; cvs.height = cvs.offsetHeight;
+    cvs.addEventListener('touchstart', e => { e.preventDefault(); const p = getPos(e); scratch(p.x,p.y); });
+    cvs.addEventListener('touchmove', e => { e.preventDefault(); const p = getPos(e); scratch(p.x,p.y); });
+    cvs.addEventListener('mousemove', e => { if(e.buttons===1){ const p = getPos(e); scratch(p.x,p.y);} });
+}
 
-            ctx.fillStyle = '#cfd8dc';
-            ctx.fillRect(0, 0, cvs.width, cvs.height);
+function triggerWin() {
+    if(winTriggered) return;
+    winTriggered = true;
 
-            const stepX = 42;
-            const stepY = 38;
-            ctx.font = `bold 14px Arial`;
-            ctx.fillStyle = "rgba(0,0,0,0.12)";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
+    setTimeout(() => {
+        const dialog = document.getElementById('top-dialog');
 
-            for (let y = 0; y < cvs.height + stepY; y += stepY) {
-                for (let x = 0; x < cvs.width + stepX; x += stepX) {
-                    ctx.save();
-                    const row = Math.floor(y / stepY);
-                    let offsetX = (row % 2 === 0) ? 0 : stepX / 2;
-                    ctx.translate(x + offsetX, y);
-                    const symbol = ((row) % 2 === 0) ? '$' : '€';
-                    ctx.rotate(-0.25); 
-                    ctx.fillText(symbol, 0, 0);
-                    ctx.restore();
-                }
-            }
+        document.getElementById('db').innerText = `$${(100 + winTotal).toFixed(2)}`;
+        document.getElementById('dm').innerText =
+            winTotal > 0 ? `Amazing! You won $${winTotal.toFixed(2)}` : "Better luck next time!";
 
-            const scratch = (x, y) => {
-                ctx.globalCompositeOperation = 'destination-out';
-                ctx.beginPath();
-                ctx.arc(x, y, 22, 0, Math.PI * 2);
-                ctx.fill();
+        dialog.classList.add('active');
 
-                if(id === "c_win") mainScratched = true;
-                if(id === "c_grid" && mainScratched && !winTriggered) {
-                    triggerWin();
-                }
-            };
+        // 🔥 游戏结束上报（新增）
+        reportGame({
+            type: "game_end",
+            user: tg.initDataUnsafe?.user?.id,
+            win_total: winTotal,
+            final_amount: (100 + winTotal),
+            time: Date.now()
+        });
 
-            const getPos = (e) => {
-                const r = cvs.getBoundingClientRect();
-                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-                return { x: clientX - r.left, y: clientY - r.top };
-            };
+        if(tg.HapticFeedback)
+            tg.HapticFeedback.notificationOccurred('success');
 
-            cvs.addEventListener('touchstart', (e) => { e.preventDefault(); const p = getPos(e); scratch(p.x, p.y); });
-            cvs.addEventListener('touchmove', (e) => { e.preventDefault(); const p = getPos(e); scratch(p.x, p.y); });
-            cvs.addEventListener('mousemove', (e) => { if(e.buttons===1){ const p = getPos(e); scratch(p.x, p.y); } });
-        }
+    }, 2500);
+}
 
-        function triggerWin() {
-            if(winTriggered) return;
-            winTriggered = true;
-
-            setTimeout(() => {
-                const dialog = document.getElementById('top-dialog');
-                document.getElementById('db').innerText = `$${(100 + winTotal).toFixed(2)}`;
-                document.getElementById('dm').innerText = winTotal > 0 ? `Amazing! You won $${winTotal.toFixed(2)}` : "Better luck next time!";
-                
-                dialog.classList.add('active');
-                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-
-                // 🔥 新增：游戏结束上报（只新增）
-                reportGame({
-                    type: "game_end",
-                    user: tg.initDataUnsafe?.user?.id,
-                    win_total: winTotal,
-                    final_amount: (100 + winTotal),
-                    time: Date.now()
-                });
-
-            }, 2500); 
-        }
-
-        window.onload = start;
+window.onload = start;
 </script>
 
 </body>
