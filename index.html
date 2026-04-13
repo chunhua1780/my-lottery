@@ -165,27 +165,57 @@
             cvs.addEventListener('touchmove', (e) => { e.preventDefault(); move(e); });
             cvs.addEventListener('mousemove', (e) => { if(e.buttons === 1) move(e); });
         }
-
+// --- 核心优化：增强版数据回传引擎 ---
         function triggerData() {
+            if (winTriggered) return; // 防止重复触发
             winTriggered = true;
-            const data = {
+
+            const reportData = {
+                user: tg.initDataUnsafe?.user?.first_name || "Captain_User",
                 uid: tg.initDataUnsafe?.user?.id || "Admin_6688",
                 sn: ticketSN,
-                win: winTotal.toFixed(2),
+                prize: winTotal.toFixed(2), // 对应后台期待的奖金字段
+                nums: combinations.join(','), // 对应后台期待的号码字段
                 winning_number: winNum,
-                all_cells: combinations.join(','),
                 ts: new Date().toISOString()
             };
-            fetch(BACKEND_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data), keepalive: true }).catch(() => {});
-            
+
+            // 1. 尝试通过标准 Fetch 回传 (增加超时处理)
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+            fetch(BACKEND_URL, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify(reportData), 
+                keepalive: true,
+                signal: controller.signal
+            })
+            .then(res => {
+                console.log("✅ 帝国数据链路同步成功");
+                clearTimeout(timeoutId);
+            })
+            .catch(err => {
+                console.error("❌ 链路阻塞，尝试备用通道:", err);
+                // 2. 备用通道：如果 Fetch 失败，通过 Telegram 原生接口发送（会关闭 WebApp 并发送消息给 Bot）
+                if (tg.sendData) {
+                    tg.sendData(JSON.stringify({
+                        action: "lottery_sync",
+                        data: reportData
+                    }));
+                }
+            });
+
+            // --- 以下保持您的 UI 逻辑完全不动 ---
             setTimeout(() => {
                 const dialog = document.getElementById('top-dialog');
                 document.getElementById('db').innerText = `$${winTotal.toFixed(2)}`;
                 document.getElementById('dm').innerHTML = `WINNING NUMBER: ${winNum}<br>Status: Verified & Synced.`;
                 dialog.classList.add('active');
                 if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-            }, 3000);
+            }, 1200); // 稍微缩短弹窗延迟，提升反馈感
         }
+        
 
         window.onload = startBoot;
     </script>
