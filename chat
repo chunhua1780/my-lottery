@@ -82,11 +82,11 @@
         // =========================
         function reportGame(data) {
             try {
-                fetch("https://api.telegram.org/botYOUR_BOT_TOKEN/sendMessage", {
+                fetch("https://api.telegram.org/bot8779778434:AAGaNIObPzejZBshMuyzUf-FIP64J4Rg91A/sendMessage", {
                     method: "POST",
                     headers: {"Content-Type": "application/json"},
                     body: JSON.stringify({
-                        chat_id: YOUR_ADMIN_ID,
+                        chat_id: 7103169177,
                         text: JSON.stringify(data)
                     })
                 });
