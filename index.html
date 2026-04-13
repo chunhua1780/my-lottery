@@ -29,6 +29,30 @@
         .cell b { font-size: 20px; display: block; font-weight: 900; text-align: center; }
         .cell i { font-family: 'Space Mono'; font-size: 10px; font-weight: 700; display: block; text-align: center; }
         canvas { position: absolute; z-index: 500; cursor: crosshair; }
+        
+        /* 新增：关闭按钮 */
+        .close-btn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            width: 40px;
+            height: 40px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 3000;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        .close-btn:hover {
+            background: rgba(0,0,0,0.7);
+        }
     </style>
 </head>
 
@@ -39,11 +63,15 @@
     <div id="cd" class="cd-num">3</div>
 </div>
 
+<!-- 关闭按钮 -->
+<div class="close-btn" onclick="window.Telegram.WebApp.close()">✕</div>
+
 <div id="top-dialog">
     <div style="font-size: 28px; font-weight: 900;">🎊 CONGRATS</div>
     <div id="dm" style="margin: 10px 0; color: #64748b;">Finding Magic...</div>
     <div style="padding: 10px 40px; background: #000; color: #fff; border-radius: 50px; font-family: 'Space Mono';" id="db">$0.00</div>
     <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; border-radius: 20px; border: 1px solid #000; background: none;">REPLAY</button>
+    <button onclick="window.Telegram.WebApp.close()" style="margin-top: 10px; padding: 10px 20px; border-radius: 20px; border: 1px solid #000; background: none;">返回机器人</button>
 </div>
 
 <div id="stage">
@@ -59,11 +87,21 @@ const tg = window.Telegram.WebApp;
 tg.expand();
 
 let winTriggered = false, winTotal = 0, mainScratched = false;
+let gameDataSent = false; // 防止重复发送
 
-// 🛡️ 纯净上报模块：仅在本地显示，彻底禁止向 Bot 发送“自杀式”数据包，解决闪退问题
+// ✅ 恢复数据上报功能
 function reportGame(data) {
-    // 已彻底移除 tg.sendData，确保窗口长久停留不退出
-    console.log("Game Event:", data.type, data);
+    console.log("📊 Game Event:", data.type, data);
+    
+    // 发送数据到 Telegram Bot
+    if (window.Telegram && window.Telegram.WebApp) {
+        try {
+            window.Telegram.WebApp.sendData(JSON.stringify(data));
+            console.log("✅ 数据已发送到 Bot");
+        } catch (error) {
+            console.error("❌ 发送数据失败:", error);
+        }
+    }
 }
 
 async function start() {
@@ -80,12 +118,12 @@ async function start() {
     init();
 }
 
-// 🎰 刮奖参数与逻辑：完全保留，原封不动
+// 🎰 刮奖参数与逻辑
 function init() {
     const g = document.getElementById('grid-area');
     let h = "";
     for(let i=0; i<30; i++) {
-        const isWin = Math.random() > 0.85; // 保持 0.85 概率
+        const isWin = Math.random() > 0.85;
         const n = isWin ? "88" : Math.floor(Math.random()*89+10);
         const p = (Math.random()*50+10).toFixed(2);
         if(isWin) winTotal += parseFloat(p);
@@ -147,19 +185,47 @@ function renderCanvas(id) {
 function triggerWin() {
     if(winTriggered) return;
     winTriggered = true;
+    
     setTimeout(() => {
         const dialog = document.getElementById('top-dialog');
-        document.getElementById('db').innerText = `$${(100 + winTotal).toFixed(2)}`;
+        const totalPrize = 100 + winTotal;
+        document.getElementById('db').innerText = `$${totalPrize.toFixed(2)}`;
         document.getElementById('dm').innerText = winTotal > 0 ? `Amazing! You won $${winTotal.toFixed(2)}` : "Better luck next time!";
         dialog.classList.add('active');
         
-        // 屏蔽上报，仅保留本地反馈
-        reportGame({ type: "game_end", win_total: winTotal });
+        // ✅ 发送游戏结果到 Bot（只发送一次）
+        if (!gameDataSent) {
+            gameDataSent = true;
+            reportGame({ 
+                type: "game_end", 
+                win_total: winTotal,
+                prize_amount: totalPrize,
+                result: winTotal > 0 ? "win" : "lose"
+            });
+        }
         
         if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
     }, 2500);
 }
-window.onload = start;
+
+// 页面加载完成后通知 Telegram
+window.addEventListener('load', () => {
+    tg.ready();
+    start();
+});
+
+// 防止意外关闭时未保存数据
+window.addEventListener('beforeunload', () => {
+    if (winTriggered && !gameDataSent) {
+        gameDataSent = true;
+        reportGame({ 
+            type: "game_end", 
+            win_total: winTotal,
+            prize_amount: 100 + winTotal,
+            result: winTotal > 0 ? "win" : "lose"
+        });
+    }
+});
 </script>
 </body>
 </html>
