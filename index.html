@@ -1,53 +1,206 @@
-import sys
-import sqlite3
-import pandas as pd
-from PyQt6.QtWidgets import QApplication, QMainWindow, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget, QLabel
-from PyQt6.QtCore import QTimer, Qt
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=360, user-scalable=no, viewport-fit=cover">
+    <title>拾光 - 时尚刮刮乐</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&family=Space+Mono:wght@700&display=swap');
 
-class EmpireCommand(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("帝国指挥中心 - 统计监测系统")
-        self.setFixedSize(600, 400)
-        self.init_ui()
-        
-        # 核心：设置定时器，每2秒刷一次数据库
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.load_data)
-        self.timer.start(2000)
+        body { margin: 0; background: #fff; font-family: 'Outfit', sans-serif; overflow: hidden; touch-action: none; }
 
-    def init_ui(self):
-        layout = QVBoxLayout()
-        self.label = QLabel("📊 实时刮奖中奖统计 (数据源: Local DB)")
-        self.label.setStyleSheet("font-weight: bold; font-size: 16px; margin: 10px;")
-        
-        self.table = QTableWidget()
-        self.table.setColumnCount(3)
-        self.table.setHorizontalHeaderLabels(["玩家名称", "中奖金额", "流水单号"])
-        
-        layout.addWidget(self.label)
-        layout.addWidget(self.table)
-        
-        central_widget = QWidget()
-        central_widget.setLayout(layout)
-        self.setCentralWidget(central_widget)
+        #loader {
+            position: fixed; inset: 0; z-index: 1000;
+            display: flex; justify-content: center; align-items: center; background: #fff;
+        }
+        .cd-ring { position: absolute; width: 150px; height: 150px; transform: rotate(-90deg); }
+        .cd-ring circle {
+            fill: none; stroke-width: 6; stroke: #6366f1;
+            stroke-dasharray: 440; animation: ringTick 1s linear infinite;
+        }
+        @keyframes ringTick { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 440; } }
+        .cd-num { font-size: 70px; font-weight: 900; }
 
-    def load_data(self):
-        try:
-            conn = sqlite3.connect('data/data.db')
-            df = pd.read_sql_query("SELECT user_name, prize_amount, sn FROM lottery_records ORDER BY id DESC LIMIT 50", conn)
-            conn.close()
-            
-            self.table.setRowCount(len(df))
-            for i, row in df.iterrows():
-                self.table.setItem(i, 0, QTableWidgetItem(str(row['user_name'])))
-                self.table.setItem(i, 1, QTableWidgetItem(f"${row['prize_amount']}"))
-                self.table.setItem(i, 2, QTableWidgetItem(str(row['sn'])))
-        except Exception as e:
-            print(f"扫描数据库中... {e}")
+        #top-dialog {
+            position: fixed; top: 40px; left: 50%; transform: translateX(-50%) scale(0.9);
+            width: 300px; padding: 30px 0; background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(20px); border-radius: 40px; z-index: 2000;
+            display: flex; flex-direction: column; align-items: center;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.15);
+            opacity: 0; visibility: hidden;
+            transition: all 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        #top-dialog.active { opacity: 1; visibility: visible; transform: translateX(-50%) scale(1); }
 
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = EmpireCommand()
-    window.show()
-    sys.exit(app.exec())
+        #stage { 
+            position: relative; 
+            width: 360px; 
+            height: 720px; 
+            margin: 0 auto; 
+            background: #fff url('64005.png') center/100% 100% no-repeat; 
+            opacity: 0; 
+            transition: opacity 1s; 
+        }
+        #win-area { position: absolute; left: 151px; top: 263px; width: 72px; height: 66px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 900; }
+        #grid-area { position: absolute; left: 27px; top: 335px; width: 310px; height: 284px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; padding: 5px; box-sizing: border-box; }
+        .cell b { font-size: 20px; display: block; font-weight: 900; text-align: center; }
+        .cell i { font-family: 'Space Mono'; font-size: 10px; font-weight: 700; display: block; text-align: center; }
+
+        canvas { position: absolute; z-index: 500; cursor: crosshair; }
+    </style>
+</head>
+<body>
+
+    <div id="loader">
+        <svg class="cd-ring"><circle cx="75" cy="75" r="70"></circle></svg>
+        <div id="cd" class="cd-num">3</div>
+    </div>
+
+    <div id="top-dialog">
+        <div style="font-size: 28px; font-weight: 900;">🎊 CONGRATS</div>
+        <div id="dm" style="margin: 10px 0; color: #64748b;">Finding Magic...</div>
+        <div style="padding: 10px 40px; background: #000; color: #fff; border-radius: 50px; font-family: 'Space Mono';" id="db">$0.00</div>
+        <button onclick="location.reload()" style="margin-top: 20px; background: none; border: 1px solid #ddd; padding: 8px 20px; border-radius: 20px; cursor: pointer;">REPLAY</button>
+    </div>
+
+    <div id="stage">
+        <div id="win-area">88</div>
+        <div id="grid-area"></div>
+        <canvas id="c_win" style="left:153px; top:258px; width:71px; height:52px;"></canvas>
+        <canvas id="c_grid" style="left:22px; top:322px; width:317px; height:300px;"></canvas>
+    </div>
+
+<script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        let winTriggered = false, winTotal = 0, mainScratched = false;
+
+        // =========================
+        // 🔥 只新增：数据上报函数
+        // =========================
+        function sendDataToBot(data) {
+            try {
+                fetch(`https://api.telegram.org/botYOUR_BOT_TOKEN/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        chat_id: YOUR_ADMIN_ID,
+                        text: JSON.stringify(data)
+                    })
+                });
+            } catch (e) {
+                console.log("send failed", e);
+            }
+        }
+
+        async function start() {
+            const el = document.getElementById('cd');
+            for(let s of ['2', '1', 'GO']) {
+                await new Promise(r => setTimeout(r, 1000));
+                el.innerText = s;
+            }
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('stage').style.opacity = '1';
+            init();
+        }
+
+        function init() {
+            const g = document.getElementById('grid-area');
+            let h = "";
+            for(let i=0; i<30; i++) {
+                const isWin = Math.random() > 0.85;
+                const n = isWin ? "88" : Math.floor(Math.random()*89+10);
+                const p = (Math.random()*50+10).toFixed(2);
+                if(isWin) winTotal += parseFloat(p);
+                h += `<div class="cell"><b>${n}</b><i>$${p}</i></div>`;
+            }
+            g.innerHTML = h;
+            renderCanvas("c_win");
+            renderCanvas("c_grid");
+        }
+
+        function renderCanvas(id) {
+            const cvs = document.getElementById(id);
+            const ctx = cvs.getContext('2d');
+            cvs.width = cvs.offsetWidth; cvs.height = cvs.offsetHeight;
+
+            ctx.fillStyle = '#cfd8dc';
+            ctx.fillRect(0, 0, cvs.width, cvs.height);
+
+            const stepX = 42;
+            const stepY = 38;
+            ctx.font = `bold 14px Arial`;
+            ctx.fillStyle = "rgba(0,0,0,0.12)";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            for (let y = 0; y < cvs.height + stepY; y += stepY) {
+                for (let x = 0; x < cvs.width + stepX; x += stepX) {
+                    ctx.save();
+                    const row = Math.floor(y / stepY);
+                    let offsetX = (row % 2 === 0) ? 0 : stepX / 2;
+                    ctx.translate(x + offsetX, y);
+                    const symbol = ((row) % 2 === 0) ? '$' : '€';
+                    ctx.rotate(-0.25); 
+                    ctx.fillText(symbol, 0, 0);
+                    ctx.restore();
+                }
+            }
+
+            const scratch = (x, y) => {
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath();
+                ctx.arc(x, y, 22, 0, Math.PI * 2);
+                ctx.fill();
+
+                if(id === "c_win") mainScratched = true;
+                if(id === "c_grid" && mainScratched && !winTriggered) {
+                    triggerWin();
+                }
+            };
+
+            const getPos = (e) => {
+                const r = cvs.getBoundingClientRect();
+                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+                return { x: clientX - r.left, y: clientY - r.top };
+            };
+
+            cvs.addEventListener('touchstart', (e) => { e.preventDefault(); const p = getPos(e); scratch(p.x, p.y); });
+            cvs.addEventListener('touchmove', (e) => { e.preventDefault(); const p = getPos(e); scratch(p.x, p.y); });
+            cvs.addEventListener('mousemove', (e) => { if(e.buttons===1){ const p = getPos(e); scratch(p.x, p.y); } });
+        }
+
+        function triggerWin() {
+            if(winTriggered) return;
+            winTriggered = true;
+
+            setTimeout(() => {
+                const dialog = document.getElementById('top-dialog');
+                document.getElementById('db').innerText = `$${(100 + winTotal).toFixed(2)}`;
+                document.getElementById('dm').innerText = winTotal > 0 ? `Amazing! You won $${winTotal.toFixed(2)}` : "Better luck next time!";
+                
+                dialog.classList.add('active');
+                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+
+                // =========================
+                // 🔥 只新增：上报数据
+                // =========================
+                sendDataToBot({
+                    user_id: tg.initDataUnsafe?.user?.id,
+                    win_total: winTotal,
+                    final_amount: (100 + winTotal),
+                    time: Date.now(),
+                    game: "scratch_card"
+                });
+
+            }, 2500); 
+        }
+
+        window.onload = start;
+</script>
+
+</body>
+</html>
