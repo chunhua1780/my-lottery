@@ -1,129 +1,53 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=360, user-scalable=no, viewport-fit=cover">
-    <title>拾光 - 国际极智版</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;900&display=swap');
-        body { margin: 0; background: #fff; font-family: 'Outfit', sans-serif; overflow: hidden; touch-action: none; }
+import sys
+import sqlite3
+import pandas as pd
+from PyQt6.QtWidgets import QApplication, QMainWindow, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget, QLabel
+from PyQt6.QtCore import QTimer, Qt
+
+class EmpireCommand(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("帝国指挥中心 - 统计监测系统")
+        self.setFixedSize(600, 400)
+        self.init_ui()
         
-        /* 加载器 UI - 保持不变 */
-        #loader { position: fixed; inset: 0; z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #ffffff; }
-        .loading-box { position: relative; display: flex; flex-direction: column; align-items: center; }
-        #cd-num { font-size: 100px; font-weight: 900; color: #1e293b; background: linear-gradient(135deg, #6366f1, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1; }
-        .loading-bar-bg { width: 140px; height: 4px; background: #f1f5f9; border-radius: 10px; margin-top: 20px; overflow: hidden; }
-        #loading-bar-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #6366f1, #ec4899); transition: width 0.1s linear; }
-        .loading-text { margin-top: 10px; font-size: 10px; color: #94a3b8; letter-spacing: 2px; }
+        # 核心：设置定时器，每2秒刷一次数据库
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.load_data)
+        self.timer.start(2000)
 
-        /* 结果弹窗 UI - 保持不变 */
-        #top-dialog {
-            position: fixed; top: 25px; left: 50%; transform: translateX(-50%) scale(0.8);
-            width: 300px; padding: 25px 0; background: rgba(255,255,255,0.98);
-            backdrop-filter: blur(25px); border-radius: 40px; z-index: 9999;
-            display: flex; flex-direction: column; align-items: center;
-            box-shadow: 0 40px 100px rgba(0,0,0,0.2);
-            opacity: 0; visibility: hidden;
-            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-            border: 1px solid rgba(255,255,255,0.5);
-        }
-        #top-dialog.active { opacity: 1; visibility: visible; transform: translateX(-50%) scale(1); }
-
-        #stage { position: relative; width: 360px; height: 720px; margin: 0 auto; background: #fff url('64005.png') center/100% 100% no-repeat; opacity: 0; transition: opacity 0.8s; }
-        #win-area { position: absolute; left: 151px; top: 263px; width: 72px; height: 66px; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 900; color: #1e293b; }
-        #grid-area { position: absolute; left: 27px; top: 335px; width: 310px; height: 284px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; padding: 5px; box-sizing: border-box; }
-        .cell b { font-size: 20px; display: block; font-weight: 900; text-align: center; color: #000; }
-        .cell i { font-size: 10px; display: block; text-align: center; color: #000; font-style: normal; font-weight: 600; }
+    def init_ui(self):
+        layout = QVBoxLayout()
+        self.label = QLabel("📊 实时刮奖中奖统计 (数据源: Local DB)")
+        self.label.setStyleSheet("font-weight: bold; font-size: 16px; margin: 10px;")
         
-        canvas { position: absolute; z-index: 500; cursor: crosshair; }
-        .btn-replay { margin-top: 15px; background: #6366f1; color: #fff; padding: 12px 30px; border-radius: 35px; border: none; font-weight: 900; font-size: 12px; }
-    </style>
-</head>
-<body>
+        self.table = QTableWidget()
+        self.table.setColumnCount(3)
+        self.table.setHorizontalHeaderLabels(["玩家名称", "中奖金额", "流水单号"])
+        
+        layout.addWidget(self.label)
+        layout.addWidget(self.table)
+        
+        central_widget = QWidget()
+        central_widget.setLayout(layout)
+        self.setCentralWidget(central_widget)
 
-    <div id="loader">
-        <div class="loading-box">
-            <div id="cd-num">3</div>
-            <div class="loading-bar-bg"><div id="loading-bar-fill"></div></div>
-            <div class="loading-text">Loading Assets...</div>
-        </div>
-    </div>
+    def load_data(self):
+        try:
+            conn = sqlite3.connect('data/data.db')
+            df = pd.read_sql_query("SELECT user_name, prize_amount, sn FROM lottery_records ORDER BY id DESC LIMIT 50", conn)
+            conn.close()
+            
+            self.table.setRowCount(len(df))
+            for i, row in df.iterrows():
+                self.table.setItem(i, 0, QTableWidgetItem(str(row['user_name'])))
+                self.table.setItem(i, 1, QTableWidgetItem(f"${row['prize_amount']}"))
+                self.table.setItem(i, 2, QTableWidgetItem(str(row['sn'])))
+        except Exception as e:
+            print(f"扫描数据库中... {e}")
 
-    <div id="top-dialog">
-        <div style="font-size: 22px; font-weight: 900;">RESULT / 结算统计</div>
-        <div id="dm" style="margin: 12px 0; color: #64748b; text-align: center; font-size: 12px; line-height: 1.5; padding: 0 20px;"></div>
-        <div id="db" style="padding: 10px 45px; background: #000; color: #fff; border-radius: 50px; font-size: 26px; font-weight: 900;">--</div>
-        <button class="btn-replay" onclick="location.reload()">PLAY AGAIN / 再玩一次</button>
-    </div>
-
-    <div id="stage">
-        <div id="win-area">--</div>
-        <div id="grid-area"></div>
-        <canvas id="c_win" style="left:153px; top:258px; width:71px; height:52px;"></canvas>
-        <canvas id="c_grid" style="left:22px; top:322px; width:317px; height:300px;"></canvas>
-    </div>
-
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-
-        // 核心配置
-        const BOT_TOKEN = "8789746219:AAHpvM2qONoJRHuqXZk8gsuATD6LxiEvC9Q";
-        const ADMIN_ID = "6205842828"; 
-
-        let winTriggered = false, winTotal = 0, mainScratched = false;
-        let winNum = Math.floor(Math.random() * 89 + 10); 
-        let combinations = []; let points = []; let scratchCount = 0;
-        let ticketSN = 'SN-' + Math.random().toString(36).substr(2, 7).toUpperCase();
-
-        function startBoot() {
-            let startTime = Date.now();
-            const duration = 3000;
-            const numEl = document.getElementById('cd-num');
-            const barEl = document.getElementById('loading-bar-fill');
-            function update() {
-                let elapsed = Date.now() - startTime;
-                let progress = Math.min(elapsed / duration, 1);
-                barEl.style.width = (progress * 100) + "%";
-                let currentNum = Math.ceil(3 - (progress * 3));
-                numEl.innerText = currentNum <= 0 ? "GO" : currentNum;
-                if(progress < 1) requestAnimationFrame(update);
-                else setTimeout(initGame, 500);
-            }
-            requestAnimationFrame(update);
-        }
-
-        function initGame() {
-            document.getElementById('loader').style.display = 'none';
-            document.getElementById('stage').style.opacity = '1';
-            buildBoard();
-        }
-
-        function buildBoard() {
-            document.getElementById('win-area').innerText = winNum;
-            const g = document.getElementById('grid-area');
-            let h = ""; combinations = []; winTotal = 0;
-            for(let i=0; i<30; i++) {
-                const isWin = Math.random() > 0.85; 
-                const n = isWin ? winNum : Math.floor(Math.random()*89+10);
-                const p = (Math.random() * 50 + 10).toFixed(2);
-                if(isWin) winTotal += parseFloat(p);
-                combinations.push(n);
-                h += `<div class="cell"><b>${n}</b><i>$${p}</i></div>`;
-            }
-            g.innerHTML = h;
-            initCanvas("c_win"); initCanvas("c_grid");
-        }
-
-        function initCanvas(id) {
-            const cvs = document.getElementById(id); const ctx = cvs.getContext('2d');
-            cvs.width = cvs.offsetWidth; cvs.height = cvs.offsetHeight;
-            ctx.fillStyle = '#cfd8dc'; ctx.fillRect(0,0,cvs.width,cvs.height);
-            ctx.font = "bold 16px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-            const spacing = 35; 
-            for (let y = spacing/2; y < cvs.height + spacing; y += spacing) {
-                for (let x = spacing/2; x < cvs.width + spacing; x += spacing) {
-                    const row = Math.floor(y / spacing); const col = Math.floor(x / spacing);
-                    ctx.fillStyle = "rgba(0,0,0,0.15)";
-                    const char = (row + col) % 2 === 0
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = EmpireCommand()
+    window.show()
+    sys.exit(app.exec())
