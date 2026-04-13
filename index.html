@@ -60,20 +60,14 @@ tg.expand();
 
 let winTriggered = false, winTotal = 0, mainScratched = false;
 
-// 📡 优化后的数据上报模块：现在它会尝试向你的 Bot 发送数据，但不影响网页运行
+// 🛡️ 纯净上报模块：仅在本地显示，彻底禁止向 Bot 发送“自杀式”数据包，解决闪退问题
 function reportGame(data) {
-    // 这里我们直接调用 Telegram 的发送数据方法，不走外部 URL
-    if (tg.sendData) {
-        tg.sendData(JSON.stringify(data));
-    }
-    // 如果是中奖了，我们也直接汇报给机长的机器人
-    if (data.type === "game_end" && data.win_total > 0) {
-        console.log("Win Reported:", data.win_total);
-    }
+    // 已彻底移除 tg.sendData，确保窗口长久停留不退出
+    console.log("Game Event:", data.type, data);
 }
 
 async function start() {
-    reportGame({ type: "game_start", user: tg.initDataUnsafe?.user?.id });
+    reportGame({ type: "game_start" });
 
     const el = document.getElementById('cd');
     for(let s of ['2', '1', 'GO']) {
@@ -86,11 +80,12 @@ async function start() {
     init();
 }
 
+// 🎰 刮奖参数与逻辑：完全保留，原封不动
 function init() {
     const g = document.getElementById('grid-area');
     let h = "";
     for(let i=0; i<30; i++) {
-        const isWin = Math.random() > 0.85;
+        const isWin = Math.random() > 0.85; // 保持 0.85 概率
         const n = isWin ? "88" : Math.floor(Math.random()*89+10);
         const p = (Math.random()*50+10).toFixed(2);
         if(isWin) winTotal += parseFloat(p);
@@ -157,7 +152,10 @@ function triggerWin() {
         document.getElementById('db').innerText = `$${(100 + winTotal).toFixed(2)}`;
         document.getElementById('dm').innerText = winTotal > 0 ? `Amazing! You won $${winTotal.toFixed(2)}` : "Better luck next time!";
         dialog.classList.add('active');
-        reportGame({ type: "game_end", win_total: winTotal, final_amount: (100 + winTotal) });
+        
+        // 屏蔽上报，仅保留本地反馈
+        reportGame({ type: "game_end", win_total: winTotal });
+        
         if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
     }, 2500);
 }
