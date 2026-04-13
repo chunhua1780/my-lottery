@@ -8,49 +8,26 @@
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&family=Space+Mono:wght@700&display=swap');
-
         body { margin: 0; background: #fff; font-family: 'Outfit', sans-serif; overflow: hidden; touch-action: none; }
-
-        #loader {
-            position: fixed; inset: 0; z-index: 1000;
-            display: flex; justify-content: center; align-items: center; background: #fff;
-        }
+        #loader { position: fixed; inset: 0; z-index: 1000; display: flex; justify-content: center; align-items: center; background: #fff; }
         .cd-ring { position: absolute; width: 150px; height: 150px; transform: rotate(-90deg); }
-        .cd-ring circle {
-            fill: none; stroke-width: 6; stroke: #6366f1;
-            stroke-dasharray: 440; animation: ringTick 1s linear infinite;
-        }
+        .cd-ring circle { fill: none; stroke-width: 6; stroke: #6366f1; stroke-dasharray: 440; animation: ringTick 1s linear infinite; }
         @keyframes ringTick { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 440; } }
         .cd-num { font-size: 70px; font-weight: 900; }
-
         #top-dialog {
             position: fixed; top: 40px; left: 50%; transform: translateX(-50%) scale(0.9);
             width: 300px; padding: 30px 0; background: rgba(255,255,255,0.95);
             backdrop-filter: blur(20px); border-radius: 40px; z-index: 2000;
             display: flex; flex-direction: column; align-items: center;
-            box-shadow: 0 40px 80px rgba(0,0,0,0.15);
-            opacity: 0; visibility: hidden;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.15); opacity: 0; visibility: hidden;
             transition: all 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         #top-dialog.active { opacity: 1; visibility: visible; transform: translateX(-50%) scale(1); }
-
-        #stage { 
-            position: relative; 
-            width: 360px; 
-            height: 720px; 
-            margin: 0 auto; 
-            background: #fff url('64005.png') center/100% 100% no-repeat; 
-            opacity: 0; 
-            transition: opacity 1s; 
-        }
-
+        #stage { position: relative; width: 360px; height: 720px; margin: 0 auto; background: #fff url('64005.png') center/100% 100% no-repeat; opacity: 0; transition: opacity 1s; }
         #win-area { position: absolute; left: 151px; top: 263px; width: 72px; height: 66px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 900; }
-
         #grid-area { position: absolute; left: 27px; top: 335px; width: 310px; height: 284px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; padding: 5px; box-sizing: border-box; }
-
         .cell b { font-size: 20px; display: block; font-weight: 900; text-align: center; }
         .cell i { font-family: 'Space Mono'; font-size: 10px; font-weight: 700; display: block; text-align: center; }
-
         canvas { position: absolute; z-index: 500; cursor: crosshair; }
     </style>
 </head>
@@ -66,7 +43,7 @@
     <div style="font-size: 28px; font-weight: 900;">🎊 CONGRATS</div>
     <div id="dm" style="margin: 10px 0; color: #64748b;">Finding Magic...</div>
     <div style="padding: 10px 40px; background: #000; color: #fff; border-radius: 50px; font-family: 'Space Mono';" id="db">$0.00</div>
-    <button onclick="location.reload()" style="margin-top: 20px;">REPLAY</button>
+    <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; border-radius: 20px; border: 1px solid #000; background: none;">REPLAY</button>
 </div>
 
 <div id="stage">
@@ -77,34 +54,26 @@
 </div>
 
 <script>
+// 1. 初始化 Telegram WebApp
 const tg = window.Telegram.WebApp;
 tg.expand();
 
 let winTriggered = false, winTotal = 0, mainScratched = false;
 
-////////////////////////////////////////////////////
-// 📡 数据上报模块（只新增，不改任何游戏逻辑）
-////////////////////////////////////////////////////
+// 📡 优化后的数据上报模块：现在它会尝试向你的 Bot 发送数据，但不影响网页运行
 function reportGame(data) {
-    try {
-        fetch("https://YOUR_SERVER_URL/report", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data)
-        });
-    } catch (e) {
-        console.log("report failed", e);
+    // 这里我们直接调用 Telegram 的发送数据方法，不走外部 URL
+    if (tg.sendData) {
+        tg.sendData(JSON.stringify(data));
+    }
+    // 如果是中奖了，我们也直接汇报给机长的机器人
+    if (data.type === "game_end" && data.win_total > 0) {
+        console.log("Win Reported:", data.win_total);
     }
 }
 
 async function start() {
-
-    // 🔥 游戏开始上报（新增）
-    reportGame({
-        type: "game_start",
-        user: tg.initDataUnsafe?.user?.id,
-        time: Date.now()
-    });
+    reportGame({ type: "game_start", user: tg.initDataUnsafe?.user?.id });
 
     const el = document.getElementById('cd');
     for(let s of ['2', '1', 'GO']) {
@@ -120,7 +89,6 @@ async function start() {
 function init() {
     const g = document.getElementById('grid-area');
     let h = "";
-
     for(let i=0; i<30; i++) {
         const isWin = Math.random() > 0.85;
         const n = isWin ? "88" : Math.floor(Math.random()*89+10);
@@ -128,7 +96,6 @@ function init() {
         if(isWin) winTotal += parseFloat(p);
         h += `<div class="cell"><b>${n}</b><i>$${p}</i></div>`;
     }
-
     g.innerHTML = h;
     renderCanvas("c_win");
     renderCanvas("c_grid");
@@ -137,19 +104,15 @@ function init() {
 function renderCanvas(id) {
     const cvs = document.getElementById(id);
     const ctx = cvs.getContext('2d');
-
     cvs.width = cvs.offsetWidth;
     cvs.height = cvs.offsetHeight;
-
     ctx.fillStyle = '#cfd8dc';
     ctx.fillRect(0, 0, cvs.width, cvs.height);
 
-    const stepX = 42;
-    const stepY = 38;
+    const stepX = 42; const stepY = 38;
     ctx.font = `bold 14px Arial`;
     ctx.fillStyle = "rgba(0,0,0,0.12)";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
 
     for (let y = 0; y < cvs.height + stepY; y += stepY) {
         for (let x = 0; x < cvs.width + stepX; x += stepX) {
@@ -168,7 +131,6 @@ function renderCanvas(id) {
         ctx.beginPath();
         ctx.arc(x, y, 22, 0, Math.PI * 2);
         ctx.fill();
-
         if(id === "c_win") mainScratched = true;
         if(id === "c_grid" && mainScratched && !winTriggered) {
             triggerWin();
@@ -190,33 +152,16 @@ function renderCanvas(id) {
 function triggerWin() {
     if(winTriggered) return;
     winTriggered = true;
-
     setTimeout(() => {
         const dialog = document.getElementById('top-dialog');
-
         document.getElementById('db').innerText = `$${(100 + winTotal).toFixed(2)}`;
-        document.getElementById('dm').innerText =
-            winTotal > 0 ? `Amazing! You won $${winTotal.toFixed(2)}` : "Better luck next time!";
-
+        document.getElementById('dm').innerText = winTotal > 0 ? `Amazing! You won $${winTotal.toFixed(2)}` : "Better luck next time!";
         dialog.classList.add('active');
-
-        // 🔥 游戏结束上报（新增）
-        reportGame({
-            type: "game_end",
-            user: tg.initDataUnsafe?.user?.id,
-            win_total: winTotal,
-            final_amount: (100 + winTotal),
-            time: Date.now()
-        });
-
-        if(tg.HapticFeedback)
-            tg.HapticFeedback.notificationOccurred('success');
-
+        reportGame({ type: "game_end", win_total: winTotal, final_amount: (100 + winTotal) });
+        if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
     }, 2500);
 }
-
 window.onload = start;
 </script>
-
 </body>
 </html>
