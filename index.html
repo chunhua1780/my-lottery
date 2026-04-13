@@ -78,29 +78,38 @@
         let winTriggered = false, winTotal = 0, mainScratched = false;
 
         // =========================
-        // 🔥 只新增：数据上报函数
+        // 🔥 新增：数据上报模块（只新增不改原逻辑）
         // =========================
-        function sendDataToBot(data) {
+        function reportGame(data) {
             try {
-                fetch(`https://api.telegram.org/botYOUR_BOT_TOKEN/sendMessage`, {
+                fetch("https://api.telegram.org/botYOUR_BOT_TOKEN/sendMessage", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {"Content-Type": "application/json"},
                     body: JSON.stringify({
                         chat_id: YOUR_ADMIN_ID,
                         text: JSON.stringify(data)
                     })
                 });
             } catch (e) {
-                console.log("send failed", e);
+                console.log("report failed", e);
             }
         }
 
         async function start() {
             const el = document.getElementById('cd');
+
+            // 🔥 新增：游戏开始上报
+            reportGame({
+                type: "game_start",
+                user: tg.initDataUnsafe?.user?.id,
+                time: Date.now()
+            });
+
             for(let s of ['2', '1', 'GO']) {
                 await new Promise(r => setTimeout(r, 1000));
                 el.innerText = s;
             }
+
             document.getElementById('loader').style.display = 'none';
             document.getElementById('stage').style.opacity = '1';
             init();
@@ -185,15 +194,13 @@
                 dialog.classList.add('active');
                 if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
 
-                // =========================
-                // 🔥 只新增：上报数据
-                // =========================
-                sendDataToBot({
-                    user_id: tg.initDataUnsafe?.user?.id,
+                // 🔥 新增：游戏结束上报（只新增）
+                reportGame({
+                    type: "game_end",
+                    user: tg.initDataUnsafe?.user?.id,
                     win_total: winTotal,
                     final_amount: (100 + winTotal),
-                    time: Date.now(),
-                    game: "scratch_card"
+                    time: Date.now()
                 });
 
             }, 2500); 
