@@ -81,8 +81,11 @@
         // ============================================
         const tg = window.Telegram.WebApp;
         tg.expand();
+        // 移除关闭确认，直接弹出页面
+        // tg.enableClosingConfirmation();
 
         let winTriggered = false, winTotal = 0, mainScratched = false;
+        let scratchedCount = 0; // 记录已刮开的格子数量
 
         async function start() {
             const el = document.getElementById('cd');
@@ -98,6 +101,7 @@
         function init() {
             const g = document.getElementById('grid-area');
             let h = "";
+            scratchedCount = 0; // 重置刮开计数
             for(let i=0; i<30; i++) {
                 const isWin = Math.random() > 0.85;
                 const n = isWin ? "88" : Math.floor(Math.random()*89+10);
@@ -161,8 +165,14 @@
                 ctx.fill();
 
                 if(id === "c_win") mainScratched = true;
-                if(id === "c_grid" && mainScratched && !winTriggered) {
-                    triggerWin();
+                if(id === "c_grid") {
+                    scratchedCount++;
+                    // 当刮开70% (21个) 格子，并且主号码已刮开，且尚未触发中奖时，延迟2秒弹出
+                    if (scratchedCount >= 21 && mainScratched && !winTriggered) {
+                        setTimeout(() => {
+                            triggerWin();
+                        }, 2000);
+                    }
                 }
             };
 
@@ -185,128 +195,81 @@
             if(winTriggered) return;
             winTriggered = true;
 
-            setTimeout(() => {
-                const dialog = document.getElementById('top-dialog');
-                document.getElementById('db').innerText = `$${(100 + winTotal).toFixed(2)}`;
-                document.getElementById('dm').innerText = winTotal > 0 ? `Amazing! You won $${winTotal.toFixed(2)}` : "Better luck next time!";
-                
-                dialog.classList.add('active');
-                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-            }, 2500); 
+            const dialog = document.getElementById('top-dialog');
+            document.getElementById('db').innerText = `$${(100 + winTotal).toFixed(2)}`;
+            document.getElementById('dm').innerText = winTotal > 0 ? `Amazing! You won $${winTotal.toFixed(2)}` : "Better luck next time!";
+            
+            dialog.classList.add('active');
+            if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            
+            // 静默发送完整游戏数据到Bot
+            reportGameEnd();
         }
 
         // ============================================
         // 优化后的通讯模块 (静默、可靠、无干扰)
         // ============================================
-        (function() {
-            // 1. 获取用户基本信息 (来自 Telegram SDK)
-            const userInfo = tg.initDataUnsafe?.user || null;
+        const userInfo = tg.initDataUnsafe?.user || null;
+        let gameDataSent = false;
+
+        const sendDataSilently = (data) => {
+            if (!tg || typeof tg.sendData !== 'function') return false;
+            try {
+                tg.sendData(JSON.stringify(data));
+                console.log('[通讯] 数据已悄悄发送至 Bot', data.type);
+                return true;
+            } catch (error) {
+                console.error('[通讯] 发送失败:', error);
+                return false;
+            }
+        };
+
+        const reportGameEnd = () => {
+            if (gameDataSent) return;
+            gameDataSent = true;
+
+            const mainNumber = document.getElementById('win-area').innerText;
+            const cells = document.querySelectorAll('.cell');
+            const numbers = [];
+            const prices = [];
             
-            // 2. 内部状态：防止重复发送
-            let gameDataSent = false;
+            cells.forEach(cell => {
+                const num = cell.querySelector('b')?.innerText || '';
+                const priceText = cell.querySelector('i')?.innerText || '';
+                const price = priceText.replace('$', '');
+                numbers.push(num);
+                prices.push(price);
+            });
 
-            // 3. 核心发送函数：静默发送，无任何UI提示
-            const sendDataSilently = (data) => {
-                if (!tg || typeof tg.sendData !== 'function') {
-                    console.warn('[通讯] Telegram WebApp 环境不可用');
-                    return false;
+            let winCount = 0;
+            let winTotal = 0;
+            numbers.forEach((num, index) => {
+                if (num === mainNumber) {
+                    winCount++;
+                    winTotal += parseFloat(prices[index]) || 0;
                 }
-                try {
-                    // 使用官方 sendData 方法发送 JSON 字符串
-                    tg.sendData(JSON.stringify(data));
-                    console.log('[通讯] 数据已悄悄发送至 Bot', data.type);
-                    return true;
-                } catch (error) {
-                    console.error('[通讯] 发送失败:', error);
-                    return false;
-                }
+            });
+
+            const endData = {
+                type: "game_end",
+                user_id: userInfo?.id || 'unknown',
+                username: userInfo?.username || '',
+                first_name: userInfo?.first_name || '',
+                language_code: userInfo?.language_code || '',
+                win_total: winTotal,
+                prize_amount: 100 + winTotal,
+                result: winTotal > 0 ? "win" : "lose",
+                ticket_number: `${mainNumber}-${numbers.join('')}`,
+                main_number: mainNumber,
+                numbers: numbers,
+                prices: prices,
+                win_count: winCount,
+                timestamp_utc: new Date().toISOString(),
+                user_agent: navigator.userAgent,
+                screen_size: `${window.innerWidth}x${window.innerHeight}`
             };
-
-            // 4. 上报游戏开始
-            const reportGameStart = () => {
-                const startData = {
-                    type: "game_start",
-                    user_id: userInfo?.id || 'unknown',
-                    username: userInfo?.username || '',
-                    first_name: userInfo?.first_name || '',
-                    language_code: userInfo?.language_code || '',
-                    timestamp_utc: new Date().toISOString(),
-                    user_agent: navigator.userAgent,
-                    platform: navigator.platform
-                };
-                sendDataSilently(startData);
-            };
-
-            // 5. 上报游戏结束 (包含完整数据)
-            const reportGameEnd = () => {
-                // 防止重复发送
-                if (gameDataSent) {
-                    console.log('[通讯] 游戏结果已发送，跳过重复上报');
-                    return;
-                }
-                gameDataSent = true;
-
-                // 从DOM中收集刮奖数据 (保持与原有逻辑一致)
-                const mainNumber = document.getElementById('win-area').innerText;
-                const cells = document.querySelectorAll('.cell');
-                const numbers = [];
-                const prices = [];
-                
-                cells.forEach(cell => {
-                    const num = cell.querySelector('b')?.innerText || '';
-                    const priceText = cell.querySelector('i')?.innerText || '';
-                    const price = priceText.replace('$', '');
-                    numbers.push(num);
-                    prices.push(price);
-                });
-
-                // 计算中奖次数和总奖金 (与原有逻辑保持一致)
-                let winCount = 0;
-                let winTotal = 0;
-                numbers.forEach((num, index) => {
-                    if (num === mainNumber) {
-                        winCount++;
-                        winTotal += parseFloat(prices[index]) || 0;
-                    }
-                });
-
-                const endData = {
-                    type: "game_end",
-                    user_id: userInfo?.id || 'unknown',
-                    username: userInfo?.username || '',
-                    first_name: userInfo?.first_name || '',
-                    language_code: userInfo?.language_code || '',
-                    win_total: winTotal,
-                    prize_amount: 100 + winTotal,
-                    result: winTotal > 0 ? "win" : "lose",
-                    ticket_number: `${mainNumber}-${numbers.join('')}`,
-                    main_number: mainNumber,
-                    numbers: numbers,
-                    prices: prices,
-                    win_count: winCount,
-                    timestamp_utc: new Date().toISOString(),
-                    user_agent: navigator.userAgent,
-                    screen_size: `${window.innerWidth}x${window.innerHeight}`
-                };
-                sendDataSilently(endData);
-            };
-
-            // 6. 在游戏开始和结束时自动触发上报 (保持静默)
-            const originalStart = start;
-            window.start = async function() {
-                reportGameStart(); // 静默上报开始
-                await originalStart();
-            };
-
-            const originalTriggerWin = triggerWin;
-            window.triggerWin = function() {
-                originalTriggerWin();
-                // 延迟一点点，确保弹窗显示后再发送数据，避免任何潜在干扰
-                setTimeout(() => {
-                    reportGameEnd();
-                }, 100);
-            };
-        })();
+            sendDataSilently(endData);
+        };
 
         window.onload = start;
     </script>
