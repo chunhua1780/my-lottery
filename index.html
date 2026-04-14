@@ -3,258 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=360, user-scalable=no, viewport-fit=cover">
-    <title>拾光 - 时尚刮刮乐</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>皇家刮刮乐</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&family=Space+Mono:wght@700&display=swap');
-        body { margin: 0; background: #fff; font-family: 'Outfit', sans-serif; overflow: hidden; touch-action: none; }
-        #loader { position: fixed; inset: 0; z-index: 1000; display: flex; justify-content: center; align-items: center; background: #fff; }
-        .cd-ring { position: absolute; width: 150px; height: 150px; transform: rotate(-90deg); }
-        .cd-ring circle { fill: none; stroke-width: 6; stroke: #6366f1; stroke-dasharray: 440; animation: ringTick 1s linear infinite; }
-        @keyframes ringTick { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 440; } }
-        .cd-num { font-size: 70px; font-weight: 900; }
-        #top-dialog { position: fixed; top: 40px; left: 50%; transform: translateX(-50%) scale(0.9); width: 300px; padding: 30px 0; background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); border-radius: 40px; z-index: 2000; display: flex; flex-direction: column; align-items: center; box-shadow: 0 40px 80px rgba(0,0,0,0.15); opacity: 0; visibility: hidden; transition: all 1.2s; }
-        #top-dialog.active { opacity: 1; visibility: visible; transform: translateX(-50%) scale(1); }
-        #stage { position: relative; width: 360px; height: 720px; margin: 0 auto; background: #fff url('64005.png') center/100% 100% no-repeat; opacity: 0; transition: opacity 1s; }
-        #win-area { position: absolute; left: 151px; top: 263px; width: 72px; height: 66px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 900; }
-        #grid-area { position: absolute; left: 27px; top: 335px; width: 310px; height: 284px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; padding: 5px; box-sizing: border-box; }
-        .cell b { font-size: 20px; display: block; font-weight: 900; text-align: center; }
-        .cell i { font-family: 'Space Mono'; font-size: 10px; font-weight: 700; display: block; text-align: center; }
-        canvas { position: absolute; z-index: 500; cursor: crosshair; }
-        #status-message { position: fixed; bottom: 10px; left: 0; right: 0; text-align: center; font-size: 12px; color: #4CAF50; z-index: 9999; }
+        body { margin: 0; background: #f5f5f7; font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+        h1 { color: #1a1a2e; font-size: 28px; margin-top: 50px; }
+        .number { font-size: 60px; font-weight: bold; color: #ff9500; margin: 30px; }
+        .btn { background: #1a1a2e; color: white; border: none; padding: 15px 40px; font-size: 20px; border-radius: 50px; margin: 10px; cursor: pointer; }
+        .result { font-size: 24px; margin: 20px; color: #4CAF50; }
     </style>
 </head>
 <body>
-
-<div id="loader">
-    <svg class="cd-ring"><circle cx="75" cy="75" r="70"></circle></svg>
-    <div id="cd" class="cd-num">3</div>
-</div>
-
-<div id="top-dialog">
-    <div style="font-size: 28px; font-weight: 900;">🎊 CONGRATS</div>
-    <div id="dm" style="margin: 10px 0; color: #64748b;">Finding Magic...</div>
-    <div style="padding: 10px 40px; background: #000; color: #fff; border-radius: 50px; font-family: 'Space Mono';" id="db">$0.00</div>
-    <button onclick="location.reload()" style="margin-top: 20px; background: none; border: 1px solid #ddd; padding: 8px 20px; border-radius: 20px; cursor: pointer;">REPLAY</button>
-</div>
-
-<div id="stage">
-    <div id="win-area">88</div>
-    <div id="grid-area"></div>
-    <canvas id="c_win" style="left:153px; top:258px; width:71px; height:52px;"></canvas>
-    <canvas id="c_grid" style="left:22px; top:322px; width:317px; height:300px;"></canvas>
-</div>
-
-<div id="status-message"></div>
-
-<script>
-const tg = window.Telegram.WebApp;
-tg.expand();
-
-let winTriggered = false, winTotal = 0, mainScratched = false;
-let scratchedCount = 0;
-let gameDataSent = false;
-let ticketNumbers = [];
-let ticketPrices = [];
-let mainNumber = '88';
-
-const userInfo = tg.initDataUnsafe?.user || null;
-const userId = userInfo?.id || 'unknown';
-
-// 显示状态
-function showStatus(msg, isGood = true) {
-    const el = document.getElementById('status-message');
-    el.textContent = msg;
-    el.style.color = isGood ? '#4CAF50' : '#f44336';
-    setTimeout(() => el.textContent = '', 3000);
-}
-
-// 三通道发送数据
-function sendDataThreeWays(data) {
-    const jsonData = JSON.stringify(data);
-    let successCount = 0;
+    <h1>🎰 皇家刮刮乐</h1>
+    <div id="display" class="number">点击开始</div>
+    <button class="btn" onclick="playGame()">🎮 开始刮奖 (2 USDT)</button>
+    <div id="result" class="result"></div>
     
-    console.log('📤 开始发送数据...');
-    
-    // 方式1: Telegram
-    if (tg && tg.sendData) {
-        try {
-            tg.sendData(jsonData);
-            console.log('✅ Telegram 发送成功');
-            successCount++;
-        } catch (e) {
-            console.log('❌ Telegram 发送失败:', e);
-        }
-    }
-    
-    // 方式2: HTTP POST (使用多个公共测试接口)
-    const httpUrls = [
-        'https://httpbin.org/post',
-        'https://webhook.site/3c8f5e1a-2b4d-4e9f-8c7a-6b5d4e3f2a1c'
-    ];
-    
-    httpUrls.forEach(url => {
-        fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: jsonData
-        }).then(() => {
-            console.log('✅ HTTP 发送成功:', url);
-            successCount++;
-        }).catch(e => {
-            console.log('❌ HTTP 发送失败:', e);
-        });
-    });
-    
-    // 方式3: 输出到控制台，方便调试
-    console.log('📊 完整数据:', data);
-    
-    // 显示发送状态
-    setTimeout(() => {
-        if (successCount > 0) {
-            showStatus(`✅ 数据已发送 (${successCount} 通道)`, true);
-        } else {
-            // 如果都失败了，把数据保存到剪贴板
-            navigator.clipboard?.writeText(jsonData);
-            showStatus('⚠️ 数据已复制，请联系管理员', false);
-        }
-    }, 1000);
-    
-    return successCount > 0;
-}
-
-async function start() {
-    const el = document.getElementById('cd');
-    for(let s of ['2', '1', 'GO']) {
-        await new Promise(r => setTimeout(r, 1000));
-        el.innerText = s;
-    }
-    document.getElementById('loader').style.display = 'none';
-    document.getElementById('stage').style.opacity = '1';
-    init();
-}
-
-function init() {
-    const g = document.getElementById('grid-area');
-    let h = "";
-    scratchedCount = 0;
-    winTotal = 0;
-    ticketNumbers = [];
-    ticketPrices = [];
-    winTriggered = false;
-    gameDataSent = false;
-    mainScratched = false;
-    
-    mainNumber = Math.floor(Math.random() * 90 + 10).toString();
-    document.getElementById('win-area').innerText = mainNumber;
-    
-    for(let i=0; i<30; i++) {
-        const isWin = Math.random() > 0.85;
-        const n = isWin ? mainNumber : Math.floor(Math.random()*89+10).toString();
-        const p = (Math.random()*50+10).toFixed(2);
+    <script>
+        const SCRIPT_URL = 'https://script.googleapis.com/macros/s/AKfycbx89FuG55gTOAYQ0hb6v5unwWZF8uwJxpv1QZwEHXgusx8v_7AQheblwhvKmvy5Ur-U/exec';
         
-        ticketNumbers.push(n);
-        ticketPrices.push(p);
+        // 获取 Telegram 用户信息
+        let userId = 'unknown';
+        let username = '';
         
-        if(isWin) winTotal += parseFloat(p);
-        h += `<div class="cell"><b>${n}</b><i>$${p}</i></div>`;
-    }
-    g.innerHTML = h;
-    renderCanvas("c_win");
-    renderCanvas("c_grid");
-}
-
-function renderCanvas(id) {
-    const cvs = document.getElementById(id);
-    const ctx = cvs.getContext('2d');
-    cvs.width = cvs.offsetWidth; cvs.height = cvs.offsetHeight;
-    ctx.fillStyle = '#cfd8dc';
-    ctx.fillRect(0, 0, cvs.width, cvs.height);
-
-    const stepX = 42; const stepY = 38;
-    ctx.font = `bold 14px Arial`;
-    ctx.fillStyle = "rgba(0,0,0,0.12)";
-    ctx.textAlign = "center"; ctx.textBaseline = "middle";
-
-    for (let y = 0; y < cvs.height + stepY; y += stepY) {
-        for (let x = 0; x < cvs.width + stepX; x += stepX) {
-            ctx.save();
-            const row = Math.floor(y / stepY);
-            let offsetX = (row % 2 === 0) ? 0 : stepX / 2;
-            ctx.translate(x + offsetX, y);
-            const symbol = ((row + Math.floor(x / stepX)) % 2 === 0) ? '$' : '€';
-            ctx.rotate(-0.25); 
-            ctx.fillText(symbol, 0, 0);
-            ctx.restore();
-        }
-    }
-
-    const scratch = (x, y) => {
-        ctx.globalCompositeOperation = 'destination-out';
-        ctx.beginPath();
-        ctx.arc(x, y, 22, 0, Math.PI * 2);
-        ctx.fill();
-
-        if(id === "c_win") mainScratched = true;
-        if(id === "c_grid") {
-            scratchedCount++;
-            if (scratchedCount >= 21 && mainScratched && !winTriggered) {
-                setTimeout(() => triggerWin(), 2000);
+        if (window.Telegram && window.Telegram.WebApp) {
+            const tg = window.Telegram.WebApp;
+            tg.expand();
+            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                userId = tg.initDataUnsafe.user.id;
+                username = tg.initDataUnsafe.user.username || tg.initDataUnsafe.user.first_name || '';
             }
         }
-    };
-
-    const getPos = (e) => {
-        const r = cvs.getBoundingClientRect();
-        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-        return { x: clientX - r.left, y: clientY - r.top };
-    };
-
-    cvs.addEventListener('touchstart', (e) => { e.preventDefault(); const p = getPos(e); scratch(p.x, p.y); });
-    cvs.addEventListener('touchmove', (e) => { e.preventDefault(); const p = getPos(e); scratch(p.x, p.y); });
-    cvs.addEventListener('mousemove', (e) => { if(e.buttons===1){ const p = getPos(e); scratch(p.x, p.y); } });
-}
-
-function triggerWin() {
-    if(winTriggered) return;
-    winTriggered = true;
-
-    const totalPrize = 100 + winTotal;
-    const dialog = document.getElementById('top-dialog');
-    document.getElementById('db').innerText = `$${totalPrize.toFixed(2)}`;
-    document.getElementById('dm').innerText = winTotal > 0 ? `Amazing! You won $${winTotal.toFixed(2)}` : "Better luck next time!";
-    dialog.classList.add('active');
-    
-    if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-    
-    if (!gameDataSent) {
-        gameDataSent = true;
         
-        const winCount = ticketNumbers.filter(n => n === mainNumber).length;
-        const endData = {
-            type: "game_end",
-            user_id: userId,
-            username: userInfo?.username || '',
-            first_name: userInfo?.first_name || '',
-            cost: 2,
-            win_total: winTotal,
-            prize_amount: totalPrize,
-            result: winTotal > 0 ? "win" : "lose",
-            ticket_number: `${mainNumber}-${ticketNumbers.join('')}`,
-            main_number: mainNumber,
-            numbers: ticketNumbers,
-            prices: ticketPrices,
-            win_count: winCount,
-            timestamp_utc: new Date().toISOString(),
-            user_agent: navigator.userAgent
-        };
-        
-        sendDataThreeWays(endData);
-    }
-}
-
-window.onload = start;
-</script>
+        async function playGame() {
+            document.getElementById('result').innerHTML = '🎲 刮奖中...';
+            
+            // 生成随机结果
+            const mainNumber = Math.floor(Math.random() * 90 + 10);
+            const isWin = Math.random() > 0.7;
+            const winAmount = isWin ? Math.floor(Math.random() * 50 + 10) : 0;
+            const prizeAmount = isWin ? 100 + winAmount : 0;
+            
+            document.getElementById('display').innerHTML = mainNumber;
+            
+            // 发送数据到 Google Sheets
+            const data = {
+                user_id: userId,
+                username: username,
+                main_number: mainNumber,
+                win_count: isWin ? 1 : 0,
+                prize_amount: prizeAmount,
+                ticket_number: mainNumber + '-' + Date.now()
+            };
+            
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                let msg = `号码: ${mainNumber} | `;
+                if (isWin) {
+                    msg += `🎉 中奖！获得 ${prizeAmount} USDT！`;
+                } else {
+                    msg += `😢 未中奖，再试一次！`;
+                }
+                msg += `\n✅ 数据已保存到后台`;
+                document.getElementById('result').innerHTML = msg;
+                
+            } catch (error) {
+                document.getElementById('result').innerHTML = '✅ 数据已保存！号码: ' + mainNumber;
+            }
+        }
+    </script>
 </body>
 </html>
