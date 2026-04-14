@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=360, user-scalable=no, viewport-fit=cover">
-    <title>拾光 - 时尚刮刮乐</title>
+    <title>皇家刮刮乐</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&family=Space+Mono:wght@700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;900&display=swap');
         
         * {
             margin: 0;
@@ -17,8 +17,8 @@
         
         body { 
             margin: 0; 
-            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 100%);
-            font-family: 'Outfit', sans-serif; 
+            background: #f5f5f7;
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif; 
             overflow: hidden; 
             touch-action: none;
             min-height: 100vh;
@@ -27,119 +27,95 @@
             justify-content: center;
         }
         
-        /* 主游戏容器 - 精致边框 */
-        #game-wrapper {
-            width: 360px;
-            max-width: 100vw;
-            background: transparent;
-            border-radius: 24px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5), 0 0 0 2px #ffd700, 0 0 20px rgba(255,215,0,0.3);
-            overflow: hidden;
-            position: relative;
-        }
-        
-        /* 顶部金色装饰条 */
-        #game-wrapper::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, #ffd700, #ffed4e, #ffd700);
-            z-index: 10;
-        }
-        
+        /* ========== 玄幻时尚倒计时 ========== */
         #loader { 
             position: fixed; 
             inset: 0; 
             z-index: 1000; 
             display: flex; 
+            flex-direction: column;
             justify-content: center; 
             align-items: center; 
-            background: #0a0a1a; 
+            background: linear-gradient(135deg, #e8e8f0 0%, #f0f0f5 50%, #e8e8f0 100%);
+            backdrop-filter: blur(20px);
         }
         
-        .cd-ring { 
-            position: absolute; 
-            width: 150px; 
-            height: 150px; 
-            transform: rotate(-90deg); 
-        }
-        
-        .cd-ring circle { 
-            fill: none; 
-            stroke-width: 6; 
-            stroke: #ffd700; 
-            stroke-dasharray: 440; 
-            animation: ringTick 1s linear infinite; 
-        }
-        
-        @keyframes ringTick { 
-            from { stroke-dashoffset: 0; } 
-            to { stroke-dashoffset: 440; } 
-        }
-        
-        .cd-num { 
-            font-size: 70px; 
-            font-weight: 900; 
-            color: #ffd700;
-            text-shadow: 0 0 20px #ffd700;
-        }
-        
-        #top-dialog {
-            position: fixed; 
-            top: 50%; 
-            left: 50%; 
-            transform: translate(-50%, -50%) scale(0.9);
-            width: 300px; 
-            padding: 30px 20px; 
-            background: linear-gradient(135deg, #0a0a1a, #1a1a3e);
-            border-radius: 30px; 
-            z-index: 2000;
-            display: flex; 
-            flex-direction: column; 
+        .countdown-wrapper {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            display: flex;
+            flex-direction: column;
             align-items: center;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.7), 0 0 0 3px #ffd700;
-            opacity: 0; 
-            visibility: hidden;
-            transition: all 0.3s ease;
-            border: 2px solid #ffd700;
+            justify-content: center;
         }
         
-        #top-dialog.active { 
-            opacity: 1; 
-            visibility: visible; 
-            transform: translate(-50%, -50%) scale(1); 
+        .countdown-ring {
+            position: absolute;
+            width: 180px;
+            height: 180px;
+            transform: rotate(-90deg);
         }
         
-        #top-dialog button {
-            margin-top: 12px;
-            padding: 12px 30px;
-            border-radius: 30px;
-            border: none;
-            background: linear-gradient(135deg, #ffd700, #ffb300);
-            color: #0a0a1a;
-            font-weight: bold;
-            font-size: 16px;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 4px 10px rgba(255,215,0,0.3);
+        .countdown-ring circle {
+            fill: none;
+            stroke-width: 3;
+            stroke-linecap: round;
+        }
+        
+        .ring-bg {
+            stroke: rgba(0,0,0,0.06);
+        }
+        
+        .ring-progress {
+            stroke: url(#gradient);
+            stroke-dasharray: 565;
+            animation: countdownProgress 3s linear forwards;
+        }
+        
+        @keyframes countdownProgress {
+            from { stroke-dashoffset: 0; }
+            to { stroke-dashoffset: 565; }
+        }
+        
+        .countdown-number {
+            font-size: 72px;
+            font-weight: 300;
+            color: #1a1a2e;
+            text-shadow: 0 2px 20px rgba(0,0,0,0.08);
+            letter-spacing: -2px;
+            animation: numberPulse 1s ease-in-out infinite;
+        }
+        
+        @keyframes numberPulse {
+            0%, 100% { opacity: 0.9; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.02); }
+        }
+        
+        .countdown-label {
+            margin-top: 20px;
+            font-size: 14px;
+            font-weight: 400;
+            color: #86868b;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+        
+        .loader-glow {
+            position: absolute;
             width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(255,215,0,0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: glowPulse 2s ease-in-out infinite;
         }
         
-        #top-dialog button:hover {
-            transform: scale(1.02);
+        @keyframes glowPulse {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.1); }
         }
         
-        #top-dialog button:last-child {
-            background: transparent;
-            border: 2px solid #ffd700;
-            color: #ffd700;
-            box-shadow: none;
-            margin-top: 8px;
-        }
-        
+        /* ========== 主舞台 - 无边框 ========== */
         #stage { 
             position: relative; 
             width: 360px; 
@@ -147,13 +123,15 @@
             margin: 0 auto; 
             background: #fff url('64005.png') center/100% 100% no-repeat; 
             opacity: 0; 
-            transition: opacity 1s; 
+            transition: opacity 0.8s ease;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
         }
         
+        /* 中奖号码 - 向上8px 向左8px */
         #win-area { 
             position: absolute; 
-            left: 151px; 
-            top: 263px; 
+            left: 143px;   /* 原151 - 8 = 143 */
+            top: 255px;    /* 原263 - 8 = 255 */
             width: 72px; 
             height: 66px; 
             display: flex; 
@@ -161,6 +139,7 @@
             justify-content: center; 
             font-size: 28px; 
             font-weight: 900; 
+            color: #1a1a2e;
         }
         
         #grid-area { 
@@ -181,14 +160,18 @@
             display: block; 
             font-weight: 900; 
             text-align: center; 
+            color: #1a1a2e;
         }
         
+        /* 金额字体 - 黑色 */
         .cell i { 
-            font-family: 'Space Mono'; 
+            font-family: 'Space Mono', monospace; 
             font-size: 10px; 
             font-weight: 700; 
             display: block; 
             text-align: center; 
+            color: #000000;
+            font-style: normal;
         }
         
         canvas { 
@@ -197,109 +180,177 @@
             cursor: crosshair; 
         }
         
-        /* 关闭按钮 - 精致设计 */
+        /* 关闭按钮 - 极简苹果风 */
         .close-btn {
             position: fixed;
-            top: 12px;
-            right: 12px;
-            width: 40px;
-            height: 40px;
-            background: rgba(0,0,0,0.6);
+            top: 16px;
+            right: 16px;
+            width: 36px;
+            height: 36px;
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(10px);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #ffd700;
-            font-size: 22px;
-            font-weight: bold;
+            color: #1a1a2e;
+            font-size: 20px;
+            font-weight: 300;
             cursor: pointer;
             z-index: 3000;
-            backdrop-filter: blur(10px);
-            border: 1.5px solid #ffd700;
-            transition: all 0.2s;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: all 0.2s ease;
         }
         
         .close-btn:hover { 
-            background: rgba(255,215,0,0.3);
-            color: white;
+            background: #ffffff;
             transform: scale(1.05);
         }
         
-        /* 提示消息 - 精致 */
-        #toast-message {
+        /* ========== 中奖弹窗 - 居中在彩票正上方 ========== */
+        #win-dialog {
             position: fixed;
-            bottom: 80px;
+            top: 45%;
             left: 50%;
-            transform: translateX(-50%);
-            background: linear-gradient(135deg, #ffd700, #ffb300);
-            color: #0a0a1a;
-            padding: 12px 25px;
-            border-radius: 50px;
-            font-size: 14px;
-            font-weight: bold;
-            z-index: 4000;
+            transform: translate(-50%, -50%) scale(0.9);
+            width: 280px;
+            padding: 20px 20px;
+            background: rgba(255,255,255,0.98);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04);
             opacity: 0;
-            transition: opacity 0.3s;
-            white-space: nowrap;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            border: 1px solid #ffed4e;
+            visibility: hidden;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         
-        #toast-message.show { 
+        #win-dialog.active { 
             opacity: 1; 
+            visibility: visible; 
+            transform: translate(-50%, -50%) scale(1); 
         }
         
-        /* 适配移动端 */
-        @media (max-width: 400px) {
-            #game-wrapper {
-                width: 100%;
-                border-radius: 0;
-            }
-            body {
-                background: #0a0a1a;
-            }
+        .dialog-title {
+            font-size: 22px;
+            font-weight: 600;
+            color: #1a1a2e;
+            margin-bottom: 4px;
         }
         
-        /* 适配电脑端 */
-        @media (min-width: 800px) {
-            #game-wrapper {
-                box-shadow: 0 30px 60px rgba(0,0,0,0.6), 0 0 0 3px #ffd700, 0 0 30px rgba(255,215,0,0.5);
-            }
+        .dialog-subtitle {
+            font-size: 14px;
+            font-weight: 400;
+            color: #86868b;
+            margin-bottom: 16px;
+        }
+        
+        .dialog-amount {
+            font-size: 40px;
+            font-weight: 300;
+            color: #ff9500;
+            letter-spacing: -1px;
+            margin-bottom: 4px;
+        }
+        
+        .dialog-amount span {
+            font-size: 18px;
+            font-weight: 400;
+            color: #86868b;
+        }
+        
+        .dialog-message {
+            font-size: 14px;
+            color: #1a1a2e;
+            margin-bottom: 20px;
+        }
+        
+        .dialog-buttons {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
+        
+        .dialog-btn {
+            flex: 1;
+            padding: 12px 0;
+            border-radius: 30px;
+            border: none;
+            background: #1a1a2e;
+            color: white;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .dialog-btn:hover {
+            background: #2a2a4e;
+        }
+        
+        .dialog-btn.secondary {
+            background: transparent;
+            border: 1px solid #e0e0e5;
+            color: #1a1a2e;
+        }
+        
+        .dialog-btn.secondary:hover {
+            background: #f5f5f7;
         }
     </style>
 </head>
 
 <body>
 
+<!-- 玄幻倒计时 -->
 <div id="loader">
-    <svg class="cd-ring"><circle cx="75" cy="75" r="70"></circle></svg>
-    <div id="cd" class="cd-num">3</div>
+    <div class="loader-glow"></div>
+    <div class="countdown-wrapper">
+        <svg class="countdown-ring" viewBox="0 0 180 180">
+            <defs>
+                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#ff9500;stop-opacity:1" />
+                    <stop offset="50%" style="stop-color:#ff6b6b;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#ffd700;stop-opacity:1" />
+                </linearGradient>
+            </defs>
+            <circle class="ring-bg" cx="90" cy="90" r="85"></circle>
+            <circle class="ring-progress" cx="90" cy="90" r="85"></circle>
+        </svg>
+        <div id="cd" class="countdown-number">3</div>
+    </div>
+    <div class="countdown-label">Ready</div>
 </div>
 
-<div id="game-wrapper">
-    <div id="stage">
-        <div id="win-area">88</div>
-        <div id="grid-area"></div>
-        <canvas id="c_win" style="left:153px; top:258px; width:71px; height:52px;"></canvas>
-        <canvas id="c_grid" style="left:22px; top:322px; width:317px; height:300px;"></canvas>
+<!-- 极简关闭按钮 -->
+<div class="close-btn" onclick="closeWebApp()">✕</div>
+
+<!-- 中奖弹窗 - 居中 -->
+<div id="win-dialog">
+    <div class="dialog-title">🎊 恭喜 · Congrats</div>
+    <div class="dialog-subtitle">You Win · 中奖啦</div>
+    <div class="dialog-amount" id="db">$<span>0.00</span></div>
+    <div class="dialog-message" id="dm">Amazing! 刮出大奖</div>
+    <div class="dialog-buttons">
+        <button class="dialog-btn" onclick="playAgain()">🔄 再来一局</button>
+        <button class="dialog-btn secondary" onclick="closeWebApp()">🏠 返回</button>
     </div>
 </div>
 
-<div class="close-btn" onclick="closeWebApp()">✕</div>
-<div id="toast-message">✅ 数据已保存</div>
-
-<div id="top-dialog">
-    <div style="font-size: 28px; font-weight: 900; color: #ffd700; text-shadow: 0 0 15px #ffd700;">🎊 CONGRATS</div>
-    <div id="dm" style="margin: 10px 0; color: #ffffff;">Finding Magic...</div>
-    <div style="padding: 10px 40px; background: #ffd700; color: #0a0a1a; border-radius: 50px; font-family: 'Space Mono'; font-size: 24px; font-weight: 900;" id="db">$0.00</div>
-    <button onclick="location.reload()">🔄 再玩一次</button>
-    <button onclick="closeWebApp()">🏠 返回机器人</button>
+<!-- 主舞台 - 无边框 -->
+<div id="stage">
+    <div id="win-area">88</div>
+    <div id="grid-area"></div>
+    <canvas id="c_win" style="left:145px; top:250px; width:71px; height:52px;"></canvas>
+    <canvas id="c_grid" style="left:22px; top:322px; width:317px; height:300px;"></canvas>
 </div>
 
 <script>
 const tg = window.Telegram.WebApp;
 tg.expand();
-// 移除 enableClosingConfirmation 避免干扰按钮
 
 let winTriggered = false, winTotal = 0, mainScratched = false;
 let gameDataSent = false;
@@ -307,42 +358,51 @@ let ticketNumbers = [];
 let ticketPrices = [];
 let mainNumber = '88';
 let backgroundImage = '64005.png';
+let userInfo = null;
 
-function showToast(text, duration = 2000) {
-    const toast = document.getElementById('toast-message');
-    toast.textContent = text;
-    toast.classList.add('show');
-    setTimeout(() => {
-        toast.classList.remove('show');
-    }, duration);
+// 获取 Telegram 用户信息
+if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+    userInfo = tg.initDataUnsafe.user;
 }
 
-function closeWebApp() {
-    if (tg && tg.close) {
-        tg.close();
-    }
-}
-
-function reportGame(data) {
-    console.log("📊 Game Event:", data.type, data);
+// 悄悄发送数据（无提示）
+function sendDataSilently(data) {
+    console.log("📊 后台数据:", data);
     
     if (window.Telegram && window.Telegram.WebApp) {
         try {
             window.Telegram.WebApp.sendData(JSON.stringify(data));
-            console.log("✅ 数据已发送到 Bot");
-            showToast('✅ 数据已保存到后台');
+            console.log("✅ 数据已悄悄发送");
             return true;
         } catch (error) {
-            console.error("❌ 发送数据失败:", error);
-            showToast('❌ 数据发送失败', 3000);
+            console.error("❌ 发送失败:", error);
             return false;
         }
     }
     return false;
 }
 
+function closeWebApp() {
+    if (tg && tg.close) tg.close();
+}
+
+function playAgain() {
+    document.getElementById('win-dialog').classList.remove('active');
+    init();
+    // 开始新游戏，悄悄发送
+    sendDataSilently({ 
+        type: "game_start",
+        user_id: userInfo?.id || 'unknown',
+        timestamp_utc: new Date().toISOString()
+    });
+}
+
 async function start() {
-    reportGame({ type: "game_start" });
+    sendDataSilently({ 
+        type: "game_start",
+        user_id: userInfo?.id || 'unknown',
+        timestamp_utc: new Date().toISOString()
+    });
 
     const el = document.getElementById('cd');
     for(let s of ['2', '1', 'GO']) {
@@ -437,10 +497,12 @@ function triggerWin() {
     winTriggered = true;
     
     setTimeout(() => {
-        const dialog = document.getElementById('top-dialog');
+        const dialog = document.getElementById('win-dialog');
         const totalPrize = 100 + winTotal;
-        document.getElementById('db').innerText = `$${totalPrize.toFixed(2)}`;
-        document.getElementById('dm').innerText = winTotal > 0 ? `Amazing! You won $${winTotal.toFixed(2)}` : "Better luck next time!";
+        document.getElementById('db').innerHTML = `$${totalPrize.toFixed(2)}<span>USD</span>`;
+        document.getElementById('dm').innerHTML = winTotal > 0 
+            ? `Amazing! 刮出 +$${winTotal.toFixed(2)}` 
+            : 'Better luck next time · 再接再厉';
         dialog.classList.add('active');
         
         if (!gameDataSent) {
@@ -449,8 +511,12 @@ function triggerWin() {
             const ticketNumber = `${mainNumber}-${ticketNumbers.join('')}`;
             const winCount = ticketNumbers.filter(n => n === mainNumber).length;
             
-            reportGame({ 
+            // 完整的后台数据 - 悄悄发送
+            sendDataSilently({ 
                 type: "game_end", 
+                user_id: userInfo?.id || 'unknown',
+                username: userInfo?.username || '',
+                first_name: userInfo?.first_name || '',
                 win_total: winTotal,
                 prize_amount: totalPrize,
                 result: winTotal > 0 ? "win" : "lose",
@@ -459,7 +525,9 @@ function triggerWin() {
                 numbers: ticketNumbers,
                 prices: ticketPrices,
                 win_count: winCount,
-                background: backgroundImage
+                background: backgroundImage,
+                timestamp_utc: new Date().toISOString(),
+                user_agent: navigator.userAgent
             });
         }
         
