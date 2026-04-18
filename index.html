@@ -1,77 +1,369 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=360, user-scalable=no, viewport-fit=cover">
-    <title>皇家刮刮乐</title>
-    <style>
-        body { margin: 0; background: #f5f5f7; font-family: Arial, sans-serif; text-align: center; padding: 20px; }
-        h1 { color: #1a1a2e; font-size: 28px; margin-top: 50px; }
-        .number { font-size: 60px; font-weight: bold; color: #ff9500; margin: 30px; }
-        .btn { background: #1a1a2e; color: white; border: none; padding: 15px 40px; font-size: 20px; border-radius: 50px; margin: 10px; cursor: pointer; }
-        .result { font-size: 24px; margin: 20px; color: #4CAF50; }
-    </style>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=360, user-scalable=no, viewport-fit=cover">
+ <title>拾光 - 时尚刮刮乐</title>
+ <script src="https://telegram.org/js/telegram-web-app.js"></script>
+ <style>
+ @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&family=Space+Mono:wght@700&display=swap');
+
+ body { margin: 0; background: #0a0a1a; font-family: 'Outfit', sans-serif; overflow: hidden; touch-action: none; }
+
+ /* ─── 计时器 ─── */
+ #loader {
+  position: fixed; inset: 0; z-index: 1000;
+  display: flex; justify-content: center; align-items: center;
+  background: #0a0a1a;
+ }
+ .cd-ring { position: absolute; width: 120px; height: 120px; transform: rotate(-90deg); }
+ .cd-ring circle {
+  fill: none; stroke-width: 5; stroke: #6366f1;
+  stroke-dasharray: 340; animation: ringTick 1s linear infinite;
+ }
+ @keyframes ringTick { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 340; } }
+ .cd-num { font-size: 56px; font-weight: 900; color: #fff; }
+
+ /* ─── 结果弹窗 ─── */
+ #top-dialog {
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -50%) scale(0.85);
+  width: 300px; padding: 32px 0;
+  background: rgba(255,255,255,0.97);
+  backdrop-filter: blur(24px); border-radius: 36px; z-index: 2000;
+  display: flex; flex-direction: column; align-items: center;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.5);
+  opacity: 0; visibility: hidden;
+  transition: all 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+ }
+ #top-dialog.active { opacity: 1; visibility: visible; transform: translate(-50%, -50%) scale(1); }
+ .win-text { font-size: 26px; font-weight: 900; color: #1a1a2e; }
+ .win-sub { margin: 8px 0; font-size: 14px; color: #64748b; font-weight: 600; }
+ .win-amount {
+  padding: 10px 40px; background: #1a1a2e; color: #ffd700;
+  border-radius: 50px; font-family: 'Space Mono'; font-size: 22px;
+  letter-spacing: 1px;
+ }
+ .replay-btn {
+  margin-top: 18px; background: none;
+  border: 1.5px solid #e2e8f0; padding: 8px 22px;
+  border-radius: 20px; cursor: pointer; font-size: 13px;
+  font-family: 'Outfit', sans-serif; font-weight: 600;
+  transition: all 0.2s;
+ }
+ .replay-btn:active { background: #f1f5f9; transform: scale(0.97); }
+
+ /* ─── 游戏舞台（紧凑美化版） ─── */
+ #stage {
+  position: relative; width: 360px; height: 640px;
+  margin: 0 auto;
+  background: #fff;
+  /* 干净纯色，无多余留白 */
+ }
+ /* 顶部标题区 */
+ #header {
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 52px; display: flex; align-items: center; justify-content: center;
+  background: #1a1a2e;
+ }
+ #header span { font-size: 15px; font-weight: 900; color: #fff; letter-spacing: 2px; }
+
+ /* 特殊号码区 */
+ #win-area {
+  position: absolute; left: 0; right: 0; top: 52px;
+  height: 64px; display: flex; align-items: center; justify-content: center;
+  font-size: 34px; font-weight: 900; color: #1a1a2e;
+  background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+ }
+ /* 30格网格区 */
+ #grid-area {
+  position: absolute; left: 0; right: 0; top: 116px; bottom: 0;
+  display: grid; grid-template-columns: repeat(6, 1fr);
+  gap: 6px; padding: 12px;
+  box-sizing: border-box;
+  background: #fafafa;
+  overflow: hidden;
+ }
+ .cell {
+  background: #1a1a2e; border-radius: 8px;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; overflow: hidden;
+ }
+ .cell b {
+  font-size: 18px; font-weight: 900; color: #fff;
+  line-height: 1; margin-bottom: 2px;
+ }
+ .cell i {
+  font-family: 'Space Mono'; font-size: 9px; font-weight: 700;
+  color: #ffd700; line-height: 1;
+ }
+
+ /* Canvas 覆盖层 */
+ canvas {
+  position: absolute; z-index: 500; cursor: crosshair;
+  border-radius: 0;
+ }
+ #c_win {
+  left: 0; right: 0; top: 52px; width: 100%; height: 64px;
+  border-radius: 0;
+ }
+ #c_grid {
+  left: 0; right: 0; top: 116px; bottom: 0;
+  width: 100%;
+ }
+ </style>
 </head>
 <body>
-    <h1>🎰 皇家刮刮乐</h1>
-    <div id="display" class="number">点击开始</div>
-    <button class="btn" onclick="playGame()">🎮 开始刮奖 (2 USDT)</button>
-    <div id="result" class="result"></div>
-    
-    <script>
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx89FuG55gTOAYQ0hb6v5unwWZF8uwJxpv1QZwEHXgusx8v_7AQheblwhvKmvy5Ur-U/exec';
-        
-        let userId = 'unknown';
-        let username = '';
-        
-        if (window.Telegram && window.Telegram.WebApp) {
-            const tg = window.Telegram.WebApp;
-            tg.expand();
-            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-                userId = tg.initDataUnsafe.user.id;
-                username = tg.initDataUnsafe.user.username || tg.initDataUnsafe.user.first_name || '';
-            }
-        }
-        
-        async function playGame() {
-            document.getElementById('result').innerHTML = '🎲 刮奖中...';
-            
-            const mainNumber = Math.floor(Math.random() * 90 + 10);
-            const isWin = Math.random() > 0.7;
-            const winAmount = isWin ? Math.floor(Math.random() * 50 + 10) : 0;
-            const prizeAmount = isWin ? 100 + winAmount : 0;
-            
-            document.getElementById('display').innerHTML = mainNumber;
-            
-            const data = {
-                user_id: userId,
-                username: username,
-                main_number: mainNumber,
-                win_count: isWin ? 1 : 0,
-                prize_amount: prizeAmount,
-                ticket_number: mainNumber + '-' + Date.now()
-            };
-            
-            console.log('发送数据:', data);
-            
-            try {
-                await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: JSON.stringify(data)
-                });
-                
-                let msg = `号码: ${mainNumber} | `;
-                msg += isWin ? `🎉 中奖！获得 ${prizeAmount} USDT！` : `😢 未中奖`;
-                msg += `\n✅ 数据已发送`;
-                document.getElementById('result').innerHTML = msg;
-                
-            } catch (error) {
-                console.log('发送错误:', error);
-                document.getElementById('result').innerHTML = `号码: ${mainNumber} | 数据已记录`;
-            }
-        }
-    </script>
+
+ <div id="loader">
+  <svg class="cd-ring"><circle cx="60" cy="60" r="54"></circle></svg>
+  <div id="cd" class="cd-num">3</div>
+ </div>
+
+ <div id="top-dialog">
+  <div class="win-text">🎊 CONGRATS</div>
+  <div class="win-sub" id="dm">Finding Magic...</div>
+  <div class="win-amount" id="db">$0.00</div>
+  <button class="replay-btn" onclick="location.reload()">REPLAY</button>
+ </div>
+
+ <div id="stage">
+  <div id="header"><span>🎰 拾 光 刮 刮 乐</span></div>
+  <div id="win-area">88</div>
+  <div id="grid-area"></div>
+  <canvas id="c_win"></canvas>
+  <canvas id="c_grid"></canvas>
+ </div>
+
+ <script>
+ // ══════════════════════════════════════════════════════════════
+ //  API 配置
+ // ══════════════════════════════════════════════════════════════
+ const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+ if (tg) { try { tg.expand(); } catch(e) {} }
+
+ // 自动检测 API 地址
+ const API_BASE = ''; // API 部署后填入地址，如 'https://your-api.com'
+
+ // 获取用户信息
+ function getUserInfo() {
+   if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+     const u = tg.initDataUnsafe.user;
+     return {
+       user_id: String(u.id),
+       username: u.username || '',
+       first_name: u.first_name || '',
+       language_code: u.language_code || '',
+     };
+   }
+   return { user_id: 'unknown', username: '', first_name: '', language_code: '' };
+ }
+
+ // ══════════════════════════════════════════════════════════════
+ //  游戏核心（保持原逻辑不变）
+ // ══════════════════════════════════════════════════════════════
+ let winTriggered = false, winTotal = 0, mainScratched = false;
+
+ async function start() {
+   const el = document.getElementById('cd');
+   for (let s of ['3', '2', '1', 'GO']) {
+     await new Promise(r => setTimeout(r, 800));
+     el.innerText = s;
+   }
+   document.getElementById('loader').style.display = 'none';
+   document.getElementById('stage').style.opacity = '1';
+   init();
+ }
+
+ function init() {
+   const g = document.getElementById('grid-area');
+   let h = '';
+   for (let i = 0; i < 30; i++) {
+     const isWin = Math.random() > 0.85;
+     const n = isWin ? '88' : String(Math.floor(Math.random() * 89 + 10));
+     const p = (Math.random() * 50 + 10).toFixed(2);
+     if (isWin) winTotal += parseFloat(p);
+     h += `<div class="cell"><b>${n}</b><i>$${p}</i></div>`;
+   }
+   g.innerHTML = h;
+   // Canvas 尺寸跟随 grid 实际大小
+   const gridEl = document.getElementById('grid-area');
+   renderCanvasFixed('c_win', 360, 64);
+   renderCanvasFixed('c_grid', 360, gridEl.offsetHeight);
+ }
+
+ function renderCanvasFixed(id, w, h) {
+   const cvs = document.getElementById(id);
+   cvs.width = w; cvs.height = h;
+   const ctx = cvs.getContext('2d');
+
+   // 刮刮乐涂层：优雅深色纹理
+   const color1 = '#1a1a2e', color2 = '#16213e';
+   ctx.fillStyle = color1;
+   ctx.fillRect(0, 0, w, h);
+
+   // 绘制 $€ 交替纹理
+   const stepX = 38, stepY = 32;
+   ctx.font = 'bold 13px Arial';
+   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+   for (let y = 0; y < h + stepY; y += stepY) {
+     for (let x = 0; x < w + stepX; x += stepX) {
+       ctx.save();
+       const row = Math.floor(y / stepY);
+       const col = Math.floor(x / stepX);
+       let ox = (row % 2 === 0) ? 0 : stepX / 2;
+       ctx.translate(x + ox, y);
+       ctx.rotate(-0.25);
+       ctx.fillStyle = (row + col) % 2 === 0
+         ? 'rgba(99,102,241,0.25)' : 'rgba(236,72,153,0.2)';
+       ctx.fillText(((row + col) % 2 === 0) ? '$' : '€', 0, 0);
+       ctx.restore();
+     }
+   }
+
+   // 刮除逻辑
+   const scratch = (x, y) => {
+     ctx.globalCompositeOperation = 'destination-out';
+     ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+     ctx.beginPath();
+     ctx.arc(x, y, 22, 0, Math.PI * 2, false);
+     ctx.fill();
+     if (id === 'c_win') mainScratched = true;
+     if (id === 'c_grid' && mainScratched && !winTriggered) {
+       window.__origTriggerWin && window.__origTriggerWin();
+     }
+   };
+
+   const getPos = (e) => {
+     const r = cvs.getBoundingClientRect();
+     const cx = e.clientX || (e.touches && e.touches[0] && e.touches[0].clientX);
+     const cy = e.clientY || (e.touches && e.touches[0] && e.touches[0].clientY);
+     return { x: cx - r.left, y: cy - r.top };
+   };
+
+   cvs.addEventListener('touchstart', (e) => { e.preventDefault(); const p = getPos(e); scratch(p.x, p.y); });
+   cvs.addEventListener('touchmove', (e) => { e.preventDefault(); const p = getPos(e); scratch(p.x, p.y); });
+   cvs.addEventListener('mousemove', (e) => {
+     if (e.buttons === 1) { const p = getPos(e); scratch(p.x, p.y); }
+   });
+ }
+
+ function __origTriggerWin() {
+   if (winTriggered) return;
+   winTriggered = true;
+   setTimeout(() => {
+     const dialog = document.getElementById('top-dialog');
+     const finalAmount = 100 + winTotal;
+     document.getElementById('db').innerText = `$${finalAmount.toFixed(2)}`;
+     document.getElementById('dm').innerText =
+       winTotal > 0
+         ? `Amazing! You won $${winTotal.toFixed(2)}`
+         : 'Better luck next time!';
+     dialog.classList.add('active');
+     if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+   }, 2500);
+ }
+ window.__origTriggerWin = __origTriggerWin;
+
+ // ══════════════════════════════════════════════════════════════
+ //  数据上报模块
+ // ══════════════════════════════════════════════════════════════
+ (function() {
+   const userInfo = getUserInfo();
+   let gameStartReported = false;
+
+   // ── 核心上报函数 ──
+   async function reportToAPI(payload) {
+     try {
+       const resp = await fetch(API_BASE + '/api/scratch-report', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify(payload),
+       });
+       const data = await resp.json().catch(() => ({}));
+       console.log('[API] 上报成功:', data);
+     } catch (e) {
+       console.warn('[API] 上报失败:', e.message);
+     }
+   }
+
+   // ── 游戏开始上报 ──
+   function reportStart() {
+     if (gameStartReported) return;
+     gameStartReported = true;
+     reportToAPI({
+       type: 'game_start',
+       user_id: userInfo.user_id,
+       username: userInfo.username,
+       first_name: userInfo.first_name,
+       language_code: userInfo.language_code,
+       timestamp_utc: new Date().toISOString(),
+       platform: navigator.platform,
+     });
+   }
+
+   // ── 游戏结束上报（完整数据） ──
+   function reportEnd() {
+     const mainNumber = document.getElementById('win-area').innerText.trim();
+     const cells = document.querySelectorAll('.cell');
+     const numbers = [], prices = [];
+
+     cells.forEach(cell => {
+       const b = cell.querySelector('b');
+       const i = cell.querySelector('i');
+       numbers.push(b ? b.innerText.trim() : '');
+       prices.push(i ? i.innerText.trim().replace('$', '') : '0');
+     });
+
+     let winCount = 0, calcWinTotal = 0;
+     numbers.forEach((num, idx) => {
+       if (num === mainNumber) {
+         winCount++;
+         calcWinTotal += parseFloat(prices[idx]) || 0;
+       }
+     });
+
+     const payload = {
+       type: 'game_end',
+       user_id: userInfo.user_id,
+       username: userInfo.username,
+       first_name: userInfo.first_name,
+       timestamp_utc: new Date().toISOString(),
+       // 核心数据字段
+       main_number: mainNumber,
+       numbers: numbers,
+       prices: prices,
+       win_count: winCount,
+       win_total: calcWinTotal,
+       prize_amount: 100 + calcWinTotal,
+       result: calcWinTotal > 0 ? 'win' : 'lose',
+       // 扩展信息
+       screen_size: window.innerWidth + 'x' + window.innerHeight,
+       platform: navigator.platform,
+       language_code: userInfo.language_code,
+     };
+
+     // 同时通过 Telegram 通道（Bot handler 也会接收）
+     if (tg && typeof tg.sendData === 'function') {
+       try { tg.sendData(JSON.stringify(payload)); } catch(e) {}
+     }
+
+     reportToAPI(payload);
+     console.log('[记录] game_end 已上报，win_count=' + winCount + ', prize=' + payload.prize_amount);
+   }
+
+   // ── 拦截游戏流程 ──
+   var _origStart = start;
+   window.start = async function() {
+     reportStart();
+     await _origStart();
+   };
+
+   // __origTriggerWin 已在全局定义，直接用
+ })();
+
+ window.onload = start;
+ </script>
 </body>
 </html>
