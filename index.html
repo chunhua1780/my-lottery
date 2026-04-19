@@ -1,197 +1,304 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=360, user-scalable=no, viewport-fit=cover">
-    <title>拾光 - 时尚刮刮乐</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&family=Space+Mono:wght@700&display=swap');
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=360, user-scalable=no, viewport-fit=cover">
+ <title>拾光 - 时尚刮刮乐</title>
+ <script src="https://telegram.org/js/telegram-web-app.js"></script>
+ <style>
+ @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&family=Space+Mono:wght@700&display=swap');
 
-        body { margin: 0; background: #fff; font-family: 'Outfit', sans-serif; overflow: hidden; touch-action: none; }
+ body { margin: 0; background: #fff; font-family: 'Outfit', sans-serif; overflow: hidden; touch-action: none; }
 
-        /* --- 计时器 --- */
-        #loader {
-            position: fixed; inset: 0; z-index: 1000;
-            display: flex; justify-content: center; align-items: center; background: #fff;
-        }
-        .cd-ring { position: absolute; width: 150px; height: 150px; transform: rotate(-90deg); }
-        .cd-ring circle {
-            fill: none; stroke-width: 6; stroke: #6366f1;
-            stroke-dasharray: 440; animation: ringTick 1s linear infinite;
-        }
-        @keyframes ringTick { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 440; } }
-        .cd-num { font-size: 70px; font-weight: 900; }
+ /* --- 计时器 --- */
+ #loader {
+ position: fixed; inset: 0; z-index: 1000;
+ display: flex; justify-content: center; align-items: center; background: #fff;
+ }
+ .cd-ring { position: absolute; width: 150px; height: 150px; transform: rotate(-90deg); }
+ .cd-ring circle {
+ fill: none; stroke-width: 6; stroke: #6366f1;
+ stroke-dasharray: 440; animation: ringTick 1s linear infinite;
+ }
+ @keyframes ringTick { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 440; } }
+ .cd-num { font-size: 70px; font-weight: 900; }
 
-        /* --- 弹窗：平滑过渡 --- */
-        #top-dialog {
-            position: fixed; top: 40px; left: 50%; transform: translateX(-50%) scale(0.9);
-            width: 300px; padding: 30px 0; background: rgba(255,255,255,0.95);
-            backdrop-filter: blur(20px); border-radius: 40px; z-index: 2000;
-            display: flex; flex-direction: column; align-items: center;
-            box-shadow: 0 40px 80px rgba(0,0,0,0.15);
-            opacity: 0; visibility: hidden;
-            transition: all 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        #top-dialog.active { opacity: 1; visibility: visible; transform: translateX(-50%) scale(1); }
+ /* --- 弹窗 --- */
+ #top-dialog {
+ position: fixed; top: 40px; left: 50%; transform: translateX(-50%) scale(0.9);
+ width: 300px; padding: 30px 0; background: rgba(255,255,255,0.95);
+ backdrop-filter: blur(20px); border-radius: 40px; z-index: 2000;
+ display: flex; flex-direction: column; align-items: center;
+ box-shadow: 0 40px 80px rgba(0,0,0,0.15);
+ opacity: 0; visibility: hidden;
+ transition: all 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+ }
+ #top-dialog.active { opacity: 1; visibility: visible; transform: translateX(-50%) scale(1); }
 
-        /* --- 游戏舞台 --- */
-        #stage { 
-            position: relative; 
-            width: 360px; 
-            height: 720px; 
-            margin: 0 auto; 
-            background: #fff url('64005.png') center/100% 100% no-repeat; 
-            opacity: 0; 
-            transition: opacity 1s; 
-        }
-        #win-area { position: absolute; left: 151px; top: 263px; width: 72px; height: 66px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 900; }
-        #grid-area { position: absolute; left: 27px; top: 335px; width: 310px; height: 284px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; padding: 5px; box-sizing: border-box; }
-        .cell b { font-size: 20px; display: block; font-weight: 900; text-align: center; }
-        .cell i { font-family: 'Space Mono'; font-size: 10px; font-weight: 700; display: block; text-align: center; }
+ /* --- 游戏舞台 --- */
+ #stage { 
+ position: relative; 
+ width: 360px; 
+ height: 720px; 
+ margin: 0 auto; 
+ background: #fff url('64005.png') center/100% 100% no-repeat; 
+ opacity: 0; 
+ transition: opacity 1s; 
+ }
+ #win-area { position: absolute; left: 151px; top: 263px; width: 72px; height: 66px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 900; }
+ #grid-area { position: absolute; left: 27px; top: 335px; width: 310px; height: 284px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; padding: 5px; box-sizing: border-box; }
+ .cell b { font-size: 20px; display: block; font-weight: 900; text-align: center; }
+ .cell i { font-family: 'Space Mono'; font-size: 10px; font-weight: 700; display: block; text-align: center; }
 
-        canvas { position: absolute; z-index: 500; cursor: crosshair; }
-    </style>
+ canvas { position: absolute; z-index: 500; cursor: crosshair; }
+ </style>
 </head>
 <body>
 
-    <div id="loader">
-        <svg class="cd-ring"><circle cx="75" cy="75" r="70"></circle></svg>
-        <div id="cd" class="cd-num">3</div>
-    </div>
+ <div id="loader">
+ <svg class="cd-ring"><circle cx="75" cy="75" r="70"></circle></svg>
+ <div id="cd" class="cd-num">3</div>
+ </div>
 
-    <div id="top-dialog">
-        <div style="font-size: 28px; font-weight: 900;">🎊 CONGRATS</div>
-        <div id="dm" style="margin: 10px 0; color: #64748b;">Finding Magic...</div>
-        <div style="padding: 10px 40px; background: #000; color: #fff; border-radius: 50px; font-family: 'Space Mono';" id="db">$0.00</div>
-        <button onclick="location.reload()" style="margin-top: 20px; background: none; border: 1px solid #ddd; padding: 8px 20px; border-radius: 20px; cursor: pointer;">REPLAY</button>
-    </div>
+ <div id="top-dialog">
+ <div id="dh" style="font-size: 28px; font-weight: 900;">🎊 CONGRATS</div>
+ <div id="dm" style="margin: 10px 0; color: #64748b;">Finding Magic...</div>
+ <div style="padding: 10px 40px; background: #000; color: #fff; border-radius: 50px; font-family: 'Space Mono';" id="db">$0.00</div>
+ <button onclick="location.reload()" style="margin-top: 20px; background: none; border: 1px solid #ddd; padding: 8px 20px; border-radius: 20px; cursor: pointer;">REPLAY</button>
+ </div>
 
-    <div id="stage">
-        <div id="win-area">88</div>
-        <div id="grid-area"></div>
-        <canvas id="c_win" style="left:153px; top:258px; width:71px; height:52px;"></canvas>
-        <canvas id="c_grid" style="left:22px; top:322px; width:317px; height:300px;"></canvas>
-    </div>
+ <div id="stage">
+ <div id="win-area">--</div>
+ <div id="grid-area"></div>
+ <canvas id="c_win" style="left:153px; top:258px; width:71px; height:52px;"></canvas>
+ <canvas id="c_grid" style="left:22px; top:322px; width:317px; height:300px;"></canvas>
+ </div>
 
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
+ <script>
+ const tg = window.Telegram.WebApp;
+ tg.expand();
 
-        let winTriggered = false, winTotal = 0, mainScratched = false;
+ /* ─── API 配置 ─── */
+ const API_BASE = '';
 
-        async function start() {
-            const el = document.getElementById('cd');
-            for(let s of ['2', '1', 'GO']) {
-                await new Promise(r => setTimeout(r, 1000));
-                el.innerText = s;
-            }
-            document.getElementById('loader').style.display = 'none';
-            document.getElementById('stage').style.opacity = '1';
-            init();
-        }
+ /* ─── 游戏状态 ─── */
+ let winTriggered = false, winConditionMet = false;
+ let winTotal = 0, mainScratched = false;
+ let mainNum = 0;
+ let gameData = { numbers: [], prices: [], winCount: 0 };
+ let reportSent = false;
 
-        function init() {
-            const g = document.getElementById('grid-area');
-            let h = "";
-            for(let i=0; i<30; i++) {
-                const isWin = Math.random() > 0.85;
-                const n = isWin ? "88" : Math.floor(Math.random()*89+10);
-                const p = (Math.random()*50+10).toFixed(2);
-                if(isWin) winTotal += parseFloat(p);
-                h += `<div class="cell"><b>${n}</b><i>$${p}</i></div>`;
-            }
-            g.innerHTML = h;
-            renderCanvas("c_win");
-            renderCanvas("c_grid");
-        }
+ /* ─── 用户信息 ─── */
+ function getUserInfo() {
+ if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+ const u = tg.initDataUnsafe.user;
+ return { user_id: String(u.id), username: u.username || '', first_name: u.first_name || '' };
+ }
+ return { user_id: '', username: '', first_name: '' };
+ }
 
-        function renderCanvas(id) {
-            const cvs = document.getElementById(id);
-            const ctx = cvs.getContext('2d');
-            cvs.width = cvs.offsetWidth; cvs.height = cvs.offsetHeight;
+ /* ─── 数据上报 ─── */
+ async function reportToAPI(payload) {
+ if (!API_BASE) return;
+ try {
+ await fetch(API_BASE + '/api/scratch-report', {
+ method: 'POST', headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify(payload),
+ });
+ } catch (e) { console.warn('[API]', e.message); }
+ }
 
-            // 1. 绘制清爽底色
-            ctx.fillStyle = '#cfd8dc';
-            ctx.fillRect(0, 0, cvs.width, cvs.height);
+ function reportStart() {
+ if (!API_BASE) return;
+ const u = getUserInfo();
+ reportToAPI({
+ type: 'game_start', user_id: u.user_id, username: u.username,
+ first_name: u.first_name, platform: navigator.userAgentData?.platform || '',
+ timestamp_utc: new Date().toISOString(),
+ });
+ }
 
-            // 2. 绘制 Monogram 交错纹理 (类似奢侈品排列)
-            const stepX = 42; // 水平间距
-            const stepY = 38; // 垂直间距
-            ctx.font = `bold 14px Arial`;
-            ctx.fillStyle = "rgba(0,0,0,0.12)";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
+ function reportEnd() {
+ if (reportSent || !API_BASE) return;
+ reportSent = true;
+ const u = getUserInfo();
+ reportToAPI({
+ type: 'game_end', user_id: u.user_id, username: u.username,
+ first_name: u.first_name,
+ main_number: String(mainNum), numbers: gameData.numbers, prices: gameData.prices,
+ win_count: gameData.winCount, win_total: winTotal,
+ prize_amount: winTotal, result: winTotal > 0 ? 'win' : 'lose',
+ platform: navigator.userAgentData?.platform || '',
+ screen_size: screen.width + 'x' + screen.height,
+ timestamp_utc: new Date().toISOString(),
+ });
+ }
 
-            for (let y = 0; y < cvs.height + stepY; y += stepY) {
-                for (let x = 0; x < cvs.width + stepX; x += stepX) {
-                    ctx.save();
-                    
-                    const row = Math.floor(y / stepY);
-                    const col = Math.floor(x / stepX);
-                    
-                    // 奇数行水平偏移半个间距，形成交错斜线感
-                    let offsetX = (row % 2 === 0) ? 0 : stepX / 2;
-                    
-                    ctx.translate(x + offsetX, y);
-                    
-                    // 美元和欧元符号交替分布
-                    const symbol = ((row + col) % 2 === 0) ? '$' : '€';
-                    
-                    // 增加 15 度轻微倾斜，更显优雅
-                    ctx.rotate(-0.25); 
-                    ctx.fillText(symbol, 0, 0);
-                    
-                    ctx.restore();
-                }
-            }
+ /* ─── 刮除百分比 ─── */
+ function getScratchPercent(canvas) {
+ const data = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+ let clear = 0;
+ for (let i = 3; i < data.length; i += 16) { if (data[i] < 128) clear++; }
+ return clear / Math.floor(data.length / 16);
+ }
 
-            // 3. 刮除逻辑
-            const scratch = (x, y) => {
-                ctx.globalCompositeOperation = 'destination-out';
-                ctx.lineJoin = 'round';
-                ctx.lineCap = 'round';
-                
-                ctx.beginPath();
-                ctx.arc(x, y, 22, 0, Math.PI * 2, false);
-                ctx.fill();
+ /* ─── 中奖匹配数（期望2.0，庄家利润率30%） ─── */
+ function rollMatchCount() {
+ const r = Math.random();
+ if (r < 0.13) return 0; // 13% — 没中
+ if (r < 0.37) return 1; // 24% — 小奖
+ if (r < 0.67) return 2; // 30% — 中奖
+ if (r < 0.86) return 3; // 19% — 大奖
+ if (r < 0.97) return 4; // 11% — 大奖
+ return 5; // 3% — 超级大奖
+ }
 
-                if(id === "c_win") mainScratched = true;
-                if(id === "c_grid" && mainScratched && !winTriggered) {
-                    triggerWin();
-                }
-            };
+ function randOther(main) {
+ let n;
+ do { n = Math.floor(Math.random() * 90 + 10); } while (n === main);
+ return n;
+ }
 
-            const getPos = (e) => {
-                const r = cvs.getBoundingClientRect();
-                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-                return {
-                    x: clientX - r.left,
-                    y: clientY - r.top
-                };
-            };
+ /* ─── 倒计时 ─── */
+ async function start() {
+ const el = document.getElementById('cd');
+ for (let s of ['2', '1', 'GO']) {
+ await new Promise(r => setTimeout(r, 1000));
+ el.innerText = s;
+ }
+ document.getElementById('loader').style.display = 'none';
+ document.getElementById('stage').style.opacity = '1';
+ reportStart();
+ init();
+ }
 
-            cvs.addEventListener('touchstart', (e) => { e.preventDefault(); const p = getPos(e); scratch(p.x, p.y); });
-            cvs.addEventListener('touchmove', (e) => { e.preventDefault(); const p = getPos(e); scratch(p.x, p.y); });
-            cvs.addEventListener('mousemove', (e) => { if(e.buttons===1){ const p = getPos(e); scratch(p.x, p.y); } });
-        }
+ /* ─── 生成游戏 ─── */
+ function init() {
+ const g = document.getElementById('grid-area');
+ let h = "";
+ gameData = { numbers: [], prices: [], winCount: 0 };
+ winTotal = 0;
 
-        function triggerWin() {
-            if(winTriggered) return;
-            winTriggered = true;
+ /* 1. 随机中奖号码 (10-99) */
+ mainNum = Math.floor(Math.random() * 90 + 10);
+ document.getElementById('win-area').innerText = mainNum;
 
-            setTimeout(() => {
-                const dialog = document.getElementById('top-dialog');
-                document.getElementById('db').innerText = `$${(100 + winTotal).toFixed(2)}`;
-                document.getElementById('dm').innerText = winTotal > 0 ? `Amazing! You won $${winTotal.toFixed(2)}` : "Better luck next time!";
-                
-                dialog.classList.add('active');
-                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-            }, 2500); 
-        }
+ /* 2. 本局匹配数 */
+ const matchCount = rollMatchCount();
 
-        window.onload = start;
-    </script>
+ /* 3. 随机选匹配位置 */
+ const matchPos = new Set();
+ while (matchPos.size < matchCount) {
+ matchPos.add(Math.floor(Math.random() * 30));
+ }
+
+ /* 4. 填充30格 */
+ for (let i = 0; i < 30; i++) {
+ const isMatch = matchPos.has(i);
+ const n = isMatch ? mainNum : randOther(mainNum);
+ const p = (Math.random() * 50 + 10).toFixed(2);
+ if (isMatch) { winTotal += parseFloat(p); gameData.winCount++; }
+ gameData.numbers.push(String(n));
+ gameData.prices.push(p);
+ h += `<div class="cell"><b>${n}</b><i>$${p}</i></div>`;
+ }
+ g.innerHTML = h;
+ renderCanvas("c_win");
+ renderCanvas("c_grid");
+ }
+
+ /* ─── 渲染画布 ─── */
+ let lastCheck = 0;
+
+ function renderCanvas(id) {
+ const cvs = document.getElementById(id);
+ const ctx = cvs.getContext('2d');
+ cvs.width = cvs.offsetWidth; cvs.height = cvs.offsetHeight;
+
+ ctx.fillStyle = '#cfd8dc';
+ ctx.fillRect(0, 0, cvs.width, cvs.height);
+
+ const stepX = 42, stepY = 38;
+ ctx.font = 'bold 14px Arial';
+ ctx.fillStyle = "rgba(0,0,0,0.12)";
+ ctx.textAlign = "center";
+ ctx.textBaseline = "middle";
+ for (let y = 0; y < cvs.height + stepY; y += stepY) {
+ for (let x = 0; x < cvs.width + stepX; x += stepX) {
+ ctx.save();
+ const row = Math.floor(y / stepY);
+ const col = Math.floor(x / stepX);
+ let offsetX = (row % 2 === 0) ? 0 : stepX / 2;
+ ctx.translate(x + offsetX, y);
+ const symbol = ((row + col) % 2 === 0) ? '$' : '€';
+ ctx.rotate(-0.25); 
+ ctx.fillText(symbol, 0, 0);
+ ctx.restore();
+ }
+ }
+
+ const scratch = (x, y) => {
+ ctx.globalCompositeOperation = 'destination-out';
+ ctx.lineJoin = 'round';
+ ctx.lineCap = 'round';
+ ctx.beginPath();
+ ctx.arc(x, y, 22, 0, Math.PI * 2, false);
+ ctx.fill();
+ if (id === "c_win") mainScratched = true;
+ if (id === "c_grid") checkWinCondition();
+ };
+
+ const getPos = (e) => {
+ const r = cvs.getBoundingClientRect();
+ const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+ const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+ return { x: clientX - r.left, y: clientY - r.top };
+ };
+
+ cvs.addEventListener('touchstart', (e) => { e.preventDefault(); const p = getPos(e); scratch(p.x, p.y); });
+ cvs.addEventListener('touchmove', (e) => { e.preventDefault(); const p = getPos(e); scratch(p.x, p.y); });
+ cvs.addEventListener('mousemove', (e) => { if(e.buttons===1){ const p = getPos(e); scratch(p.x, p.y); } });
+ }
+
+ /* ─── 判定：中奖区已刮 + 网格≥75% ─── */
+ function checkWinCondition() {
+ if (winTriggered || winConditionMet || !mainScratched) return;
+ const now = Date.now();
+ if (now - lastCheck < 500) return;
+ lastCheck = now;
+
+ const pct = getScratchPercent(document.getElementById('c_grid'));
+ if (pct >= 0.75) {
+ winConditionMet = true;
+ setTimeout(() => triggerWin(), 2500 + Math.random() * 500);
+ }
+ }
+
+ /* ─── 弹窗 ─── */
+ function triggerWin() {
+ if (winTriggered) return;
+ winTriggered = true;
+ reportEnd();
+
+ const dialog = document.getElementById('top-dialog');
+ const heading = document.getElementById('dh');
+
+ if (winTotal > 0) {
+ heading.innerText = '🎊 CONGRATS';
+ document.getElementById('db').innerText = `$${winTotal.toFixed(2)}`;
+ document.getElementById('dm').innerText = `Amazing! You won $${winTotal.toFixed(2)}`;
+ if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+ } else {
+ heading.innerText = '😔 TRY AGAIN';
+ document.getElementById('db').innerText = '$0.00';
+ document.getElementById('dm').innerText = 'Better luck next time!';
+ if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+ }
+
+ dialog.classList.add('active');
+ }
+
+ window.onload = start;
+ </script>
 </body>
 </html>
